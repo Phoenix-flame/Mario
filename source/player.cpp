@@ -3,17 +3,21 @@
 
 
 
-void Player::update(int dir){
-    if (state == STAND && dir != 0){
-        this->dir = (dir == -1)?LEFT:RIGHT;
+void Player::update(int _dir){
+    Dir trans_dir = (_dir == 1)?RIGHT:LEFT;
+    if (state == STAND && (_dir != 0) ){
+        this->dir = (trans_dir == -1)?LEFT:RIGHT;
         startMove();
     }
-    else if (state == WALK && dir != 0){
-        this->dir = (dir == -1)?LEFT:RIGHT;
+    else if (state == WALK && _dir != 0){
+        this->dir = (_dir == -1)?LEFT:RIGHT;
         move();
     }
-    else if ((state == WALK || state == SLIDE) && dir == 0){
+    else if ((state == WALK || state == SLIDE) && _dir == 0){
         endMove();
+    }
+    else if (state == SLIDE && trans_dir != dir){
+        startMove();
     }
 
 
@@ -114,7 +118,7 @@ void Player::move(){
 }
 void Player::endMove(){
     static int start_slide = 0;
-    if (slide_enable < 5){
+    if (slide_enable < 10){
         state = STAND;
         return;
     }
