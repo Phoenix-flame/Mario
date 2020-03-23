@@ -38,21 +38,29 @@ bool World::collision(Object o1, Object o2){
 
 }
 
-bool World::collisionGravity(Object o1, Object o2){
-    Point o1_xRange = o1.getXRange();
+bool World::collisionGravity(Object* o1, Object* o2){
+
+    Point o1_xRange = o1->getXRange();
     int o1_left = o1_xRange.x;
     int o1_right = o1_xRange.y;
-    Point o1_yRange = o1.getYRange();
+    Point o1_yRange = o1->getYRange();
     int o1_top = o1_yRange.x;
     int o1_bottom = o1_yRange.y;
-    Point o2_xRange = o2.getXRange();
+    Point o2_xRange = o2->getXRange();
     int o2_left = o2_xRange.x;
     int o2_right = o2_xRange.y;
-    Point o2_yRange = o2.getYRange();
+    Point o2_yRange = o2->getYRange();
     int o2_top = o2_yRange.x;
     int o2_bottom = o2_yRange.y;
+
+    
     if (o1_right >= o2_left && o1_left <= o2_right){
-        if (o1_bottom >= o2_top && o1_top <= o2_bottom){
+        if (o1_bottom >= (o2_top - 3) && o1_top <= o2_bottom){
+            return true;
+        }
+    }
+    if (o1_right == o2_right && o1_left == o2_left){
+        if (o1_bottom >= (o2_top - 3) && o1_top <= o2_bottom){
             return true;
         }
     }
@@ -63,14 +71,47 @@ bool World::collisionGravity(Object o1, Object o2){
 
 void World::gravity(){
     Player* player = map->player;
-    bool on_the_floor = true;
+    
+    bool on_the_floor = false;
     for (auto o:map->grounds){
-        if (!collisionGravity(*player, *o)){
-            player->startFall();
-            on_the_floor = false;
+        if (collisionGravity(player, o)){
+            player->endFall();
+            on_the_floor = true;
         }
     }
-    if (on_the_floor){
-        player->endFall();
+    for (auto o:map->bricks){
+        if (collisionGravity(player, o)){
+            player->endFall();
+            on_the_floor = true;
+        }
     }
+    for (auto o:map->blocks){
+        if (collisionGravity(player, o)){
+            player->endFall();
+            on_the_floor = true;
+        }
+    }
+    for (auto o:map->coins){
+        if (collisionGravity(player, o)){
+            player->endFall();
+            on_the_floor = true;
+        }
+    }
+    for (auto o:map->fires){
+        if (collisionGravity(player, o)){
+            player->endFall();
+            on_the_floor = true;
+        }
+    }
+    for (auto o:map->healths){
+        if (collisionGravity(player, o)){
+            player->endFall();
+            on_the_floor = true;
+        }
+    }
+    // std::cout << (on_the_floor?"stand":"falling") << std::endl;
+    if (!on_the_floor){
+        player->startFall();
+    }
+    
 }

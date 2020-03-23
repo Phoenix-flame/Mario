@@ -55,14 +55,39 @@ enum State{
 };
 
 enum Dir{
+    STOP,
     LEFT,
     RIGHT
 };
 
+inline const char* ToString(State v)
+{
+    switch (v)
+    {
+        case STAND:   return "STAND";
+        case WALK:   return "WALK";
+        case DEAD: return "DEAD";
+        case SLIDE:   return "SLIDE";
+        case JUMP:   return "JUMP";
+        case FALL: return "FALL";
+        default:      return "[Unknown State]";
+    }
+}
+
+inline const char* ToString(Dir v)
+{
+    switch (v)
+    {
+        case STOP:   return "STOP";
+        case LEFT:   return "LEFT";
+        case RIGHT: return "RIGHT";
+        default:      return "[Unknown Direction]";
+    }
+}
+
 class Player: public Object{
 public:
     Player(int x, int y):Object(Point(x, y), Point(24, 32), ""){
-        std::cout << x << " " << y << std::endl;
         level = NORMAL;
         state = STAND;
         image = NORM_STAND_RIGHT;
@@ -84,10 +109,12 @@ public:
 
     // falling
     void startFall();
-    void falling();
+    void falling(Dir _dir, bool stop_horizontal_move);
+    void move_during_fall();
     void endFall();
 
-
+    void _moveX(int dx);
+    void _moveY(int dy);
 
 private:
     Level level;

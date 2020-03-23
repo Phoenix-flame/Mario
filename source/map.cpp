@@ -59,7 +59,7 @@ Map::Map(std::string filepath){
             else if(line[x] == 'M'){
                 // player = new Player(x, y);
                 player = new Player(16, 1);
-                this->objects.push_back(player);
+                
             }
             else if(line[x] == '|'){
                 bool exist = false;
@@ -100,7 +100,7 @@ Map::Map(std::string filepath){
         }
         y += 1;
     }
-
+    this->objects.push_back(player);
     map_file.close();
 }
 

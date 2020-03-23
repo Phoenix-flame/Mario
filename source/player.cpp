@@ -4,7 +4,14 @@
 
 
 void Player::update(int _dir){
+    std::cout << ToString(state) << " " << _dir << std::endl;
     Dir trans_dir = (_dir == 1)?RIGHT:LEFT;
+    if (_dir == 0){ trans_dir = STOP;}
+    else {
+        dir = trans_dir;
+    }
+    
+    
     if (state == STAND && (_dir != 0) ){
         this->dir = (trans_dir == -1)?LEFT:RIGHT;
         startMove();
@@ -20,7 +27,10 @@ void Player::update(int _dir){
         startMove();
     }
     else if (state == FALL){
-        falling();
+        // if (_dir != 0){
+            // dir = trans_dir;
+        // }
+        falling(trans_dir, (_dir == 0)?true:false);
     }
 
 
@@ -59,6 +69,12 @@ void Player::updateFigure(){
         }
         else if (state == SLIDE){
             image = (dir == LEFT)?NORM_SLIDE_LEFT:NORM_SLIDE_RIGHT;
+        }
+        else if (state == FALL){
+            if (dir!= STOP){
+                image = (dir == LEFT)?NORM_JUMP_LEFT:NORM_JUMP_RIGHT;
+            }
+            
         }
         break;
     case POWER:
@@ -104,20 +120,19 @@ void Player::updateFigure(){
 
 
 void Player::startMove(){
-    pos.x += 1;
     state = WALK;
     slide_enable = 0;
 
 }
 void Player::move(){
     if (dir == LEFT){
-        pos.x -= 5;
+        _moveX(-5);
     }
     else if (dir == RIGHT){
-        pos.x += 5;
+        _moveX(+5);
     }
     slide_enable += 1;
-    std::cout <<slide_enable << std::endl;
+    std::cout << slide_enable << std::endl;
     
 }
 void Player::endMove(){
@@ -138,10 +153,10 @@ void Player::endMove(){
     }
     else{
         if (dir == LEFT){
-            pos.x -= 5;
+            _moveX(-5);
         }
         else if (dir == RIGHT){
-            pos.x += 5;
+            _moveX(+5);
         }   
     }
     
@@ -163,13 +178,37 @@ void Player::startFall(){
     state = FALL;
 }
 
-void Player::falling(){
+void Player::falling(Dir _dir, bool stop_horizontal_move){
     state = FALL;
-    pos.y += 5;
-
+    _moveY(+5);
+    if (stop_horizontal_move){return;}
+    if (_dir == LEFT){
+        _moveX(-3);
+    }
+    else if (_dir == RIGHT){
+        _moveX(+3);
+    }  
+    
 }
 
 
 void Player::endFall(){
-    state = STAND;
+    if (state == FALL){
+        state = STAND;
+    }
+    
+}
+
+
+
+
+void Player::_moveX(int dx){
+    pos.x += dx;
+    xMin += dx;
+    xMax += dx;
+}
+void Player::_moveY(int dy){
+    pos.y += dy;
+    yMin += dy;
+    yMax += dy;
 }
