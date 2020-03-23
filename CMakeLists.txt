@@ -16,9 +16,19 @@ set(sources
     source/core.hpp
     source/map.cpp
     source/map.hpp
-    source/object.cpp
-    source/object.hpp
-    source/block.hpp
+    source/player.hpp
+    source/player.cpp
+    source/objects/object.cpp
+    source/objects/object.hpp
+    source/objects/block.hpp
+    source/objects/ground.hpp
+    source/objects/brick.hpp
+    source/objects/coin_container.hpp
+    source/objects/fire_block.hpp
+    source/objects/health_block.hpp
+    source/objects/goomba.hpp
+    source/objects/koopa_troopa.hpp
+    source/objects/pipes.hpp
 )
 
 find_package(SDL2 REQUIRED)

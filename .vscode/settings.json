@@ -52,6 +52,12 @@
         "thread": "cpp",
         "cinttypes": "cpp",
         "typeindex": "cpp",
-        "typeinfo": "cpp"
+        "typeinfo": "cpp",
+        "csignal": "cpp",
+        "strstream": "cpp",
+        "numeric": "cpp",
+        "iomanip": "cpp",
+        "cfenv": "cpp",
+        "valarray": "cpp"
     }
 }

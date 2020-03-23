@@ -2,7 +2,7 @@
 #define _OBJECT_HPP_
 
 #include <string>
-#include "rsdl.hpp"
+#include "../rsdl.hpp"
 
 
 class Object{
@@ -11,7 +11,7 @@ public:
     std::string getImage();
     Point getPos();
     Point getSize();
-private:
+protected:
     Point pos;
 
     int xMin;

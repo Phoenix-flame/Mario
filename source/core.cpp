@@ -60,7 +60,7 @@ void Core::showDebug(){
 
 bool Core::events(){
     Event event = win->poll_for_event();
-    std::cout << event.get_type() << std::endl;
+    // std::cout << event.get_type() << std::endl;
     switch (event.get_type()) {
         case Event::QUIT:
             return false;
