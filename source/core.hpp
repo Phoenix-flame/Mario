@@ -1,5 +1,5 @@
 #include "world.hpp"
-#define MIN_FRAME_RATE 60
+#define MIN_FRAME_RATE 60   
 
 
 class Core{

@@ -116,6 +116,8 @@ public:
     void _moveX(int dx);
     void _moveY(int dy);
 
+    State getState(){return state;}
+
 private:
     Level level;
     State state;
@@ -123,6 +125,9 @@ private:
 
 
     int slide_enable = 0;
-
+    int jump_timer = 0;
+    bool move_during_jump;
+    int jump_speed_vertical;
+    int jump_speed_horizontal;
 
 };

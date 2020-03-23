@@ -13,8 +13,9 @@ public:
     void loop();
 
     // Physics
-    bool collision(Object o1, Object o2);
+    void collision();
     bool collisionGravity(Object* o1, Object* o2);
+    bool collisionJump(Object* o1, Object* o2);
     void gravity();
 
     Player* getPlayer(){return map->player;}

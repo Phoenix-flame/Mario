@@ -6,10 +6,7 @@
 void Player::update(int _dir){
     std::cout << ToString(state) << " " << _dir << std::endl;
     Dir trans_dir = (_dir == 1)?RIGHT:LEFT;
-    if (_dir == 0){ trans_dir = STOP;}
-    else {
-        dir = trans_dir;
-    }
+   
     
     
     if (state == STAND && (_dir != 0) ){
@@ -27,10 +24,14 @@ void Player::update(int _dir){
         startMove();
     }
     else if (state == FALL){
-        // if (_dir != 0){
-            // dir = trans_dir;
-        // }
+        if (_dir == 0){ trans_dir = STOP;}
+        else {
+            dir = trans_dir;
+        }
         falling(trans_dir, (_dir == 0)?true:false);
+    }
+    else if(state == JUMP){
+        jump();
     }
 
 
@@ -71,9 +72,9 @@ void Player::updateFigure(){
             image = (dir == LEFT)?NORM_SLIDE_LEFT:NORM_SLIDE_RIGHT;
         }
         else if (state == FALL){
-            if (dir!= STOP){
+            // if (dir!= STOP){
                 image = (dir == LEFT)?NORM_JUMP_LEFT:NORM_JUMP_RIGHT;
-            }
+            // }
             
         }
         break;
@@ -147,7 +148,7 @@ void Player::endMove(){
         
     }
     std::cout << SDL_GetTicks() - start_slide << std::endl;
-    if (SDL_GetTicks() - start_slide >120){
+    if (SDL_GetTicks() - start_slide >240){
         state = STAND;
         slide_enable = 0;
     }
@@ -165,17 +166,50 @@ void Player::endMove(){
 
 
 void Player::startJump(){
-
+    if (state == JUMP || state == FALL){return;} // You cannot initiate a jump during a jump
+    if (state == STAND){ 
+        move_during_jump = false;
+    }
+    else {
+        move_during_jump = true;
+    }
+    state = JUMP;
+    jump_speed_vertical = -10;
+    jump_timer = SDL_GetTicks();
 }
 void Player::jump(){
-
+    static int jump_cycles = 0;
+    
+    if (SDL_GetTicks() - jump_timer < 1000){
+        
+        _moveY(jump_speed_vertical);
+        jump_speed_vertical += (jump_cycles%2 == 0)?1:0;
+        jump_cycles += 1;
+        std::cout << "jump_speed_vertical: " << jump_speed_vertical << std::endl; 
+        if (move_during_jump){
+            if (dir == LEFT){
+                _moveX(-5);
+            }
+            else if (dir == RIGHT){
+                _moveX(+5);
+            } 
+        }
+        
+    }
+    else {
+        state = FALL;
+        
+    }
 }
 void Player::endJump(){
-
+    state = FALL;
 }
 
 void Player::startFall(){
-    state = FALL;
+    if (state != JUMP){
+        state = FALL;
+    }
+    
 }
 
 void Player::falling(Dir _dir, bool stop_horizontal_move){
@@ -183,10 +217,10 @@ void Player::falling(Dir _dir, bool stop_horizontal_move){
     _moveY(+5);
     if (stop_horizontal_move){return;}
     if (_dir == LEFT){
-        _moveX(-3);
+        _moveX(-5);
     }
     else if (_dir == RIGHT){
-        _moveX(+3);
+        _moveX(+5);
     }  
     
 }

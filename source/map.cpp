@@ -58,7 +58,7 @@ Map::Map(std::string filepath){
             }
             else if(line[x] == 'M'){
                 // player = new Player(x, y);
-                player = new Player(16, 1);
+                player = new Player(5, 5);
                 
             }
             else if(line[x] == '|'){

@@ -25,17 +25,28 @@ void Core::loop(){
 
 
 void Core::update(){
+    int player_x = world->getPlayer()->getPos().x + world->camera->getPos().x;
     if(KEY_RIGHT_PRESSED){
         world->getPlayer()->update(1);
-        world->camera->move(-5);
+        if (player_x > 400){
+            world->camera->move(-5);
+        }
+        
     }
     else if (KEY_LEFT_PRESSED){
         world->getPlayer()->update(-1);
-        world->camera->move(5);
+        if (player_x < 100){
+            world->camera->move(5);
+        }
+        
     }
     else{
         world->getPlayer()->update(0);
     }
+    if(KEY_UP_PRESSED){
+        world->getPlayer()->startJump();
+    }
+
 }
 
 
