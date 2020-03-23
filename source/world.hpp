@@ -22,8 +22,9 @@ public:
 
     std::vector<Object*> getObjects();
     Camera* camera;
-private:
     Map* map;
+private:
+    
     
     Physics* physics;
 

@@ -7,7 +7,12 @@ World::World(){
 
 
 void World::loop(){
-    
+    for(auto b:map->bricks){
+        b->update();
+    }
+    for(auto c:map->coins){
+        c->update();
+    }
     // gravity();
     // collision();
 }

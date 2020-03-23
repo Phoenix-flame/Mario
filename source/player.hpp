@@ -89,7 +89,7 @@ inline const char* ToString(Dir v)
 
 class Player: public Object{
 public:
-    Player(int x, int y):Object(Point(x, y), Point(24, 32), ""){
+    Player(int x, int y):Object(Point(x, y), Point(12, 16), ""){
         level = NORMAL;
         state = STAND;
         image = NORM_STAND_RIGHT;
@@ -135,8 +135,7 @@ private:
     void collision(std::vector<Object*> objs);
 
     int slide_enable = 0;
-    int jump_timer = 0;
-    Timer jumpTimer;
+    
     bool move_during_jump;
     int jump_speed_vertical;
     int jump_speed_horizontal;
@@ -144,7 +143,9 @@ private:
     int fall_speed_vertical;
     int fall_speed_horizontal;
 
-
+    // Timers
+    Timer slideTimer;
+    Timer jumpTimer;
     Timer RW_Timer;
     Timer LW_Timer;
 };

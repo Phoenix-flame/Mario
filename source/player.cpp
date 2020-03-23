@@ -4,7 +4,7 @@
 
 
 void Player::update(std::vector<Object*> objs, int _dir){
-    std::cout << ToString(state) << " " << _dir << std::endl;
+    // std::cout << ToString(state) << " " << _dir << std::endl;
     Dir trans_dir = (_dir == 1)?RIGHT:LEFT;
     
     gravity(objs);
@@ -137,9 +137,8 @@ void Player::updateFigure(){
             image = (dir == LEFT)?NORM_SLIDE_LEFT:NORM_SLIDE_RIGHT;
         }
         else if (state == FALL){
-            // if (dir!= STOP){
-                image = (dir == LEFT)?NORM_JUMP_LEFT:NORM_JUMP_RIGHT;
-            // }
+            image = (dir == LEFT)?NORM_JUMP_LEFT:NORM_JUMP_RIGHT;
+ 
             
         }
         break;
@@ -198,22 +197,23 @@ void Player::move(){
         _moveX(+5);
     }
     slide_enable += 1;
-    std::cout << slide_enable << std::endl;
+    // std::cout << slide_enable << std::endl;
     
 }
 void Player::endMove(){
-    static int start_slide = 0;
+
     if (slide_enable < 10){
         state = STAND;
         return;
     }
     else if (state == WALK){
-        start_slide = SDL_GetTicks();
+        slideTimer.reset();
+        slideTimer.start();
         state = SLIDE;
         
     }
-    std::cout << SDL_GetTicks() - start_slide << std::endl;
-    if (SDL_GetTicks() - start_slide >240){
+
+    if (slideTimer.getTime() > 300){
         state = STAND;
         slide_enable = 0;
     }
@@ -264,8 +264,7 @@ void Player::jump(){
     }
     else {
         state = FALL;
-        fall_speed_vertical = 3;
-        
+        fall_speed_vertical = -jump_speed_vertical;
     }
 }
 void Player::endJump(){
@@ -273,7 +272,7 @@ void Player::endJump(){
 }
 
 void Player::startFall(){
-    if (state != JUMP){
+    if (state != JUMP){  // when mario is jumping, gravity has no effect on it
         state = FALL;
         fall_speed_vertical = 3;
     }
@@ -282,16 +281,12 @@ void Player::startFall(){
 
 void Player::falling(Dir _dir, bool stop_horizontal_move){
     static int fall_cycles = 0;
-
-
-
     _moveY(fall_speed_vertical);
     fall_speed_vertical += (fall_cycles%2 == 0)?1:0;
     if (fall_speed_vertical >= 10){
         fall_speed_vertical = 10;
     }
     fall_cycles += 1;
-    // std::cout << "fall_speed_vertical: " << fall_speed_vertical << std::endl; 
 
     if (stop_horizontal_move){return;}
     if (_dir == LEFT){
@@ -416,6 +411,8 @@ Point Player::checkDistToPlatform(std::vector<Object*> objs){
 
 
 void Player::jumpCollision(std::vector<Object*> objs){
+    Object* selected;
+    bool collided = false;
     for (auto o:objs){
         Rectangle o1(getPos(), getPos() + getSize());
         Rectangle o2(o->getPos(), o->getPos() + o->getSize());
@@ -429,16 +426,19 @@ void Player::jumpCollision(std::vector<Object*> objs){
         int o2_left = o2.x;
         int o2_right = o2.x + o2.w;
 
-        if (o1_right >= o2_left && o1_left <= o2_right){
+        if ((o1_right >= o2_left && o1_left <= o2_right) ||
+            (o1_left >= o2_left && o1_left <= o2_right)){
             if (o1_top >= o2_bottom && abs(o1_top - o2_bottom) < 10){
                 if (state == JUMP){
-                    std::cout << "here\n";
                     endJump();
-                    o->selected = true;
+                    collided = true;
+                    selected = o;
                 }
             }
         }
     }
+    selected->selected = true;
+    selected->mark();
 }
 
 

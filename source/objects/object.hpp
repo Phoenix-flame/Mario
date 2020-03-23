@@ -3,6 +3,7 @@
 
 #include <string>
 #include "../rsdl.hpp"
+#include "../timer.hpp"
 
 
 class Object{
@@ -14,7 +15,23 @@ public:
     Point getXRange();
     Point getYRange();
 
+    void mark(){
+        startAnimation = true;
+    }
+
     bool selected = false;
+
+    void _moveX(int dx){
+        pos.x += dx;
+        xMin += dx;
+        xMax += dx;
+    }
+    void _moveY(int dy){
+        pos.y += dy;
+        yMin += dy;
+        yMax += dy;
+    }
+
 protected:
     Point pos;
 
@@ -26,6 +43,7 @@ protected:
 
     Point size;
     
+    bool startAnimation = false;
 
     std::string image;
 };

@@ -1,3 +1,6 @@
+#ifndef _TIMER_HPP_
+#define _TIMER_HPP_
+
 #include "rsdl.hpp"
 
 
@@ -23,3 +26,6 @@ private:
     int time;
     bool started = false;
 };
+
+
+#endif // !_TIMER_HPP_

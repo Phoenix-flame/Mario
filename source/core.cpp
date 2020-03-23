@@ -109,7 +109,7 @@ void Core::showDebug(){
     for (auto o:world->getObjects()){
         if (o->selected){
             Point start_object = o->getPos() + world->camera->getPos();
-            win->draw_rect(Rectangle(start_object, start_object + o->getSize()), BLUE, 1U);
+            win->draw_rect(Rectangle(start_object, start_object + o->getSize()), BLUE, 4U);
         }
         
     }
@@ -125,10 +125,23 @@ void Core::drawObjects(){
                  Rectangle(b->getPos() + offset, b->getPos() + b->getSize() + offset), NULL_RECT,
                  0, false);
     }
+
+    for(auto c:world->map->coins){
+        if (c->coinIsAvailable){
+            win->draw_img(c->getImageCoin(),
+                 Rectangle(c->getCoinPos() + offset,
+                  c->getCoinPos() + c->getCoinSize() + offset), NULL_RECT,
+                 0, false);
+        }
+        
+    }
+
     Player * player = world->getPlayer();
     win->draw_img(player->getImage(),
                  Rectangle(player->getPos() + offset, player->getPos() + player->getSize() + offset), NULL_RECT,
                  0, false);
+
+
 }
 
 
