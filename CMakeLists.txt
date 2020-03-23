@@ -1,0 +1,33 @@
+cmake_minimum_required(VERSION 3.2)
+
+project(Mario VERSION 4.7.2 LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread" )
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${Mario_SOURCE_DIR}/cmake")
+
+message (${CMAKE_MODULE_PATH})
+set(sources
+    main.cpp
+    source/rsdl.cpp
+    source/rsdl.hpp
+    source/map.cpp
+    source/map.hpp
+    source/object.cpp
+    source/object.hpp
+    source/block.hpp
+)
+
+find_package(SDL2 REQUIRED)
+find_package(SDL2_Image REQUIRED)
+find_package(SDL2_Mixer REQUIRED)
+find_package(SDL2_ttf REQUIRED)
+include_directories(${SDL2_INCLUDE_DIR} ${SDL2_IMAGE_INCLUDE_DIR} ${SDL2_MIXER_INCLUDE_DIR} ${SDL2_TTF_INCLUDE_DIR})
+
+
+add_executable(${CMAKE_PROJECT_NAME} ${sources})
+target_link_libraries(${CMAKE_PROJECT_NAME} ${SDL2_LIBRARY} ${SDL2_IMAGE_LIBRARY} ${SDL2_MIXER_LIBRARY} ${SDL2_TTF_LIBRARY})
+
+
+
+

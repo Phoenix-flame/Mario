@@ -1,0 +1,1 @@
+/usr/bin/c++   -std=c++11 -pthread  -rdynamic CMakeFiles/Mario.dir/main.cpp.o CMakeFiles/Mario.dir/source/rsdl.cpp.o CMakeFiles/Mario.dir/source/map.cpp.o CMakeFiles/Mario.dir/source/object.cpp.o  -o Mario -Wl,-Bstatic -lSDL2main -Wl,-Bdynamic -lSDL2 -lpthread -lSDL2_image -lSDL2_mixer -lSDL2_ttf 

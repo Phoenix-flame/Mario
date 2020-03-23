@@ -1,0 +1,3 @@
+/home/alireza/Programming/C++/Mario/build/CMakeFiles/rebuild_cache.dir
+/home/alireza/Programming/C++/Mario/build/CMakeFiles/Mario.dir
+/home/alireza/Programming/C++/Mario/build/CMakeFiles/edit_cache.dir
