@@ -27,10 +27,13 @@ void Core::loop(){
 
 void Core::update(){
     int player_x = world->getPlayer()->getPos().x + world->camera->getPos().x;
+    State state = world->getPlayer()->getState();
+    Dir dir = world->getPlayer()->getDir();
     if(KEY_RIGHT_PRESSED){
         world->getPlayer()->update(world->getObjects(), 1);
         if (player_x > 400){
             world->camera->move(-5);
+            world->camera->moveBackground(-1);
         }
         
     }
@@ -38,12 +41,30 @@ void Core::update(){
         world->getPlayer()->update(world->getObjects(), -1);
         if (player_x < 100){
             world->camera->move(5);
+            world->camera->moveBackground(1);
         }
         
     }
     else{
         world->getPlayer()->update(world->getObjects(), 0);
     }
+
+    // Move camera when mario is sliding
+    if(state == SLIDE && dir == RIGHT){
+        if (player_x > 400){
+            world->camera->move(-5);
+            world->camera->moveBackground(-1);
+        }
+    }
+    else if(state == SLIDE && dir == LEFT){
+        if (player_x < 100){
+            world->camera->move(5);
+            world->camera->moveBackground(1);
+        }
+    }
+
+
+
     if(KEY_UP_PRESSED){
         if(world->getPlayer()->can_jump){
             world->getPlayer()->startJump();
@@ -59,12 +80,21 @@ void Core::update(){
 
 void Core::draw(){
     win->clear();
+    drawBackground();
     drawObjects();
 
     this->showDebug();
 
 
     win->update_screen();
+}
+
+void Core::drawBackground(){
+    
+    win->draw_img(BACKGROUND,
+                Rectangle(world->camera->getPosBackground(), Point(1600, 480) + world->camera->getPosBackground()),
+                Rectangle(Point(0, 0), Point(2000, 1000)),
+                0, false);
 }
 
 void Core::showDebug(){

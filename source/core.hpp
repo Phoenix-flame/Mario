@@ -1,6 +1,7 @@
 #include "world.hpp"
 #define MIN_FRAME_RATE 30   
 
+#define BACKGROUND "assets/background_image.png"
 
 class Core{
 public:
@@ -13,6 +14,8 @@ public:
     
     void showDebug();
     void drawObjects();
+
+    void drawBackground();
 private:
     World* world;
     Window* win;

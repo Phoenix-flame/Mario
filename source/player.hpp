@@ -104,22 +104,24 @@ public:
     void move();
     void endMove();
     
-    // Jump
+    // Jump Methods
     void startJump();
     void jump();
     void endJump();
-    bool can_jump = true;
+    bool can_jump = true; // Jumping only once when up arrow is holded
 
-    // falling
+    // Falling Methods
     void startFall();
     void falling(Dir _dir, bool stop_horizontal_move);
     void move_during_fall();
     void endFall();
 
+    // Base movment methods
     void _moveX(int dx);
     void _moveY(int dy);
 
     State getState(){return state;}
+    Dir getDir(){return dir;}
 
     void gravity(std::vector<Object*> objs);
     void jumpCollision(std::vector<Object*> objs);
@@ -130,9 +132,11 @@ private:
 
     Point checkDistToPlatform(std::vector<Object*> objs);
     int collisionGravity(Rectangle o1, Rectangle o2);
+    void collision(std::vector<Object*> objs);
 
     int slide_enable = 0;
     int jump_timer = 0;
+    Timer jumpTimer;
     bool move_during_jump;
     int jump_speed_vertical;
     int jump_speed_horizontal;

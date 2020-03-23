@@ -9,10 +9,11 @@ void Player::update(std::vector<Object*> objs, int _dir){
     
     gravity(objs);
     jumpCollision(objs);
+    collision(objs);
     
     Point min_dist_to_platform = checkDistToPlatform(objs);
-    std::cout << "Min Dist to Platform: " << min_dist_to_platform.x << std::endl;
-    std::cout << "Min Dist to TopBlock: " << min_dist_to_platform.y << std::endl;
+    // std::cout << "Min Dist to Platform: " << min_dist_to_platform.x << std::endl;
+    // std::cout << "Min Dist to TopBlock: " << min_dist_to_platform.y << std::endl;
 
     if (state == STAND && (_dir != 0) ){
         this->dir = (trans_dir == -1)?LEFT:RIGHT;
@@ -25,7 +26,7 @@ void Player::update(std::vector<Object*> objs, int _dir){
     else if ((state == WALK || state == SLIDE) && _dir == 0){
         endMove();
     }
-    else if (state == SLIDE && trans_dir != dir){
+    else if (state == SLIDE){
         startMove();
     }
     else if (state == FALL){
@@ -93,7 +94,6 @@ void Player::updateFigure(){
             }
             else if (dir == RIGHT){
                 walk_left = 1;
-                std::cout << "Timer Value: " << RW_Timer.getTime() << std::endl;
                 if (walk_right == 1){ 
                     image = NORM_WALK_RIGHT1; 
                     if (!RW_Timer.isStarted()){
@@ -240,12 +240,13 @@ void Player::startJump(){
     }
     state = JUMP;
     jump_speed_vertical = -10;
-    jump_timer = SDL_GetTicks();
+    jumpTimer.reset();
+    jumpTimer.start();
 }
 void Player::jump(){
     static int jump_cycles = 0;
     
-    if (SDL_GetTicks() - jump_timer < 600){
+    if (jumpTimer.getTime() < 600){
         _moveY(jump_speed_vertical);
         jump_speed_vertical += (jump_cycles%2 == 0)?1:0;
         jump_cycles += 1;
@@ -338,7 +339,7 @@ int Player::collisionGravity(Rectangle o1, Rectangle o2){
     int o2_right = o2.x + o2.w;
 
     if (o1_right >= o2_left && o1_left <= o2_right){
-        if (o1_bottom <= o2_top && abs(o1_bottom - o2_top) < 2){
+        if (o1_bottom <= o2_top && abs(o1_bottom - o2_top) < 3){
             return abs(o1_bottom - o2_top);
         }
     }
@@ -415,7 +416,6 @@ Point Player::checkDistToPlatform(std::vector<Object*> objs){
 
 
 void Player::jumpCollision(std::vector<Object*> objs){
-    bool below = false;
     for (auto o:objs){
         Rectangle o1(getPos(), getPos() + getSize());
         Rectangle o2(o->getPos(), o->getPos() + o->getSize());
@@ -430,28 +430,41 @@ void Player::jumpCollision(std::vector<Object*> objs){
         int o2_right = o2.x + o2.w;
 
         if (o1_right >= o2_left && o1_left <= o2_right){
-            if (o1_top >= o2_bottom && abs(o1_top - o2_bottom) < 2){
+            if (o1_top >= o2_bottom && abs(o1_top - o2_bottom) < 10){
                 if (state == JUMP){
+                    std::cout << "here\n";
                     endJump();
                     o->selected = true;
                 }
             }
         }
-
-
-        // if (collisionGravity(o1, o2) != -1){
-
-        //     o->selected = true;
-        // }
-        // else{
-        //     o->selected = false;
-        // }
     }
+}
 
-    // if (!below){
-    //     if (getState() != FALL){
-    //         startFall();
-    //     }
+
+
+void Player::collision(std::vector<Object*> objs){
+    for (auto o:objs){
+        Rectangle o1(getPos(), getPos() + getSize());
+        Rectangle o2(o->getPos(), o->getPos() + o->getSize());
+        int o1_top = o1.y;
+        int o1_bottom = o1.y + o1.h;
+        int o2_top = o2.y;
+        int o2_bottom = o2.y + o2.h;
         
-    // }
+        int o1_left = o1.x;
+        int o1_right = o1.x + o1.w;
+        int o2_left = o2.x;
+        int o2_right = o2.x + o2.w;
+
+        if (o1_bottom > o2_top && o1_bottom < o2_bottom){
+            if (o1_right <= o2_left && abs(o1_right - o2_left) < 10){
+                if (state == WALK || state == SLIDE){
+                    std::cout << "LEFT HORIZONTAL COLLISION\n";
+                    endMove();
+                    o->selected = true;
+                }
+            }
+        }
+    }
 }
