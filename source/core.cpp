@@ -45,7 +45,11 @@ void Core::update(){
         world->getPlayer()->update(world->getObjects(), 0);
     }
     if(KEY_UP_PRESSED){
-        world->getPlayer()->startJump();
+        if(world->getPlayer()->can_jump){
+            world->getPlayer()->startJump();
+            world->getPlayer()->can_jump = false;
+        }
+        
     }
 
 }
@@ -114,6 +118,7 @@ bool Core::events(){
                 return false;
             }
             else if (event.get_pressed_key() == 'R'){
+                world->getPlayer()->can_jump = true;
                 KEY_UP_PRESSED = true;
             }
             else if (event.get_pressed_key() == 'O'){

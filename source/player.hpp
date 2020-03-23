@@ -108,6 +108,7 @@ public:
     void startJump();
     void jump();
     void endJump();
+    bool can_jump = true;
 
     // falling
     void startFall();
@@ -121,12 +122,13 @@ public:
     State getState(){return state;}
 
     void gravity(std::vector<Object*> objs);
+    void jumpCollision(std::vector<Object*> objs);
 private:
     Level level;
     State state;
     Dir dir;
 
-    int checkDistToPlatform(std::vector<Object*> objs);
+    Point checkDistToPlatform(std::vector<Object*> objs);
     int collisionGravity(Rectangle o1, Rectangle o2);
 
     int slide_enable = 0;
