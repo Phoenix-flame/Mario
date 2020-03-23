@@ -1,3 +1,6 @@
+#ifndef _OBJECT_HPP_
+#define _OBJECT_HPP_
+
 #include <string>
 #include "rsdl.hpp"
 
@@ -5,7 +8,9 @@
 class Object{
 public:
     Object(Point pos, Point size, std::string image);
-
+    std::string getImage();
+    Point getPos();
+    Point getSize();
 private:
     Point pos;
 
@@ -20,3 +25,5 @@ private:
 
     std::string image;
 };
+
+#endif // !_OBJECT_HPP_

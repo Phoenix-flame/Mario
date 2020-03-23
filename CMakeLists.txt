@@ -11,6 +11,9 @@ set(sources
     main.cpp
     source/rsdl.cpp
     source/rsdl.hpp
+
+    source/core.cpp
+    source/core.hpp
     source/map.cpp
     source/map.hpp
     source/object.cpp
