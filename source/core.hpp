@@ -1,11 +1,4 @@
-#include "rsdl.hpp"
-#include <cstdlib>
-#include <ctime>
-#include <iostream>
-#include <vector>
-#include "map.hpp"
-
-
+#include "world.hpp"
 #define MIN_FRAME_RATE 60
 
 
@@ -19,8 +12,9 @@ public:
     void update();
     
     void showDebug();
+    void drawObjects();
 private:
-    Map* map;
+    World* world;
     Window* win;
 
     int FPS;

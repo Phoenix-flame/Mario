@@ -16,8 +16,14 @@ set(sources
     source/core.hpp
     source/map.cpp
     source/map.hpp
+    source/world.hpp
+    source/world.cpp
     source/player.hpp
     source/player.cpp
+    source/physics.hpp
+    source/physics.cpp
+    source/camera.hpp
+    source/camera.cpp
     source/objects/object.cpp
     source/objects/object.hpp
     source/objects/block.hpp

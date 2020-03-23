@@ -17,21 +17,24 @@
 
 class Map{
 public:
-    Map(std::string filepath, Window* win);
+    Map(std::string filepath);
     void drawObjects();
     Point offset;
+
+    std::vector<Object*> objects;
 private:
-    std::vector<Block> blocks;
-    std::vector<Ground> grounds;
-    std::vector<Brick> bricks;
-    std::vector<CoinContainer> coins;
-    std::vector<FireContainer> fires;
-    std::vector<HealthContainer> healths;
-    std::vector<Goomba> goombas;
-    std::vector<Koopa> koopas;
-    std::vector<Pipe> pipes;
+    std::vector<Block*> blocks;
+    std::vector<Ground*> grounds;
+    std::vector<Brick*> bricks;
+    std::vector<CoinContainer*> coins;
+    std::vector<FireContainer*> fires;
+    std::vector<HealthContainer*> healths;
+    std::vector<Goomba*> goombas;
+    std::vector<Koopa*> koopas;
+    std::vector<Pipe*> pipes;
+
+    
 
     Player* player;
 
-    Window* win;
 };

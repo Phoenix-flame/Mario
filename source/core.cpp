@@ -2,7 +2,7 @@
 
 Core::Core(){
     this->win = new Window(640, 480, "Mario");
-    this->map = new Map("assets/maps/1/1.txt", win);
+    this->world = new World();
 
     FPS = 0;
 }
@@ -25,10 +25,10 @@ void Core::loop(){
 
 void Core::update(){
     if(KEY_RIGHT_PRESSED){
-        map->offset.x -= 10;
+        // map->offset.x -= 10;
     }
     else if (KEY_LEFT_PRESSED){
-        map->offset.x += 10;
+        // map->offset.x += 10;
     }
 }
 
@@ -37,7 +37,7 @@ void Core::update(){
 
 void Core::draw(){
     win->clear();
-    map->drawObjects();
+    drawObjects();
 
     this->showDebug();
 
@@ -53,14 +53,22 @@ void Core::showDebug(){
 
 
 
-
+void Core::drawObjects(){
+    for (auto b:world->getObjects()){
+        if (b->getPos().x < 0 || b->getPos().x > 600){
+            continue;
+        }
+        win->draw_img(b->getImage(),
+                 Rectangle(b->getPos(), b->getPos() + b->getSize()), NULL_RECT,
+                 0, false);
+    }
+}
 
 
 
 
 bool Core::events(){
     Event event = win->poll_for_event();
-    // std::cout << event.get_type() << std::endl;
     switch (event.get_type()) {
         case Event::QUIT:
             return false;
