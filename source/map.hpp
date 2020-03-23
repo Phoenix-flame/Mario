@@ -21,8 +21,8 @@ public:
     void drawObjects();
     Point offset;
 
-    std::vector<Object*> objects;
-private:
+    Player* player;
+    
     std::vector<Block*> blocks;
     std::vector<Ground*> grounds;
     std::vector<Brick*> bricks;
@@ -32,9 +32,12 @@ private:
     std::vector<Goomba*> goombas;
     std::vector<Koopa*> koopas;
     std::vector<Pipe*> pipes;
+    std::vector<Object*> objects;
+private:
+    
 
     
 
-    Player* player;
+    
 
 };

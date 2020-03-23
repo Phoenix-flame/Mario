@@ -14,6 +14,7 @@ void Core::loop(){
         if(!this->events()){
             break;
         }
+        this->world->loop();
         this->update();
         this->draw();
         if(SDL_GetTicks() - frameTime < MIN_FRAME_RATE) {

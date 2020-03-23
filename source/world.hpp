@@ -12,6 +12,10 @@ public:
     World();
     void loop();
 
+    // Physics
+    void collision();
+    void gravity();
+
     std::vector<Object*> getObjects();
     Camera* camera;
 private:

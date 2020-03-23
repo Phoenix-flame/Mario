@@ -7,10 +7,22 @@ World::World(){
 
 
 void World::loop(){
-
+    // map->player->stand();
+    collision();
 }
 
 
 std::vector<Object*> World::getObjects(){
     return map->objects;
+}
+
+
+
+
+void World::collision(){
+    Player* player = map->player;
+}
+
+void World::gravity(){
+    Player* player = map->player;
 }

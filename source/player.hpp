@@ -40,23 +40,50 @@
 #define BIG_WALK_RIGHT2 "assets/sprites/mario/big/walking-right-2.png"
 #define BIG_WALK_RIGHT3 "assets/sprites/mario/big/walking-right-3.png"
 
-enum State{
+enum Level{
     NORMAL,
     POWER,
     BIG
+};
+enum State{
+    STAND, 
+    WALK,
+    DEAD,
+    SLIDE,
+    JUMP
+};
+
+enum Dir{
+    LEFT,
+    RIGHT
 };
 
 class Player: public Object{
 public:
     Player(int x, int y):Object(Point(x, y), Point(24, 32), ""){
         std::cout << x << " " << y << std::endl;
-        state = NORMAL;
+        level = NORMAL;
+        state = STAND;
         image = NORM_STAND_RIGHT;
         size = Point(24, 32);
     }
 
+    void update(int dir);
+    void updateFigure();
+    void startMove();
+    void move();
+    void endMove();
+
+    void moveLeft();
+    void moveRight();
+    void jump();
+    void stand();
+    void slide();
 
 private:
+    Level level;
     State state;
+    Dir dir;
+
 
 };
