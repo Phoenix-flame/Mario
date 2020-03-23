@@ -6,6 +6,10 @@ Camera::Camera(){
 }
 
 void Camera::move(int offset){
-
+    this->pos.x += offset;
 }
 
+
+Point Camera::getPos(){
+    return pos;
+}

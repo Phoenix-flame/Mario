@@ -13,9 +13,10 @@ public:
     void loop();
 
     std::vector<Object*> getObjects();
+    Camera* camera;
 private:
     Map* map;
-    Camera* camera;
+    
     Physics* physics;
 
 };

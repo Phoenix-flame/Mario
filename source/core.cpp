@@ -25,10 +25,10 @@ void Core::loop(){
 
 void Core::update(){
     if(KEY_RIGHT_PRESSED){
-        // map->offset.x -= 10;
+        world->camera->move(-50);
     }
     else if (KEY_LEFT_PRESSED){
-        // map->offset.x += 10;
+        world->camera->move(50);
     }
 }
 
@@ -55,11 +55,9 @@ void Core::showDebug(){
 
 void Core::drawObjects(){
     for (auto b:world->getObjects()){
-        if (b->getPos().x < 0 || b->getPos().x > 600){
-            continue;
-        }
+        Point offset = world->camera->getPos();
         win->draw_img(b->getImage(),
-                 Rectangle(b->getPos(), b->getPos() + b->getSize()), NULL_RECT,
+                 Rectangle(b->getPos() + offset, b->getPos() + b->getSize() + offset), NULL_RECT,
                  0, false);
     }
 }

@@ -6,7 +6,7 @@ public:
     Camera();
 
     void move(int offset);
-    void getPos();
+    Point getPos();
 
 private:
     Point pos;
