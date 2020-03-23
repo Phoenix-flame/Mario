@@ -11,6 +11,8 @@ public:
     std::string getImage();
     Point getPos();
     Point getSize();
+    Point getXRange();
+    Point getYRange();
 protected:
     Point pos;
 

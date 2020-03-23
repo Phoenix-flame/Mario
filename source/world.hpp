@@ -13,7 +13,8 @@ public:
     void loop();
 
     // Physics
-    void collision();
+    bool collision(Object o1, Object o2);
+    bool collisionGravity(Object o1, Object o2);
     void gravity();
 
     Player* getPlayer(){return map->player;}

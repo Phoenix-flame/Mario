@@ -19,6 +19,9 @@ void Player::update(int _dir){
     else if (state == SLIDE && trans_dir != dir){
         startMove();
     }
+    else if (state == FALL){
+        falling();
+    }
 
 
 
@@ -103,6 +106,7 @@ void Player::updateFigure(){
 void Player::startMove(){
     pos.x += 1;
     state = WALK;
+    slide_enable = 0;
 
 }
 void Player::move(){
@@ -141,4 +145,31 @@ void Player::endMove(){
         }   
     }
     
+}
+
+
+
+void Player::startJump(){
+
+}
+void Player::jump(){
+
+}
+void Player::endJump(){
+
+}
+
+void Player::startFall(){
+    state = FALL;
+}
+
+void Player::falling(){
+    state = FALL;
+    pos.y += 5;
+
+}
+
+
+void Player::endFall(){
+    state = STAND;
 }

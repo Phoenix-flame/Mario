@@ -50,7 +50,8 @@ enum State{
     WALK,
     DEAD,
     SLIDE,
-    JUMP
+    JUMP,
+    FALL
 };
 
 enum Dir{
@@ -70,15 +71,23 @@ public:
 
     void update(int dir);
     void updateFigure();
+
+    // Move and slide
     void startMove();
     void move();
     void endMove();
-
-    void moveLeft();
-    void moveRight();
+    
+    // Jump
+    void startJump();
     void jump();
-    void stand();
-    void slide();
+    void endJump();
+
+    // falling
+    void startFall();
+    void falling();
+    void endFall();
+
+
 
 private:
     Level level;
