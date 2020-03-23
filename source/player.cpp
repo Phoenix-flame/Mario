@@ -65,7 +65,6 @@ void Player::updateFigure(){
         else if (state == WALK){
             if (dir == LEFT){
                 walk_right = 1;
-                std::cout << SDL_GetTicks() << std::endl;
                 if (walk_left == 1){
                     image = NORM_WALK_LEFT1;
                     if (!LW_Timer.isStarted()) LW_Timer.start();

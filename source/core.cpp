@@ -83,7 +83,7 @@ void Core::draw(){
     drawBackground();
     drawObjects();
 
-    this->showDebug();
+    // this->showDebug();
 
 
     win->update_screen();
@@ -111,7 +111,6 @@ void Core::showDebug(){
             Point start_object = o->getPos() + world->camera->getPos();
             win->draw_rect(Rectangle(start_object, start_object + o->getSize()), BLUE, 4U);
         }
-        
     }
 }
 
@@ -120,12 +119,7 @@ void Core::showDebug(){
 
 void Core::drawObjects(){
     Point offset = world->camera->getPos();
-    for (auto b:world->getObjects()){
-        win->draw_img(b->getImage(),
-                 Rectangle(b->getPos() + offset, b->getPos() + b->getSize() + offset), NULL_RECT,
-                 0, false);
-    }
-
+    // Coin animation
     for(auto c:world->map->coins){
         if (c->coinIsAvailable){
             win->draw_img(c->getImageCoin(),
@@ -133,8 +127,14 @@ void Core::drawObjects(){
                   c->getCoinPos() + c->getCoinSize() + offset), NULL_RECT,
                  0, false);
         }
-        
     }
+    for (auto b:world->getObjects()){
+        win->draw_img(b->getImage(),
+                 Rectangle(b->getPos() + offset, b->getPos() + b->getSize() + offset), NULL_RECT,
+                 0, false);
+    }
+
+
 
     Player * player = world->getPlayer();
     win->draw_img(player->getImage(),

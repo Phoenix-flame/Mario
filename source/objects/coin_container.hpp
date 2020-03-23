@@ -24,7 +24,7 @@ public:
                 if (!coinAnimation.isStarted()){
                     coinAnimation.start();
                     coinIsAvailable = true;
-                    posCoin = pos - Point(0, -10);
+                    posCoin = pos - Point(-5, -10);
                     sizeCoin = Point(16, 16);
                 }
                 _moveY(-1);
@@ -45,7 +45,7 @@ public:
                     posCoin.y -= 10;
                 }
                 else if (coinAnimation.getTime() >= 200 &&
-                coinAnimation.getTime() < 400){
+                coinAnimation.getTime() < 380){
                     posCoin.y += 10;
                 }
                 else{
