@@ -86,4 +86,7 @@ private:
     Dir dir;
 
 
+    int slide_enable = 0;
+
+
 };

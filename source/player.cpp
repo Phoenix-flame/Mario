@@ -4,9 +4,21 @@
 
 
 void Player::update(int dir){
-    if (state == STAND){
-
+    if (state == STAND && dir != 0){
+        this->dir = (dir == -1)?LEFT:RIGHT;
+        startMove();
     }
+    else if (state == WALK && dir != 0){
+        this->dir = (dir == -1)?LEFT:RIGHT;
+        move();
+    }
+    else if ((state == WALK || state == SLIDE) && dir == 0){
+        endMove();
+    }
+
+
+
+    updateFigure();
 }
 
 void Player::updateFigure(){
@@ -19,7 +31,6 @@ void Player::updateFigure(){
             image = (dir == LEFT)?NORM_STAND_LEFT:NORM_STAND_RIGHT;
         }
         else if (state == WALK){
-            
             if (dir == LEFT){
                 walk_right = 1;
                 if (walk_left == 1){ image = NORM_WALK_LEFT1; walk_left = 2;}
@@ -80,4 +91,50 @@ void Player::updateFigure(){
     default:
         break;
     }
+}
+
+
+
+
+void Player::startMove(){
+    pos.x += 1;
+    state = WALK;
+
+}
+void Player::move(){
+    if (dir == LEFT){
+        pos.x -= 5;
+    }
+    else if (dir == RIGHT){
+        pos.x += 5;
+    }
+    slide_enable += 1;
+    std::cout <<slide_enable << std::endl;
+    
+}
+void Player::endMove(){
+    static int start_slide = 0;
+    if (slide_enable < 5){
+        state = STAND;
+        return;
+    }
+    else if (state == WALK){
+        start_slide = SDL_GetTicks();
+        state = SLIDE;
+        
+    }
+    std::cout << SDL_GetTicks() - start_slide << std::endl;
+    if (SDL_GetTicks() - start_slide >120){
+        state = STAND;
+        slide_enable = 0;
+    }
+    else{
+        if (dir == LEFT){
+            pos.x -= 5;
+        }
+        else if (dir == RIGHT){
+            pos.x += 5;
+        }   
+    }
+    
 }

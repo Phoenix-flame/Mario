@@ -26,10 +26,15 @@ void Core::loop(){
 
 void Core::update(){
     if(KEY_RIGHT_PRESSED){
-        world->camera->move(-50);
+        world->getPlayer()->update(1);
+        world->camera->move(-5);
     }
     else if (KEY_LEFT_PRESSED){
-        world->camera->move(50);
+        world->getPlayer()->update(-1);
+        world->camera->move(5);
+    }
+    else{
+        world->getPlayer()->update(0);
     }
 }
 

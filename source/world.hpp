@@ -16,6 +16,8 @@ public:
     void collision();
     void gravity();
 
+    Player* getPlayer(){return map->player;}
+
     std::vector<Object*> getObjects();
     Camera* camera;
 private:

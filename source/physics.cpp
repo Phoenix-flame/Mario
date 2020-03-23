@@ -1,13 +1,13 @@
-#include "physics.hpp"
+// #include "physics.hpp"
 
-void Physics::gravity(){
+// void Physics::gravity(){
 
-}
+// }
 
-void Physics::collision(){
+// void Physics::collision(){
 
-}
+// }
 
-void Physics::friction(){
+// void Physics::friction(){
     
-}
+// }
