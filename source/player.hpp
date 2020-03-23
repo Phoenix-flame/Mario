@@ -1,4 +1,6 @@
 #include "objects/object.hpp"
+#include <vector>
+#include "timer.hpp"
 
 #define NORM_DEAD "assets/sprites/mario/normal/dead.png"
 #define NORM_JUMP_LEFT "assets/sprites/mario/normal/jumping-left.png"
@@ -94,7 +96,7 @@ public:
         size = Point(24, 32);
     }
 
-    void update(int dir);
+    void update(std::vector<Object*> objs, int dir);
     void updateFigure();
 
     // Move and slide
@@ -118,11 +120,14 @@ public:
 
     State getState(){return state;}
 
+    void gravity(std::vector<Object*> objs);
 private:
     Level level;
     State state;
     Dir dir;
 
+    int checkDistToPlatform(std::vector<Object*> objs);
+    int collisionGravity(Rectangle o1, Rectangle o2);
 
     int slide_enable = 0;
     int jump_timer = 0;
@@ -130,4 +135,10 @@ private:
     int jump_speed_vertical;
     int jump_speed_horizontal;
 
+    int fall_speed_vertical;
+    int fall_speed_horizontal;
+
+
+    Timer RW_Timer;
+    Timer LW_Timer;
 };

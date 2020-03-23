@@ -14,8 +14,9 @@ void Core::loop(){
         if(!this->events()){
             break;
         }
-        this->world->loop();
+        
         this->update();
+        this->world->loop();
         this->draw();
         if(SDL_GetTicks() - frameTime < MIN_FRAME_RATE) {
             SDL_Delay(MIN_FRAME_RATE - (SDL_GetTicks () - frameTime));
@@ -27,21 +28,21 @@ void Core::loop(){
 void Core::update(){
     int player_x = world->getPlayer()->getPos().x + world->camera->getPos().x;
     if(KEY_RIGHT_PRESSED){
-        world->getPlayer()->update(1);
+        world->getPlayer()->update(world->getObjects(), 1);
         if (player_x > 400){
             world->camera->move(-5);
         }
         
     }
     else if (KEY_LEFT_PRESSED){
-        world->getPlayer()->update(-1);
+        world->getPlayer()->update(world->getObjects(), -1);
         if (player_x < 100){
             world->camera->move(5);
         }
         
     }
     else{
-        world->getPlayer()->update(0);
+        world->getPlayer()->update(world->getObjects(), 0);
     }
     if(KEY_UP_PRESSED){
         world->getPlayer()->startJump();
@@ -64,19 +65,36 @@ void Core::draw(){
 
 void Core::showDebug(){
     win->show_text("FPS: " + std::to_string(FPS), Point(10, 10), WHITE, "assets/Roboto-Regular.ttf", 10);
+    win->show_text("State: " + std::string(ToString(world->getPlayer()->getState())),
+     world->getPlayer()->getPos() + Point(15, -15) + world->camera->getPos(),
+     WHITE, "assets/Roboto-Regular.ttf", 15);
+    Point start_player = world->getPlayer()->getPos() + world->camera->getPos();
+    win->draw_rect(Rectangle(start_player, start_player + world->getPlayer()->getSize()), WHITE, 1U);
 
+
+    for (auto o:world->getObjects()){
+        if (o->selected){
+            Point start_object = o->getPos() + world->camera->getPos();
+            win->draw_rect(Rectangle(start_object, start_object + o->getSize()), BLUE, 1U);
+        }
+        
+    }
 }
 
 
 
 
 void Core::drawObjects(){
+    Point offset = world->camera->getPos();
     for (auto b:world->getObjects()){
-        Point offset = world->camera->getPos();
         win->draw_img(b->getImage(),
                  Rectangle(b->getPos() + offset, b->getPos() + b->getSize() + offset), NULL_RECT,
                  0, false);
     }
+    Player * player = world->getPlayer();
+    win->draw_img(player->getImage(),
+                 Rectangle(player->getPos() + offset, player->getPos() + player->getSize() + offset), NULL_RECT,
+                 0, false);
 }
 
 

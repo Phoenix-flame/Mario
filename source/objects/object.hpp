@@ -13,6 +13,8 @@ public:
     Point getSize();
     Point getXRange();
     Point getYRange();
+
+    bool selected = false;
 protected:
     Point pos;
 

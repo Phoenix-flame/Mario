@@ -8,8 +8,8 @@ World::World(){
 
 void World::loop(){
     
-    gravity();
-    collision();
+    // gravity();
+    // collision();
 }
 
 
@@ -39,15 +39,15 @@ bool World::collisionGravity(Object* o1, Object* o2){
 
     
     if (o1_right >= o2_left && o1_left <= o2_right){
-        if (o1_bottom >= (o2_top - 3) && o1_top <= o2_bottom){
+        if (o1_bottom <= o2_top && abs(o1_bottom - o2_top) < 10){
             return true;
         }
     }
-    if (o1_right == o2_right && o1_left == o2_left){
-        if (o1_bottom >= (o2_top - 3) && o1_top <= o2_bottom){
-            return true;
-        }
-    }
+    // if (o1_right == o2_right && o1_left == o2_left){
+    //     if (o1_bottom >= (o2_top - 3) && o1_top <= o2_bottom){
+    //         return true;
+    //     }
+    // }
     return false;
     
 }
@@ -69,15 +69,15 @@ bool World::collisionJump(Object* o1, Object* o2){
 
     
     if (o1_right >= o2_left && o1_left <= o2_right){
-        if (o2_bottom >= (o1_top - 3) && o2_top <= o1_bottom){
+        if (o1_bottom <= o2_top && abs(o1_bottom - o2_top) < 3){
             return true;
         }
     }
-    if (o1_right == o2_right && o1_left == o2_left){
-        if (o2_bottom >= (o1_top - 3) && o2_top <= o1_bottom){
-            return true;
-        }
-    }
+    // if (o1_right == o2_right && o1_left == o2_left){
+    //     if (o2_bottom >= (o1_top - 3) && o2_top <= o1_bottom){
+    //         return true;
+    //     }
+    // }
     return false;
     
 }
@@ -124,45 +124,22 @@ void World::gravity(){
     Player* player = map->player;
     
     bool on_the_floor = false;
-    for (auto o:map->grounds){
+    for (auto o:map->objects){
         if (collisionGravity(player, o)){
             player->endFall();
             on_the_floor = true;
+            o->selected = true;
+        }
+        else{
+            o->selected = false;
         }
     }
-    for (auto o:map->bricks){
-        if (collisionGravity(player, o)){
-            player->endFall();
-            on_the_floor = true;
-        }
-    }
-    for (auto o:map->blocks){
-        if (collisionGravity(player, o)){
-            player->endFall();
-            on_the_floor = true;
-        }
-    }
-    for (auto o:map->coins){
-        if (collisionGravity(player, o)){
-            player->endFall();
-            on_the_floor = true;
-        }
-    }
-    for (auto o:map->fires){
-        if (collisionGravity(player, o)){
-            player->endFall();
-            on_the_floor = true;
-        }
-    }
-    for (auto o:map->healths){
-        if (collisionGravity(player, o)){
-            player->endFall();
-            on_the_floor = true;
-        }
-    }
-    // std::cout << (on_the_floor?"stand":"falling") << std::endl;
+
     if (!on_the_floor){
-        player->startFall();
+        if (player->getState() != FALL){
+            player->startFall();
+        }
+        
     }
     
 }

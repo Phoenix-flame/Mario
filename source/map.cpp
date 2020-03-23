@@ -100,7 +100,7 @@ Map::Map(std::string filepath){
         }
         y += 1;
     }
-    this->objects.push_back(player);
+    // this->objects.push_back(player);
     map_file.close();
 }
 
