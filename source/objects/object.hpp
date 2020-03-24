@@ -4,6 +4,7 @@
 #include <string>
 #include "../rsdl.hpp"
 #include "../timer.hpp"
+#include <vector>
 
 enum Type {
     BLOCK,
@@ -16,6 +17,12 @@ enum Type {
     GOOMBA,
     KOOPA,
     PLAYER
+};
+
+enum Dir{
+    STOP,
+    LEFT,
+    RIGHT
 };
 
 class Object{

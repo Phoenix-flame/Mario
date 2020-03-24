@@ -13,8 +13,9 @@ void World::loop(){
     for(auto c:map->coins){
         c->update();
     }
-    // gravity();
-    // collision();
+    for(auto g:map->goombas){
+        g->update(map->objects);
+    }
 }
 
 

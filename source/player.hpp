@@ -56,11 +56,7 @@ enum State{
     FALL
 };
 
-enum Dir{
-    STOP,
-    LEFT,
-    RIGHT
-};
+
 
 inline const char* ToString(State v)
 {
@@ -125,6 +121,10 @@ public:
 
     void gravity(std::vector<Object*> objs);
     void jumpCollision(std::vector<Object*> objs);
+
+
+    // Debug 
+    Point min_dist_to_platform;
 private:
     Level level;
     State state;
@@ -136,6 +136,8 @@ private:
 
     int slide_enable = 0;
     
+    int speed = 0;
+
     bool move_during_jump;
     int jump_speed_vertical;
     int jump_speed_horizontal;

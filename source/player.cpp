@@ -4,30 +4,27 @@
 
 
 void Player::update(std::vector<Object*> objs, int _dir){
-    std::cout << ToString(state) << " " << _dir << std::endl;
     Dir trans_dir = (_dir == 1)?RIGHT:LEFT;
-    // std::cout << "initiate move with dir: " << ToString(trans_dir) << std::endl;
+
     gravity(objs);
-    jumpCollision(objs);
+    if (state == JUMP) {jumpCollision(objs);}
     collision(objs);
     
-    Point min_dist_to_platform = checkDistToPlatform(objs);
-    // std::cout << "Min Dist to Platform: " << min_dist_to_platform.x << std::endl;
-    // std::cout << "Min Dist to TopBlock: " << min_dist_to_platform.y << std::endl;
+    min_dist_to_platform = checkDistToPlatform(objs);
 
     if (state == STAND && (_dir != 0) ){
         this->dir = trans_dir;
-        // std::cout << "start move with dir: " << ToString(dir) << std::endl;
         startMove();
     }
     else if (state == WALK && _dir != 0){
-        this->dir = (_dir == -1)?LEFT:RIGHT;
+        this->dir = trans_dir;
         move();
     }
     else if ((state == WALK || state == SLIDE) && _dir == 0){
         endMove();
     }
     else if (state == SLIDE){
+        dir = trans_dir;
         startMove();
     }
     else if (state == FALL){
@@ -187,43 +184,42 @@ void Player::updateFigure(){
 void Player::startMove(){
     state = WALK;
     slide_enable = 0;
+    if (dir == LEFT){
+        speed = -5;
+    }
+    else if (dir == RIGHT){
+        speed = 5;
+    }
 
 }
 void Player::move(){
-    if (dir == LEFT){
-        _moveX(-5);
-    }
-    else if (dir == RIGHT){
-        _moveX(+5);
-    }
+    _moveX(speed);
+
     slide_enable += 1;
-    // std::cout << slide_enable << std::endl;
-    
 }
 void Player::endMove(){
 
     if (slide_enable < 10){
         state = STAND;
+        speed = 0;
         return;
     }
     else if (state == WALK){
         slideTimer.reset();
         slideTimer.start();
         state = SLIDE;
+        if (dir == LEFT){speed = -5;}
+        else if (dir == RIGHT) {speed = 5;}
         
     }
 
-    if (slideTimer.getTime() > 300){
+    if (slideTimer.getTime() > 600){
         state = STAND;
+        speed = 0;
         slide_enable = 0;
     }
     else{
-        if (dir == LEFT){
-            _moveX(-5);
-        }
-        else if (dir == RIGHT){
-            _moveX(+5);
-        }   
+        _moveX(speed);  
     }
     
 }
@@ -243,6 +239,8 @@ void Player::startJump(){
     jumpTimer.reset();
     jumpTimer.start();
 }
+
+
 void Player::jump(){
     static int jump_cycles = 0;
     
@@ -253,14 +251,7 @@ void Player::jump(){
         if (jump_speed_vertical > 0){
             jump_speed_vertical = 0;
         }
-        if (move_during_jump){
-            if (dir == LEFT){
-                _moveX(-5);
-            }
-            else if (dir == RIGHT){
-                _moveX(+5);
-            } 
-        }
+        _moveX(speed);
     }
     else {
         state = FALL;
@@ -302,6 +293,7 @@ void Player::falling(Dir _dir, bool stop_horizontal_move){
 void Player::endFall(){
     if (state == FALL){
         state = STAND;
+        speed = 0;
     }
     
 }
@@ -431,7 +423,6 @@ void Player::jumpCollision(std::vector<Object*> objs){
         if ((o1_center >= o2_left && o1_center <= o2_right)){
             
             if (o1_top >= o2_bottom && abs(o1_top - o2_bottom) < 5){
-                std::cout << "from center" << std::endl;
                 if (state == JUMP){
                     endJump();
                     collision_with_center = true;
@@ -454,7 +445,6 @@ void Player::jumpCollision(std::vector<Object*> objs){
                 }
             }
             else if (o1_right >= o2_left && o1_right <= o2_right){
-                // std::cout << "right edge\n";
                 if (o1_top >= o2_bottom && abs(o1_top - o2_bottom) < 5){
                     if (state == JUMP){
                         collided = true;
@@ -488,22 +478,20 @@ void Player::collision(std::vector<Object*> objs){
         int o2_right = o2.x + o2.w;
 
         if (o1_center >= o2_top && o1_center <= o2_bottom){
-            if (o1_right <= o2_left && abs(o1_right - o2_left) < 5){
+            if (o1_right <= o2_left && abs(o1_right - o2_left) < 2){
                 if (state == WALK || state == SLIDE){
                     if (dir == RIGHT){
-                        std::cout << "LEFT HORIZONTAL COLLISION\n";
                         endMove();
-                        // dir = RIGHT;
+                        slideTimer.reset();
                         o->selected = true;
                     } 
                 }
             }
-            else if (o1_left >= o2_right && abs(o1_left - o2_right) < 5){
+            else if (o1_left >= o2_right && abs(o1_left - o2_right) < 2){
                 if (state == WALK || state == SLIDE){
                     if (dir == LEFT){
-                        std::cout << "RIGHT HORIZONTAL COLLISION\n";
-                        dir = LEFT;
                         endMove();
+                        slideTimer.reset();
                         o->selected = true;
                     } 
                 }

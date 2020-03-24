@@ -26,6 +26,7 @@ void Core::loop(){
 
 
 void Core::update(){
+    // std::cout << world->camera->getPos().x << std::endl;
     int player_x = world->getPlayer()->getPos().x + world->camera->getPos().x;
     State state = world->getPlayer()->getState();
     Dir dir = world->getPlayer()->getDir();
@@ -113,7 +114,8 @@ void Core::showDebug(){
     win->draw_line(Point(pos_player.x + size_player.x/2.0, pos_player.y - 50), 
                    Point(pos_player.x + size_player.x/2.0, pos_player.y + size_player.y + 50), RED);
 
-
+    win->draw_line(Point(pos_player.x, pos_player.y - world->getPlayer()->min_dist_to_platform.y),
+    Point(pos_player.x + size_player.x, pos_player.y - world->getPlayer()->min_dist_to_platform.y));
     for (auto o:world->getObjects()){
         if (o->selected){
             Point start_object = o->getPos() + world->camera->getPos();

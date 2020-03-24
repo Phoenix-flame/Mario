@@ -33,6 +33,7 @@ set(sources
     source/objects/fire_block.hpp
     source/objects/health_block.hpp
     source/objects/goomba.hpp
+    source/objects/goomba.cpp
     source/objects/koopa_troopa.hpp
     source/objects/pipes.hpp
 )
