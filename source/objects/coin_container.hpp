@@ -1,14 +1,24 @@
 #include "object.hpp"
 
+#define COIN_BLOCK_FULL "assets/sprites/objects/bricks_blocks/question-1.png"
+#define COIN_BLOCK_EMPTY "assets/sprites/objects/bricks_blocks/question-empty.png"
+#define COIN_IMAGE "assets/sprites/objects/coin.png"
+
+
 enum CoinState{
     COIN,
     COIN_RELEASED,
     EMPTY
 };
 
+
+
 class CoinContainer: public Object{
 public:
-    CoinContainer(int x, int y):Object(Point(x, y), Point(24, 24), "assets/sprites/objects/bricks_blocks/question-1.png"){
+    CoinContainer(int x, int y):Object(Point(x, y),
+        Point(24, 24), 
+        COIN_BLOCK_FULL,
+        COIN_CONTAINER){
         state = COIN;
     }
 
@@ -29,7 +39,7 @@ public:
                 _moveY(-1);
             }
             else if (prevPos.y != pos.y){
-                image = image_empty;
+                image = COIN_BLOCK_EMPTY;
                 _moveY(+1);
             }
             else{
@@ -57,7 +67,7 @@ public:
         }
     }
     std::string getImageCoin(){
-        return image_coin;
+        return COIN_IMAGE;
     }
     Point getCoinPos(){
         return posCoin;
@@ -67,8 +77,6 @@ public:
     }
     bool coinIsAvailable = false;
 private:
-    std::string image_empty = "assets/sprites/objects/bricks_blocks/question-empty.png";
-    std::string image_coin = "assets/sprites/objects/coin.png";
     Timer animationTimer;
     Timer coinAnimation;
     Point prevPos;

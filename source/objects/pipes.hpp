@@ -3,7 +3,11 @@
 
 class Pipe: public Object{
 public:
-    Pipe(int x, int y, std::string type):Object(Point(x, y), Point(24, 24), "assets/sprites/objects/pipe/right.png"){
+    Pipe(int x, int y, std::string type):Object(Point(x, y),
+        Point(24, 24), 
+        "",
+        PIPE){
+
         if (type == "r"){
             image = "assets/sprites/objects/pipe/right.png";
         }

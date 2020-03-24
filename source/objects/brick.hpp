@@ -1,9 +1,14 @@
 #include "object.hpp"
 
+#define BRICK_IMAGE "assets/sprites/objects/bricks_blocks/brick.png"
 
 class Brick: public Object{
 public:
-    Brick(int x, int y):Object(Point(x, y), Point(24, 24), "assets/sprites/objects/bricks_blocks/brick.png"){}
+    Brick(int x, int y):Object(Point(x, y),
+        Point(24, 24),
+        BRICK_IMAGE,
+        BRICK){}
+
     void update(){
         if (startAnimation){
             if (!animationTimer.isStarted()){

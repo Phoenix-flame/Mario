@@ -1,6 +1,6 @@
 #include "object.hpp"
 
-Object::Object(Point pos, Point size, std::string image){
+Object::Object(Point pos, Point size, std::string image, Type _type){
     this->pos = pos;
 
     this->size = size;
@@ -15,6 +15,8 @@ Object::Object(Point pos, Point size, std::string image){
     this->yMax = this->yMin + this->size.y;
 
     this->image = image;
+
+    this->type = _type;
 }
 
 
@@ -36,4 +38,22 @@ Point Object::getXRange(){
 }
 Point Object::getYRange(){
     return Point(yMin, yMax);
+}
+
+
+void Object::_moveX(int dx){
+    pos.x += dx;
+    xMin += dx;
+    xMax += dx;
+}
+
+void Object::_moveY(int dy){
+    pos.y += dy;
+    yMin += dy;
+    yMax += dy;
+}
+
+
+void Object::mark(){
+    startAnimation = true;
 }

@@ -83,7 +83,7 @@ void Core::draw(){
     drawBackground();
     drawObjects();
 
-    // this->showDebug();
+    this->showDebug();
 
 
     win->update_screen();
@@ -102,8 +102,16 @@ void Core::showDebug(){
     win->show_text("State: " + std::string(ToString(world->getPlayer()->getState())),
      world->getPlayer()->getPos() + Point(15, -15) + world->camera->getPos(),
      WHITE, "assets/Roboto-Regular.ttf", 15);
-    Point start_player = world->getPlayer()->getPos() + world->camera->getPos();
-    win->draw_rect(Rectangle(start_player, start_player + world->getPlayer()->getSize()), WHITE, 1U);
+    
+    Point pos_player = world->getPlayer()->getPos() + world->camera->getPos();
+    Point size_player = world->getPlayer()->getSize();
+    win->draw_rect(Rectangle(pos_player, pos_player + world->getPlayer()->getSize()), WHITE, 1U);
+    
+    win->draw_line(Point(pos_player.x - 50, pos_player.y + size_player.y/2.0), 
+                   Point(pos_player.x + size_player.x + 50, pos_player.y + size_player.y/2.0), RED);
+
+    win->draw_line(Point(pos_player.x + size_player.x/2.0, pos_player.y - 50), 
+                   Point(pos_player.x + size_player.x/2.0, pos_player.y + size_player.y + 50), RED);
 
 
     for (auto o:world->getObjects()){

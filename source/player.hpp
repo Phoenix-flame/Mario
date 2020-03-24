@@ -89,7 +89,7 @@ inline const char* ToString(Dir v)
 
 class Player: public Object{
 public:
-    Player(int x, int y):Object(Point(x, y), Point(12, 16), ""){
+    Player(int x, int y):Object(Point(x, y), Point(12, 16), "", PLAYER){
         level = NORMAL;
         state = STAND;
         image = NORM_STAND_RIGHT;

@@ -4,9 +4,9 @@
 
 
 void Player::update(std::vector<Object*> objs, int _dir){
-    // std::cout << ToString(state) << " " << _dir << std::endl;
+    std::cout << ToString(state) << " " << _dir << std::endl;
     Dir trans_dir = (_dir == 1)?RIGHT:LEFT;
-    
+    // std::cout << "initiate move with dir: " << ToString(trans_dir) << std::endl;
     gravity(objs);
     jumpCollision(objs);
     collision(objs);
@@ -16,7 +16,8 @@ void Player::update(std::vector<Object*> objs, int _dir){
     // std::cout << "Min Dist to TopBlock: " << min_dist_to_platform.y << std::endl;
 
     if (state == STAND && (_dir != 0) ){
-        this->dir = (trans_dir == -1)?LEFT:RIGHT;
+        this->dir = trans_dir;
+        // std::cout << "start move with dir: " << ToString(dir) << std::endl;
         startMove();
     }
     else if (state == WALK && _dir != 0){
@@ -411,6 +412,7 @@ Point Player::checkDistToPlatform(std::vector<Object*> objs){
 
 void Player::jumpCollision(std::vector<Object*> objs){
     Object* selected;
+    bool collision_with_center = false;
     bool collided = false;
     for (auto o:objs){
         Rectangle o1(getPos(), getPos() + getSize());
@@ -421,21 +423,53 @@ void Player::jumpCollision(std::vector<Object*> objs){
         int o2_bottom = o2.y + o2.h;
         
         int o1_center = o1.x + o1.w/2.0;
+        int o1_left = o1.x;
+        int o1_right = o1.x + o1.w;
         int o2_left = o2.x;
         int o2_right = o2.x + o2.w;
 
         if ((o1_center >= o2_left && o1_center <= o2_right)){
+            
             if (o1_top >= o2_bottom && abs(o1_top - o2_bottom) < 5){
+                std::cout << "from center" << std::endl;
                 if (state == JUMP){
                     endJump();
+                    collision_with_center = true;
                     collided = true;
-                    selected = o;
+                    o->selected = true;
+                    o->mark();
+                    return;
+                }
+            }
+        }
+        else if (!collision_with_center){
+            if (o1_left >= o2_left && o1_left <= o2_right){
+                
+                if (o1_top >= o2_bottom && abs(o1_top - o2_bottom) < 5){
+                    std::cout << "left edge\n";
+                    if (state == JUMP){
+                        collided = true;
+                        selected = o;
+                    }
+                }
+            }
+            else if (o1_right >= o2_left && o1_right <= o2_right){
+                // std::cout << "right edge\n";
+                if (o1_top >= o2_bottom && abs(o1_top - o2_bottom) < 5){
+                    if (state == JUMP){
+                        collided = true;
+                        selected = o;
+                    }
                 }
             }
         }
     }
-    selected->selected = true;
-    selected->mark();
+    if (!collision_with_center && collided){
+        endJump();
+        selected->selected = true;
+        selected->mark();
+    }
+    
 }
 
 
@@ -444,8 +478,7 @@ void Player::collision(std::vector<Object*> objs){
     for (auto o:objs){
         Rectangle o1(getPos(), getPos() + getSize());
         Rectangle o2(o->getPos(), o->getPos() + o->getSize());
-        int o1_top = o1.y;
-        int o1_bottom = o1.y + o1.h;
+        int o1_center = o1.y + o1.h/2.0;
         int o2_top = o2.y;
         int o2_bottom = o2.y + o2.h;
         
@@ -454,12 +487,25 @@ void Player::collision(std::vector<Object*> objs){
         int o2_left = o2.x;
         int o2_right = o2.x + o2.w;
 
-        if (o1_bottom > o2_top && o1_bottom < o2_bottom){
-            if (o1_right <= o2_left && abs(o1_right - o2_left) < 10){
+        if (o1_center >= o2_top && o1_center <= o2_bottom){
+            if (o1_right <= o2_left && abs(o1_right - o2_left) < 5){
                 if (state == WALK || state == SLIDE){
-                    std::cout << "LEFT HORIZONTAL COLLISION\n";
-                    endMove();
-                    o->selected = true;
+                    if (dir == RIGHT){
+                        std::cout << "LEFT HORIZONTAL COLLISION\n";
+                        endMove();
+                        // dir = RIGHT;
+                        o->selected = true;
+                    } 
+                }
+            }
+            else if (o1_left >= o2_right && abs(o1_left - o2_right) < 5){
+                if (state == WALK || state == SLIDE){
+                    if (dir == LEFT){
+                        std::cout << "RIGHT HORIZONTAL COLLISION\n";
+                        dir = LEFT;
+                        endMove();
+                        o->selected = true;
+                    } 
                 }
             }
         }
