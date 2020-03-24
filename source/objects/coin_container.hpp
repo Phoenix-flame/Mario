@@ -14,7 +14,6 @@ public:
 
     void update(){
         if (startAnimation && (state == COIN || state == COIN_RELEASED)){
-            std::cout << "coin animation" << std::endl;
             if (state == COIN){
                 if (!animationTimer.isStarted()){
                 animationTimer.start();
@@ -24,8 +23,8 @@ public:
                 if (!coinAnimation.isStarted()){
                     coinAnimation.start();
                     coinIsAvailable = true;
-                    posCoin = pos - Point(-5, -10);
-                    sizeCoin = Point(16, 16);
+                    posCoin = pos - Point(0, -10);
+                    sizeCoin = Point(20, 20);
                 }
                 _moveY(-1);
             }
@@ -42,11 +41,11 @@ public:
             
             if (coinIsAvailable){
                 if (coinAnimation.getTime() < 200){
-                    posCoin.y -= 10;
+                    posCoin.y -= 15;
                 }
                 else if (coinAnimation.getTime() >= 200 &&
-                coinAnimation.getTime() < 380){
-                    posCoin.y += 10;
+                coinAnimation.getTime() < 300){
+                    posCoin.y += 15;
                 }
                 else{
                     coinIsAvailable = false;

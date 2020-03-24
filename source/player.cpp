@@ -420,14 +420,12 @@ void Player::jumpCollision(std::vector<Object*> objs){
         int o2_top = o2.y;
         int o2_bottom = o2.y + o2.h;
         
-        int o1_left = o1.x;
-        int o1_right = o1.x + o1.w;
+        int o1_center = o1.x + o1.w/2.0;
         int o2_left = o2.x;
         int o2_right = o2.x + o2.w;
 
-        if ((o1_right >= o2_left && o1_left <= o2_right) ||
-            (o1_left >= o2_left && o1_left <= o2_right)){
-            if (o1_top >= o2_bottom && abs(o1_top - o2_bottom) < 10){
+        if ((o1_center >= o2_left && o1_center <= o2_right)){
+            if (o1_top >= o2_bottom && abs(o1_top - o2_bottom) < 5){
                 if (state == JUMP){
                     endJump();
                     collided = true;

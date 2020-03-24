@@ -6,7 +6,6 @@ public:
     Brick(int x, int y):Object(Point(x, y), Point(24, 24), "assets/sprites/objects/bricks_blocks/brick.png"){}
     void update(){
         if (startAnimation){
-            std::cout << "started" << std::endl;
             if (!animationTimer.isStarted()){
                 animationTimer.reset();
                 animationTimer.start();

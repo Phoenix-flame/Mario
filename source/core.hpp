@@ -1,5 +1,5 @@
 #include "world.hpp"
-#define MIN_FRAME_RATE 30   
+#define MIN_FRAME_RATE 30  
 
 #define BACKGROUND "assets/background_image.png"
 
