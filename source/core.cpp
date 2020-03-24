@@ -30,7 +30,6 @@ void Core::loop(){
 
 
 void Core::update(){
-    // std::cout << world->camera->getPos().x << std::endl;
     int player_x = world->getPlayer()->getPos().x + world->camera->getPos().x;
     State state = world->getPlayer()->getState();
     Dir dir = world->getPlayer()->getDir();

@@ -14,6 +14,9 @@ void World::loop(){
         c->update();
     }
     for(auto g:map->goombas){
+        if ((g->getPos() + camera->getPos()).x < 700){
+            g->seen();
+        } 
         g->update(map->objects);
     }
 }

@@ -1,7 +1,7 @@
 #include "goomba.hpp"
 
 void Goomba::update(std::vector<Object*> objs){
-
+    if(!visited){return;}
     gravity(objs);
 
     int min_dist_to_platform = checkDistToPlatform(objs);

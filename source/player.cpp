@@ -213,7 +213,7 @@ void Player::endMove(){
         
     }
 
-    if (slideTimer.getTime() > 300){
+    if (slideTimer.getTime() > 350){
         state = STAND;
         speed = 0;
         slide_enable = 0;

@@ -27,7 +27,6 @@ public:
         std::default_random_engine generator(seed);
         std::uniform_int_distribution<int> distribution(1,2);
         walk_state = distribution(generator);
-        std::cout << walk_state << std::endl;
     }
 
     void update(std::vector<Object*> objs);
@@ -38,6 +37,10 @@ public:
     void falling();
     void endFall();
 
+    void seen(){
+        visited = true;
+    }
+
 private:
     GoombaState state;
     Dir dir;
@@ -45,6 +48,7 @@ private:
     int checkDistToPlatform(std::vector<Object*> objs);
     int collisionGravity(Rectangle o1, Rectangle o2);
 
+    bool visited = false; // goombas start moving when they are seen once.
 
     int speed;
     int fall_speed_vertical;
