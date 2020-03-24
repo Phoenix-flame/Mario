@@ -3,10 +3,15 @@
 void Goomba::update(std::vector<Object*> objs){
     if(!visited){return;}
     gravity(objs);
-
+    collision(objs);
     int min_dist_to_platform = checkDistToPlatform(objs);
-
-    _moveX(-1);
+    if (dir == LEFT){
+        _moveX(-1);
+    }
+    else if (dir == RIGHT){
+        _moveX(+1); 
+    }
+    
     if (state == GOOMBA_FALL_STATE){
         if (fall_speed_vertical > min_dist_to_platform){
             fall_speed_vertical = min_dist_to_platform;
@@ -44,10 +49,8 @@ void Goomba::gravity(std::vector<Object*> objs){
         if (collisionGravity(o1, o2) != -1){
             endFall();
             on_the_floor = true;
-            o->selected = true;
         }
         else{
-            o->selected = false;
         }
     }
 
@@ -141,6 +144,39 @@ void Goomba::falling(){
 void Goomba::endFall(){
     if (state == GOOMBA_FALL_STATE){
         state = GOOMBA_WALK_STATE;
+    }    
+}
+
+
+void Goomba::collision(std::vector<Object*> objs){
+    for (auto o:objs){
+        if (o->getType() == GOOMBA){continue;}
+        Rectangle o1(getPos(), getPos() + getSize());
+        Rectangle o2(o->getPos(), o->getPos() + o->getSize());
+        int o1_center = o1.y + o1.h/2.0;
+        int o2_top = o2.y;
+        int o2_bottom = o2.y + o2.h;
+        
+        int o1_left = o1.x;
+        int o1_right = o1.x + o1.w;
+        int o2_left = o2.x;
+        int o2_right = o2.x + o2.w;
+
+        if (o1_center >= o2_top && o1_center <= (o2_bottom - 5)){
+            if (o1_right <= o2_left && abs(o1_right - o2_left) < 2){
+                if (state == GOOMBA_WALK_STATE){
+                    if (dir == RIGHT){
+                        dir = LEFT;
+                    } 
+                }
+            }
+            else if (o1_left >= o2_right && abs(o1_left - o2_right) < 2){
+                if (state == GOOMBA_WALK_STATE){
+                    if (dir == LEFT){
+                        dir = RIGHT;
+                    } 
+                }
+            }
+        }
     }
-    
 }

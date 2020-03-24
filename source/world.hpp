@@ -12,12 +12,6 @@ public:
     World();
     void loop();
 
-    // Physics
-    void collision();
-    bool collisionGravity(Object* o1, Object* o2);
-    bool collisionJump(Object* o1, Object* o2);
-    void gravity();
-
     Player* getPlayer(){return map->player;}
 
     std::vector<Object*> getObjects();

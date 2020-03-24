@@ -6,6 +6,9 @@
 #include "../timer.hpp"
 #include <vector>
 
+
+
+
 enum Type {
     BLOCK,
     BRICK,
@@ -44,6 +47,9 @@ public:
     void _moveX(int dx);
     void _moveY(int dy);
 
+    Type getType(){
+        return type;
+    }
 protected:
     Point pos;
 

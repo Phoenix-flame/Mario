@@ -22,7 +22,7 @@ public:
 
         state = GOOMBA_WALK_STATE;
         int speed = -1;
-
+        dir = LEFT;
         unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
         std::default_random_engine generator(seed);
         std::uniform_int_distribution<int> distribution(1,2);
@@ -31,6 +31,7 @@ public:
 
     void update(std::vector<Object*> objs);
     void gravity(std::vector<Object*> objs);
+    void collision(std::vector<Object*> objs);
     void updateFigure();
 
     void startFall();
