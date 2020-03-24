@@ -58,6 +58,7 @@
         "numeric": "cpp",
         "iomanip": "cpp",
         "cfenv": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "random": "cpp"
     }
 }

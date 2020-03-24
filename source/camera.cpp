@@ -2,7 +2,7 @@
 
 
 Camera::Camera(){
-    this->pos = Point(-1700, 0);
+    this->pos = Point(0, 0);
     this->posBackground = Point(0, 0);
 }
 

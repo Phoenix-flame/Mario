@@ -9,7 +9,11 @@ Core::Core(){
 
 
 void Core::loop(){
+    int start = system_clock::now().time_since_epoch().count();
     while (true){
+        int now = system_clock::now().time_since_epoch().count();
+        FPS = 1000000000.0/(now - start);
+        start = now;
         frameTime = SDL_GetTicks();
         if(!this->events()){
             break;
@@ -99,7 +103,7 @@ void Core::drawBackground(){
 }
 
 void Core::showDebug(){
-    win->show_text("FPS: " + std::to_string(FPS), Point(10, 10), WHITE, "assets/Roboto-Regular.ttf", 10);
+    win->show_text("FPS: " + std::to_string(FPS), Point(10, 10), BLACK, "assets/Roboto-Regular.ttf", 20);
     win->show_text("State: " + std::string(ToString(world->getPlayer()->getState())),
      world->getPlayer()->getPos() + Point(15, -15) + world->camera->getPos(),
      WHITE, "assets/Roboto-Regular.ttf", 15);

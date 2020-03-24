@@ -1,5 +1,10 @@
 #include "world.hpp"
-#define MIN_FRAME_RATE 30  
+#include <chrono>
+using namespace std::chrono;
+
+
+
+#define MIN_FRAME_RATE 30
 
 #define BACKGROUND "assets/background_image.png"
 
@@ -20,7 +25,7 @@ private:
     World* world;
     Window* win;
 
-    int FPS;
+    double FPS;
     int frameTime;
 
     // Keyboard events
