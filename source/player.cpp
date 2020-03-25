@@ -345,8 +345,15 @@ void Player::gravity(std::vector<Object*> objs){
             on_the_floor = true;
 
             // Kill enemies by jumping on their head :)
-            if (o->getType() == GOOMBA){
+            if (o->getType() == GOOMBA){  // TODO FIX THIS
                 kill(o);
+            }
+            else if (o->getType() == KOOPA){
+                if (!koopa_hit){
+                    kill(o);
+                    koopa_hit = true;
+                }
+                
             }
 
             // Just for Debug
@@ -354,6 +361,9 @@ void Player::gravity(std::vector<Object*> objs){
         }
         else{
             // Just for Debug
+            if (o->getType() == KOOPA){
+                koopa_hit = false;
+            }
             o->selected = false;
         }
     }

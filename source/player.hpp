@@ -154,4 +154,7 @@ private:
     Timer jumpTimer;
     Timer RW_Timer;
     Timer LW_Timer;
+
+
+    bool koopa_hit = false;
 };

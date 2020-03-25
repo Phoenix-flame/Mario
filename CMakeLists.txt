@@ -35,6 +35,7 @@ set(sources
     source/objects/goomba.hpp
     source/objects/goomba.cpp
     source/objects/koopa_troopa.hpp
+    source/objects/koopa_troopa.cpp
     source/objects/pipes.hpp
 )
 

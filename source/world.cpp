@@ -13,11 +13,28 @@ void World::loop(){
     for(auto c:map->coins){
         c->update();
     }
-    for(auto g:map->goombas){
-        if ((g->getPos() + camera->getPos()).x < 700){
-            g->seen();
+    for(unsigned int i = 0 ; i < map->goombas.size() ; i ++){
+        if ((map->goombas[i]->getPos() + camera->getPos()).x < 700){
+            map->goombas[i]->seen();
         } 
-        g->update(map->objects);
+
+        if (map->goombas[i]->getPos().y > 500){
+            map->goombas.erase(map->goombas.begin() + i);
+        }
+        
+        map->goombas[i]->update(map->objects);
+    }
+
+    for(unsigned int i = 0 ; i < map->koopas.size() ; i ++){
+        if ((map->koopas[i]->getPos() + camera->getPos()).x < 700){
+            map->koopas[i]->seen();
+        } 
+
+        if (map->koopas[i]->getPos().y > 500){
+            map->koopas.erase(map->koopas.begin() + i);
+        }
+        
+        map->koopas[i]->update(map->objects);
     }
 }
 
