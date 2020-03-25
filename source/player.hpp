@@ -122,6 +122,10 @@ public:
     void gravity(std::vector<Object*> objs);
     void jumpCollision(std::vector<Object*> objs);
 
+    void kill(Object* obj);
+
+    void dead();
+
 
     // Debug 
     Point min_dist_to_platform;

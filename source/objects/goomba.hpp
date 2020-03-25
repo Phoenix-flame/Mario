@@ -42,6 +42,9 @@ public:
         visited = true;
     }
 
+
+    void death() override;
+
 private:
     GoombaState state;
     Dir dir;
@@ -54,9 +57,11 @@ private:
     int speed;
     int fall_speed_vertical;
     int fall_speed_horizontal;
+    int fall_cycles = 0;
     
     int walk_state;
     // Timers
     Timer walkTimer;
+    Timer deathAnimation;
 
 };

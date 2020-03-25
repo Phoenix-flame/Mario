@@ -2,6 +2,20 @@
 
 void Goomba::update(std::vector<Object*> objs){
     if(!visited){return;}
+    if(state == GOOMBA_DEAD_STATE){
+        if (!deathAnimation.isStarted()){
+            deathAnimation.start();
+        }
+        if (deathAnimation.getTime() < 100){
+            fall_speed_vertical = 3;
+            _moveY(-5);
+        }
+        else if (deathAnimation.getTime() >= 200){
+            falling();
+        }
+        updateFigure();
+        return;
+    }
     gravity(objs);
     collision(objs);
     int min_dist_to_platform = checkDistToPlatform(objs);
@@ -39,6 +53,9 @@ void Goomba::updateFigure(){
             }
         }
     }
+    else if (state == GOOMBA_DEAD_STATE){
+        image = GOOMBA_DEAD_IMAGE;
+    }
 }
 
 void Goomba::gravity(std::vector<Object*> objs){
@@ -47,7 +64,7 @@ void Goomba::gravity(std::vector<Object*> objs){
         Rectangle o1(getPos(), getPos() + getSize());
         Rectangle o2(o->getPos(), o->getPos() + o->getSize());
         if (collisionGravity(o1, o2) != -1){
-            endFall();
+            if (state != GOOMBA_DEAD_STATE) endFall();
             on_the_floor = true;
         }
         else{
@@ -125,7 +142,6 @@ void Goomba::startFall(){
 }
 
 void Goomba::falling(){
-    static int fall_cycles = 0;
     _moveY(fall_speed_vertical);
     fall_speed_vertical += (fall_cycles%2 == 0)?1:0;
     if (fall_speed_vertical >= 10){
@@ -150,7 +166,7 @@ void Goomba::endFall(){
 
 void Goomba::collision(std::vector<Object*> objs){
     for (auto o:objs){
-        if (o->getType() == GOOMBA){continue;}
+        if (o->getType() == GOOMBA || o->getType() == KOOPA){continue;}
         Rectangle o1(getPos(), getPos() + getSize());
         Rectangle o2(o->getPos(), o->getPos() + o->getSize());
         int o1_center = o1.y + o1.h/2.0;
@@ -179,4 +195,11 @@ void Goomba::collision(std::vector<Object*> objs){
             }
         }
     }
+}
+
+
+
+void Goomba::death(){
+    // Very simple death
+    state = GOOMBA_DEAD_STATE;
 }

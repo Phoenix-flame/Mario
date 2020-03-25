@@ -57,3 +57,6 @@ void Object::_moveY(int dy){
 void Object::mark(){
     startAnimation = true;
 }
+
+
+void Object::death(){}

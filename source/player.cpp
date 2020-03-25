@@ -343,9 +343,17 @@ void Player::gravity(std::vector<Object*> objs){
         if (collisionGravity(o1, o2) != -1){
             endFall();
             on_the_floor = true;
+
+            // Kill enemies by jumping on their head :)
+            if (o->getType() == GOOMBA){
+                kill(o);
+            }
+
+            // Just for Debug
             o->selected = true;
         }
         else{
+            // Just for Debug
             o->selected = false;
         }
     }
@@ -498,4 +506,14 @@ void Player::collision(std::vector<Object*> objs){
             }
         }
     }
+}
+
+
+
+void Player::kill(Object* obj){
+    obj->death();
+}
+
+void Player::dead(){
+
 }

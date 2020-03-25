@@ -50,6 +50,9 @@ public:
     Type getType(){
         return type;
     }
+
+    virtual void death();
+
 protected:
     Point pos;
 
