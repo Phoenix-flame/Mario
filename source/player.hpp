@@ -151,7 +151,7 @@ private:
 
     int slide_enable = 0;
     
-    int speed = 0;
+    double speed = 0;
 
     bool move_during_jump;
     int jump_speed_vertical;
@@ -159,6 +159,7 @@ private:
 
     int fall_speed_vertical;
     int fall_speed_horizontal;
+    int fall_cycles = 0;
 
     // Timers
     Timer slideTimer;

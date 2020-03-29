@@ -3,16 +3,18 @@
 void Player::update(std::vector<Object*> objs, int _dir){
     Dir trans_dir = (_dir == 1)?RIGHT:LEFT;
     bool stop = (_dir == 0)?true:false;
-
+    
+    // std::cout <<fall_speed_vertical << std::endl;
 
     gravity(objs);
     min_dist_to_platform = checkDistToPlatform(objs);
-
+    jumpCollision(objs);
+    
 
     if (state == STAND && stop){
         funcToRun = &Player::stand;
     }
-    else if (state == STAND && !stop){
+    if (state == STAND && !stop){
         dir = trans_dir;
         startMove();
         funcToRun = &Player::normalMove;
@@ -21,16 +23,37 @@ void Player::update(std::vector<Object*> objs, int _dir){
         endMove();
         funcToRun = &Player::normalMove;
     }
-    else if (state == JUMP && speed == 0){
+    else if (state == JUMP){
+        if (stop){
+            speed = 0;
+        }
+        else{
+            dir = (stop)?STOP:trans_dir;
+            if (dir == LEFT){speed = -5;}
+            else if (dir == RIGHT){speed = +5;}
+            else{speed = 0;}
+        }
+        if (abs(jump_speed_vertical) > min_dist_to_platform.y){
+            jump_speed_vertical = -min_dist_to_platform.y;
+        }
         funcToRun = &Player::jump;
     }
-    else if (state == FALL && speed == 0){
+    else if (state == FALL){
+        if (stop){
+            speed = 0;
+        }
+        else{
+            dir = (stop)?STOP:trans_dir;
+            if (dir == LEFT){speed = -5;}
+            else if (dir == RIGHT){speed = 5;}
+            else{speed = 0;}
+        }
         if (fall_speed_vertical > min_dist_to_platform.x){
             fall_speed_vertical = min_dist_to_platform.x;
         }
         funcToRun = &Player::falling;
     }
-
+ 
     // Update Player State
     (this->*funcToRun)();
     updateFigure();
@@ -169,19 +192,23 @@ void Player::updateFigure(){
 void Player::startMove(){
     state = WALK;
     slide_enable = 0;
-    if (dir == LEFT){
-        speed = -5;
-    }
-    else if (dir == RIGHT){
-        speed = 5;
-    }
-
 }
 
 void Player::normalMove(){
-    
+    if (dir == LEFT){
+        speed -= 1;
+        if (speed < -5){
+            speed = -5;
+        }
+    }
+    else if (dir == RIGHT){
+        speed += 1;
+        if (speed > 5){
+            speed = 5;
+        }
+    }
     if(state == SLIDE){
-        if (slideTimer.getTime() > 350){
+        if (slideTimer.getTime() > 200){
             state = STAND;
             speed = 0;
             slide_enable = 0;
@@ -201,7 +228,7 @@ void Player::stand(){
 }
 
 void Player::endMove(){
-    if (slide_enable < 10){
+    if (slide_enable < 20){
         state = STAND;
         speed = 0;
         return;
@@ -243,12 +270,12 @@ void Player::jump(){
         if (jump_speed_vertical > 0){
             jump_speed_vertical = 0;
         }
-        _moveX(speed);
     }
     else {
         state = FALL;
         fall_speed_vertical = -jump_speed_vertical;
     }
+    _moveX(speed);
 }
 void Player::endJump(){
     state = FALL;
@@ -258,21 +285,17 @@ void Player::startFall(){
     if (state != JUMP){  // when mario is jumping, gravity has no effect on it
         state = FALL;
         fall_speed_vertical = 3;
-    }
-    
+    }   
 }
 
 void Player::falling(){
-    static int fall_cycles = 0;
     _moveY(fall_speed_vertical);
+    _moveX(speed);
     fall_speed_vertical += (fall_cycles%2 == 0)?1:0;
     if (fall_speed_vertical >= 10){
         fall_speed_vertical = 10;
     }
     fall_cycles += 1;
-
-
-    
 }
 
 
