@@ -9,7 +9,7 @@ void Player::update(std::vector<Object*> objs, int _dir){
     gravity(objs);
     min_dist_to_platform = checkDistToPlatform(objs);
     jumpCollision(objs);
-    
+    collision(objs);
 
     if (state == STAND && stop){
         funcToRun = &Player::stand;
@@ -28,6 +28,9 @@ void Player::update(std::vector<Object*> objs, int _dir){
             speed = 0;
         }
         else{
+            if (speed == 0){
+                endJump();
+            }
             dir = (stop)?STOP:trans_dir;
             if (dir == LEFT){speed = -5;}
             else if (dir == RIGHT){speed = +5;}
@@ -196,13 +199,13 @@ void Player::startMove(){
 
 void Player::normalMove(){
     if (dir == LEFT){
-        speed -= 1;
+        speed = -5;
         if (speed < -5){
             speed = -5;
         }
     }
     else if (dir == RIGHT){
-        speed += 1;
+        speed = 5;
         if (speed > 5){
             speed = 5;
         }
