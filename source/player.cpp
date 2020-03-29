@@ -1,53 +1,38 @@
 #include "player.hpp"
 
-
-
-
 void Player::update(std::vector<Object*> objs, int _dir){
     Dir trans_dir = (_dir == 1)?RIGHT:LEFT;
+    bool stop = (_dir == 0)?true:false;
+
 
     gravity(objs);
-    if (state == JUMP) {jumpCollision(objs);}
-    collision(objs);
-    
     min_dist_to_platform = checkDistToPlatform(objs);
 
-    if (state == STAND && (_dir != 0) ){
-        this->dir = trans_dir;
-        startMove();
+
+    if (state == STAND && stop){
+        funcToRun = &Player::stand;
     }
-    else if (state == WALK && _dir != 0){
-        this->dir = trans_dir;
-        move();
-    }
-    else if ((state == WALK || state == SLIDE) && _dir == 0){
-        endMove();
-    }
-    else if (state == SLIDE){
+    else if (state == STAND && !stop){
         dir = trans_dir;
         startMove();
+        funcToRun = &Player::normalMove;
     }
-    else if (state == FALL){
-        if (_dir == 0){ trans_dir = STOP;}
-        else {
-            dir = trans_dir;
-        }
+    else if (state == WALK && stop){
+        endMove();
+        funcToRun = &Player::normalMove;
+    }
+    else if (state == JUMP && speed == 0){
+        funcToRun = &Player::jump;
+    }
+    else if (state == FALL && speed == 0){
         if (fall_speed_vertical > min_dist_to_platform.x){
             fall_speed_vertical = min_dist_to_platform.x;
         }
-        falling(trans_dir, (_dir == 0)?true:false);
-
-    }
-    else if(state == JUMP){
-        if (jump_speed_vertical > min_dist_to_platform.y){
-            jump_speed_vertical = min_dist_to_platform.y;
-        }
-        jump();
-        
+        funcToRun = &Player::falling;
     }
 
-
-
+    // Update Player State
+    (this->*funcToRun)();
     updateFigure();
 }
 
@@ -192,13 +177,30 @@ void Player::startMove(){
     }
 
 }
-void Player::move(){
-    _moveX(speed);
 
-    slide_enable += 1;
+void Player::normalMove(){
+    
+    if(state == SLIDE){
+        if (slideTimer.getTime() > 350){
+            state = STAND;
+            speed = 0;
+            slide_enable = 0;
+        }
+        else{
+            _moveX(speed);  
+        }
+    }
+    else{
+        _moveX(speed);
+        slide_enable += 1;
+    }
 }
-void Player::endMove(){
 
+void Player::stand(){
+    
+}
+
+void Player::endMove(){
     if (slide_enable < 10){
         state = STAND;
         speed = 0;
@@ -211,17 +213,7 @@ void Player::endMove(){
         if (dir == LEFT){speed = -5;}
         else if (dir == RIGHT) {speed = 5;}
         
-    }
-
-    if (slideTimer.getTime() > 350){
-        state = STAND;
-        speed = 0;
-        slide_enable = 0;
-    }
-    else{
-        _moveX(speed);  
-    }
-    
+    } 
 }
 
 
@@ -270,7 +262,7 @@ void Player::startFall(){
     
 }
 
-void Player::falling(Dir _dir, bool stop_horizontal_move){
+void Player::falling(){
     static int fall_cycles = 0;
     _moveY(fall_speed_vertical);
     fall_speed_vertical += (fall_cycles%2 == 0)?1:0;
@@ -279,13 +271,7 @@ void Player::falling(Dir _dir, bool stop_horizontal_move){
     }
     fall_cycles += 1;
 
-    if (stop_horizontal_move){return;}
-    if (_dir == LEFT){
-        _moveX(-5);
-    }
-    else if (_dir == RIGHT){
-        _moveX(+5);
-    }  
+
     
 }
 
@@ -357,7 +343,7 @@ void Player::gravity(std::vector<Object*> objs){
             }
 
             // Just for Debug
-            o->selected = true;
+            // o->selected = true;
         }
         else{
             // Just for Debug
@@ -445,7 +431,7 @@ void Player::jumpCollision(std::vector<Object*> objs){
                     endJump();
                     collision_with_center = true;
                     collided = true;
-                    o->selected = true;
+                    // o->selected = true;
                     o->mark();
                     return;
                 }
@@ -474,7 +460,7 @@ void Player::jumpCollision(std::vector<Object*> objs){
     }
     if (!collision_with_center && collided){
         endJump();
-        selected->selected = true;
+        // selected->selected = true;
         selected->mark();
     }
     
@@ -486,7 +472,7 @@ void Player::collision(std::vector<Object*> objs){
     for (auto o:objs){
         Rectangle o1(getPos(), getPos() + getSize());
         Rectangle o2(o->getPos(), o->getPos() + o->getSize());
-        int o1_center = o1.y + o1.h/2.0;
+        double o1_center = o1.y + o1.h/2.0;
         int o2_top = o2.y;
         int o2_bottom = o2.y + o2.h;
         
@@ -496,26 +482,95 @@ void Player::collision(std::vector<Object*> objs){
         int o2_right = o2.x + o2.w;
 
         if (o1_center >= o2_top && o1_center <= o2_bottom){
-            if (o1_right <= o2_left && abs(o1_right - o2_left) < 2){
+            if (o1_right <= o2_left && abs(o1_right - o2_left) <= 5){
                 if (state == WALK || state == SLIDE){
+                    
                     if (dir == RIGHT){
-                        endMove();
-                        slideTimer.reset();
-                        o->selected = true;
+                        speed = abs(o1_right - o2_left);
+                        if (speed == 0){
+                            state = WALK;
+                            slide_enable = 0;
+                            slideTimer.reset();
+                        }
+                        // o->selected = true;
                     } 
                 }
+                if (state == JUMP){}
             }
-            else if (o1_left >= o2_right && abs(o1_left - o2_right) < 2){
+            else if (o1_left >= o2_right && abs(o1_left - o2_right) <= 5){
                 if (state == WALK || state == SLIDE){
                     if (dir == LEFT){
-                        endMove();
-                        slideTimer.reset();
-                        o->selected = true;
+                        speed = -abs(o1_left - o2_right);
+                        if (speed == 0){
+                            state = WALK;
+                            slide_enable = 0;
+                            slideTimer.reset();
+                        }
+                        // o->selected = true;
                     } 
                 }
             }
         }
     }
+}
+
+
+
+
+
+Point Player::checkDistToLR(std::vector<Object*> objs){
+    int min_dist_l = DBL_MAX;
+    int min_dist_r = DBL_MAX;
+    for (auto o:objs){
+        Rectangle o1(getPos(), getPos() + getSize());
+        Rectangle o2(o->getPos(), o->getPos() + o->getSize());
+        double o1_center = o1.y + o1.h/2.0;
+        int o2_top = o2.y;
+        int o2_bottom = o2.y + o2.h;
+        
+        int o1_left = o1.x;
+        int o1_right = o1.x + o1.w;
+        int o2_left = o2.x;
+        int o2_right = o2.x + o2.w;
+
+
+        int dist_l = -1;
+        int dist_r = -1;
+        if (o1_center >= o2_top && o1_center <= o2_bottom){
+            
+            if (o1_right <= o2_left){
+                dist_l = abs(o1_right - o2_left);
+            }
+            if (o1_left >= o2_right){
+                dist_r = abs(o1_left - o2_right);
+            }
+        }
+        
+        if (dist_l != -1){
+            if (dist_l < 100){
+                o->selected = true;
+            }
+            else{
+                o->selected = false; 
+            }
+            if (dist_l < min_dist_l){
+                min_dist_l = dist_l;
+            }
+        }
+        if (dist_r != -1){
+            if (dist_r < 100){
+                o->selected = true;
+            }
+            else{
+                o->selected = false; 
+            }
+            if (dist_r < min_dist_r){
+                min_dist_r = dist_r;
+            }
+        }
+
+    }
+    return Point(min_dist_l, min_dist_r);
 }
 
 

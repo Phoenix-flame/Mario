@@ -106,6 +106,9 @@ void Core::showDebug(){
     win->show_text("State: " + std::string(ToString(world->getPlayer()->getState())),
      world->getPlayer()->getPos() + Point(15, -15) + world->camera->getPos(),
      WHITE, "assets/Roboto-Regular.ttf", 15);
+     win->show_text("Speed: " + std::to_string(world->getPlayer()->getSpeed()),
+     world->getPlayer()->getPos() + Point(15, -30) + world->camera->getPos(),
+     WHITE, "assets/Roboto-Regular.ttf", 15);
     
     Point pos_player = world->getPlayer()->getPos() + world->camera->getPos();
     Point size_player = world->getPlayer()->getSize();

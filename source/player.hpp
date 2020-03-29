@@ -1,5 +1,6 @@
 #include "objects/object.hpp"
 #include <vector>
+#include <functional>
 #include "timer.hpp"
 
 #define NORM_DEAD "assets/sprites/mario/normal/dead.png"
@@ -90,15 +91,21 @@ public:
         state = STAND;
         image = NORM_STAND_RIGHT;
         size = Point(24, 32);
+        funcToRun = &Player::stand;
     }
 
     void update(std::vector<Object*> objs, int dir);
     void updateFigure();
 
+    // Stand
+    void stand();
+
     // Move and slide
     void startMove();
-    void move();
+    void normalMove();
     void endMove();
+
+    
     
     // Jump Methods
     void startJump();
@@ -108,7 +115,7 @@ public:
 
     // Falling Methods
     void startFall();
-    void falling(Dir _dir, bool stop_horizontal_move);
+    void falling();
     void move_during_fall();
     void endFall();
 
@@ -126,15 +133,19 @@ public:
 
     void dead();
 
+    double getSpeed(){return speed;}
 
     // Debug 
     Point min_dist_to_platform;
 private:
+    void (Player::*funcToRun)();
+    
     Level level;
     State state;
     Dir dir;
 
     Point checkDistToPlatform(std::vector<Object*> objs);
+    Point checkDistToLR(std::vector<Object*> objs);
     int collisionGravity(Rectangle o1, Rectangle o2);
     void collision(std::vector<Object*> objs);
 

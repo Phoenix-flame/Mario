@@ -44,10 +44,10 @@ public:
 
 
     void death() override;
-
+    Dir dir;
 private:
     GoombaState state;
-    Dir dir;
+    
 
     int checkDistToPlatform(std::vector<Object*> objs);
     int collisionGravity(Rectangle o1, Rectangle o2);

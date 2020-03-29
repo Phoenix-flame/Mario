@@ -166,7 +166,7 @@ void Goomba::endFall(){
 
 void Goomba::collision(std::vector<Object*> objs){
     for (auto o:objs){
-        if (o->getType() == GOOMBA || o->getType() == KOOPA){continue;}
+        // if (o->getType() == GOOMBA || o->getType() == KOOPA){continue;}
         Rectangle o1(getPos(), getPos() + getSize());
         Rectangle o2(o->getPos(), o->getPos() + o->getSize());
         int o1_center = o1.y + o1.h/2.0;

@@ -2,7 +2,7 @@
 
 World::World(){
     this->camera = new Camera();
-    this->map = new Map("assets/maps/1/1.txt");
+    this->map = new Map("assets/maps/1/2.txt");
 }
 
 
@@ -16,6 +16,7 @@ void World::loop(){
     for(unsigned int i = 0 ; i < map->goombas.size() ; i ++){
         if ((map->goombas[i]->getPos() + camera->getPos()).x < 700){
             map->goombas[i]->seen();
+            // if (i == 0){map->goombas[i]->dir = RIGHT;}
         } 
 
         if (map->goombas[i]->getPos().y > 500){
