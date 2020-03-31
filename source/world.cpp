@@ -2,7 +2,7 @@
 
 World::World(){
     this->camera = new Camera();
-    this->map = new Map("assets/maps/1/2.txt");
+    this->map = new Map("assets/maps/1/1.txt");
 }
 
 

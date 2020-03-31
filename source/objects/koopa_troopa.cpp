@@ -5,7 +5,6 @@
 
 void Koopa::update(std::vector<Object*> objs){
     if(!visited){return;}
-    
 
     gravity(objs);
     collision(objs);
@@ -17,10 +16,10 @@ void Koopa::update(std::vector<Object*> objs){
     }
     else if (state == KOOPA_FAST_AND_FURIOUS_STATE){
         if (dir == LEFT){
-            _moveX(-1);
+            _moveX(-4);
         }
         else if (dir == RIGHT){
-            _moveX(+1); 
+            _moveX(+4); 
         }
         if (state == KOOPA_FALL_STATE){
             if (fall_speed_vertical > min_dist_to_platform){
@@ -226,7 +225,7 @@ void Koopa::collision(std::vector<Object*> objs){
         if (o->getType() == GOOMBA || o->getType() == KOOPA){continue;}
         Rectangle o1(getPos(), getPos() + getSize());
         Rectangle o2(o->getPos(), o->getPos() + o->getSize());
-        int o1_center = o1.y + o1.h/2.0;
+        double o1_center = o1.y + o1.h/2.0;
         int o2_top = o2.y;
         int o2_bottom = o2.y + o2.h;
         
@@ -235,7 +234,7 @@ void Koopa::collision(std::vector<Object*> objs){
         int o2_left = o2.x;
         int o2_right = o2.x + o2.w;
 
-        if (o1_center >= o2_top && o1_center <= (o2_bottom - 5)){
+        if (o1_center >= o2_top && o1_center <= (o2_bottom)){
             if (o1_right <= o2_left && abs(o1_right - o2_left) < 6){
                 if (state == KOOPA_WALK_STATE){
                     if (dir == RIGHT){

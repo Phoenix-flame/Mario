@@ -4,22 +4,32 @@ void Player::update(std::vector<Object*> objs, int _dir){
     Dir trans_dir = (_dir == 1)?RIGHT:LEFT;
     bool stop = (_dir == 0)?true:false;
     
-    // std::cout <<fall_speed_vertical << std::endl;
-
+    // Physics
     gravity(objs);
-    min_dist_to_platform = checkDistToPlatform(objs);
     jumpCollision(objs);
-    collision(objs);
+    // collision(objs);
+    min_dist_to_platform = checkDistToPlatform(objs);
+    Point dist = checkDistToLR(objs);
+    std::cout << "toRight: " << dist.x << " toLeft: " << dist.y << std::endl;
 
+    bool collided = false;
+
+    // if (dist.x < 5 && trans_dir == dir){
+    //     speed = 0;
+    //     collided = true;
+    //     if (state == WALK || state == STAND){endMove();}
+    // }
+
+    // Movement profile
     if (state == STAND && stop){
         funcToRun = &Player::stand;
     }
-    if (state == STAND && !stop){
+    if (state == STAND && !stop && !collided) {
         dir = trans_dir;
         startMove();
         funcToRun = &Player::normalMove;
     }
-    else if (state == WALK && stop){
+    else if (state == WALK && stop && !collided){
         endMove();
         funcToRun = &Player::normalMove;
     }
@@ -28,9 +38,9 @@ void Player::update(std::vector<Object*> objs, int _dir){
             speed = 0;
         }
         else{
-            if (speed == 0){
-                endJump();
-            }
+            // if (speed == 0){
+            //     endJump();
+            // }
             dir = (stop)?STOP:trans_dir;
             if (dir == LEFT){speed = -5;}
             else if (dir == RIGHT){speed = +5;}
@@ -280,6 +290,7 @@ void Player::jump(){
     }
     _moveX(speed);
 }
+
 void Player::endJump(){
     state = FALL;
 }
@@ -508,11 +519,12 @@ void Player::collision(std::vector<Object*> objs){
         int o2_right = o2.x + o2.w;
 
         if (o1_center >= o2_top && o1_center <= o2_bottom){
-            if (o1_right <= o2_left && abs(o1_right - o2_left) <= 5){
+            if (o1_right <= o2_left && abs(o1_right - o2_left) <= 10){
                 if (state == WALK || state == SLIDE){
-                    
+                    std::cout << "here1" << std::endl;
                     if (dir == RIGHT){
-                        speed = abs(o1_right - o2_left);
+                        std::cout << "here" << std::endl;
+                        speed = 0;
                         if (speed == 0){
                             state = WALK;
                             slide_enable = 0;
@@ -596,6 +608,7 @@ Point Player::checkDistToLR(std::vector<Object*> objs){
         }
 
     }
+
     return Point(min_dist_l, min_dist_r);
 }
 

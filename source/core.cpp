@@ -87,7 +87,7 @@ void Core::draw(){
     drawBackground();
     drawObjects();
 
-    this->showDebug();
+    // this->showDebug();
 
 
     win->update_screen();
