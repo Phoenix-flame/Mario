@@ -52,7 +52,7 @@ public:
     }
 
     virtual void death();
-
+    virtual void kill();
 protected:
     Point pos;
 

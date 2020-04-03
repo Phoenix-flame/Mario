@@ -23,7 +23,7 @@ void World::loop(){
             map->goombas.erase(map->goombas.begin() + i);
         }
         
-        map->goombas[i]->update(map->objects);
+        map->goombas[i]->update(map->objects, map->player);
     }
 
     for(unsigned int i = 0 ; i < map->koopas.size() ; i ++){

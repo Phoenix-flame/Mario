@@ -132,8 +132,12 @@ public:
     void kill(Object* obj);
 
     void dead();
+    void death() override;
+    void death_animation();
 
     double getSpeed(){return speed;}
+
+
 
     // Debug 
     Point min_dist_to_platform;
@@ -163,12 +167,14 @@ private:
     int fall_speed_vertical;
     int fall_speed_horizontal;
     int fall_cycles = 0;
+    int terminal_speed = 10;
 
     // Timers
     Timer slideTimer;
     Timer jumpTimer;
     Timer RW_Timer;
     Timer LW_Timer;
+    Timer deathAnimation;
 
 
     bool koopa_hit = false;

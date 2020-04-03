@@ -4,14 +4,23 @@ void Player::update(std::vector<Object*> objs, int _dir){
     Dir trans_dir = (_dir == 1)?RIGHT:LEFT;
     bool stop = (_dir == 0)?true:false;
     
-    // Physics
-    gravity(objs);
-    jumpCollision(objs);
-    collision(objs);
-    min_dist_to_platform = checkDistToPlatform(objs);
+    
+
 
 
     // Movement profile
+    if (state == DEAD){
+        speed = 0;
+        funcToRun = &Player::death_animation;
+    }
+    else{
+        // Physics
+        gravity(objs);
+        jumpCollision(objs);
+        collision(objs);
+        min_dist_to_platform = checkDistToPlatform(objs);
+    }
+
     if (state == STAND && stop){
         funcToRun = &Player::stand;
     }
@@ -157,28 +166,90 @@ void Player::updateFigure(){
         }
         else if (state == FALL){
             image = (dir == LEFT)?NORM_JUMP_LEFT:NORM_JUMP_RIGHT;
- 
-            
         }
         break;
-    case POWER:
+    case BIG:
         if (state == STAND){
-
+            image = (dir == LEFT)?BIG_STAND_LEFT:BIG_STAND_RIGHT;
         }
         else if (state == WALK){
-
+            if (dir == LEFT){
+                walk_right = 1;
+                if (walk_left == 1){
+                    image = BIG_WALK_LEFT1;
+                    if (!LW_Timer.isStarted()) LW_Timer.start();
+                    if (LW_Timer.getTime() > 30){
+                        walk_left = 2;
+                        LW_Timer.reset();
+                    }
+                    
+                }
+                else if (walk_left == 2){
+                    image = BIG_WALK_LEFT2; 
+                    if (!LW_Timer.isStarted()) LW_Timer.start();
+                    if (LW_Timer.getTime() > 30){
+                        walk_left = 3;
+                        LW_Timer.reset();
+                    }
+                }
+                else if (walk_left == 3){
+                    image = BIG_WALK_LEFT3; 
+                    if (!LW_Timer.isStarted()) LW_Timer.start();
+                    if (LW_Timer.getTime() > 30){
+                        walk_left = 1;
+                        LW_Timer.reset();
+                    }
+                }
+            }
+            else if (dir == RIGHT){
+                walk_left = 1;
+                if (walk_right == 1){ 
+                    image = BIG_WALK_RIGHT1; 
+                    if (!RW_Timer.isStarted()){
+                        RW_Timer.start();
+                    }
+                    if (RW_Timer.getTime() > 30){
+                        walk_right = 2;
+                        RW_Timer.reset();
+                    }
+                    
+                }
+                else if (walk_right == 2){
+                    image = BIG_WALK_RIGHT2; 
+                    if (!RW_Timer.isStarted()){
+                        RW_Timer.start();
+                    }
+                    if (RW_Timer.getTime() > 30){
+                        walk_right = 3;
+                        RW_Timer.reset();
+                    }
+                }
+                else if (walk_right == 3){
+                    image = BIG_WALK_RIGHT3; 
+                    if (!RW_Timer.isStarted()){
+                        RW_Timer.start();
+                    }
+                    if (RW_Timer.getTime() > 30){
+                        walk_right = 1;
+                        RW_Timer.reset();
+                    }
+                }
+            }
         }
         else if (state == DEAD){
             
         }
         else if (state == JUMP){
-            
+            image = (dir == LEFT)?BIG_JUMP_LEFT:BIG_JUMP_RIGHT;
         }
         else if (state == SLIDE){
-            
+            image = (dir == LEFT)?BIG_SLIDE_LEFT:BIG_SLIDE_RIGHT;
+        }
+        else if (state == FALL){
+            image = (dir == LEFT)?BIG_JUMP_LEFT:BIG_JUMP_RIGHT;
         }
         break;
-    case BIG:
+    case POWER:
         if (state == STAND){
 
         }
@@ -308,8 +379,8 @@ void Player::falling(){
     _moveY(fall_speed_vertical);
     _moveX(speed);
     fall_speed_vertical += (fall_cycles%2 == 0)?1:0;
-    if (fall_speed_vertical >= 10){
-        fall_speed_vertical = 10;
+    if (fall_speed_vertical >= terminal_speed){
+        fall_speed_vertical = terminal_speed;
     }
     fall_cycles += 1;
 }
@@ -527,7 +598,9 @@ void Player::collision(std::vector<Object*> objs){
                     else if (state == JUMP){
                         speed = 0;
                     } 
-                    
+                    if (o->getType() == GOOMBA){
+                        death();
+                    }
                 }
             }
             else if (abs(o1.left_center.x - o2.right_center.x) < 4){
@@ -540,11 +613,12 @@ void Player::collision(std::vector<Object*> objs){
                     else if (state == JUMP){
                         speed = 0;
                     } 
+                    if (o->getType() == GOOMBA){
+                        death();
+                    }
                 }
             }
-        }
-        
-        
+        } 
     }
 }
 
@@ -616,4 +690,24 @@ void Player::kill(Object* obj){
 
 void Player::dead(){
 
+}
+
+void Player::death(){
+    state = DEAD;
+    speed = 0;
+    terminal_speed = 100;
+}
+
+
+void Player::death_animation(){
+    if (!deathAnimation.isStarted()){
+        deathAnimation.start();
+    }
+    if (deathAnimation.getTime() < 300){
+        fall_speed_vertical = 3;
+        _moveY(-5);
+    }
+    else if (deathAnimation.getTime() >= 350){
+        falling();
+    }
 }

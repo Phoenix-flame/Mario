@@ -60,3 +60,5 @@ void Object::mark(){
 
 
 void Object::death(){}
+
+void Object::kill(){}
