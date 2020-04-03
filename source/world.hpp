@@ -3,9 +3,13 @@
 #include <ctime>
 #include <iostream>
 #include <vector>
+#include <queue>
 #include "map.hpp"
+
 #include "camera.hpp"
 #include "physics.hpp"
+
+
 
 class World{
 public:
@@ -17,9 +21,12 @@ public:
     std::vector<Object*> getObjects();
     Camera* camera;
     Map* map;
+
+    std::vector<Object*> ghosts;
+    
 private:
     
-    
+    void ghostCollector();
     Physics* physics;
 
 };

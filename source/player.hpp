@@ -152,6 +152,7 @@ private:
     Point checkDistToLR(std::vector<Object*> objs);
     int collisionGravity(Rectangle o1, Rectangle o2);
     void collision(std::vector<Object*> objs);
+    void veryPreciseCollisionDetector(Object* o1, Object* o2);
 
     int slide_enable = 0;
     

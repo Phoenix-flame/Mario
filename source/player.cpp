@@ -71,9 +71,13 @@ void Player::update(std::vector<Object*> objs, int _dir){
             else if (dir == RIGHT){speed = 5;}
             else{speed = 0;}
         }
+
+        // It's important
         if (fall_speed_vertical > min_dist_to_platform.x){
             fall_speed_vertical = min_dist_to_platform.x;
         }
+
+
         funcToRun = &Player::falling;
     }
  
@@ -451,12 +455,8 @@ void Player::gravity(std::vector<Object*> objs){
                 }
                 
             }
-
-            // Just for Debug
-            // o->selected = true;
         }
         else{
-            // Just for Debug
             if (o->getType() == KOOPA){
                 koopa_hit = false;
             }
@@ -523,43 +523,30 @@ void Player::jumpCollision(std::vector<Object*> objs){
     for (auto o:objs){
         Rectangle o1(getPos(), getPos() + getSize());
         Rectangle o2(o->getPos(), o->getPos() + o->getSize());
-        int o1_top = o1.y;
-        int o1_bottom = o1.y + o1.h;
-        int o2_top = o2.y;
-        int o2_bottom = o2.y + o2.h;
-        
-        int o1_center = o1.x + o1.w/2.0;
-        int o1_left = o1.x;
-        int o1_right = o1.x + o1.w;
-        int o2_left = o2.x;
-        int o2_right = o2.x + o2.w;
 
-        if ((o1_center >= o2_left && o1_center <= o2_right)){
-            
-            if (o1_top >= o2_bottom && abs(o1_top - o2_bottom) < 5){
+        if ((o1.top_center.x >= o2.left_top.x && o1.top_center.x <= o2.right_top.x)){
+            if (o1.top_center.y >= o2.bottom_center.y && abs(o1.top_center.y - o2.bottom_center.y) < 5){
                 if (state == JUMP){
                     endJump();
                     collision_with_center = true;
                     collided = true;
-                    // o->selected = true;
+
                     o->mark();
                     return;
                 }
             }
         }
         else if (!collision_with_center){
-            if (o1_left >= o2_left && o1_left <= o2_right){
-                
-                if (o1_top >= o2_bottom && abs(o1_top - o2_bottom) < 5){
-                    std::cout << "left edge\n";
+            if (o1.left_top.x >= o2.left_top.x && o1.left_top.x <= o2.right_top.x){
+                if (o1.top_center.y >= o2.bottom_center.y && abs(o1.top_center.y - o2.bottom_center.y) < 5){
                     if (state == JUMP){
                         collided = true;
                         selected = o;
                     }
                 }
             }
-            else if (o1_right >= o2_left && o1_right <= o2_right){
-                if (o1_top >= o2_bottom && abs(o1_top - o2_bottom) < 5){
+            else if (o1.right_top.x >= o2.left_top.x && o1.right_top.x <= o2.right_top.x){
+                if (o1.top_center.y >= o2.bottom_center.y && abs(o1.top_center.y - o2.bottom_center.y) < 5){
                     if (state == JUMP){
                         collided = true;
                         selected = o;
@@ -570,12 +557,14 @@ void Player::jumpCollision(std::vector<Object*> objs){
     }
     if (!collision_with_center && collided){
         endJump();
-        // selected->selected = true;
         selected->mark();
     }
     
 }
 
+void Player::veryPreciseCollisionDetector(Object* o1, Object* o2){
+
+}
 
 
 void Player::collision(std::vector<Object*> objs){

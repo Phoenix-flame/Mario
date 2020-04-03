@@ -13,7 +13,10 @@
 #include "objects/goomba.hpp"
 #include "objects/koopa_troopa.hpp"
 #include "objects/pipes.hpp"
+#include "objects/coin.hpp"
 #include "player.hpp"
+
+
 
 
 class Map{
@@ -34,6 +37,9 @@ public:
     std::vector<Koopa*> koopas;
     std::vector<Pipe*> pipes;
     std::vector<Object*> objects;
+    std::vector<Object*> Ghosts;
+
+    
 private:
     
 

@@ -9,6 +9,7 @@
 
 
 
+
 enum Type {
     BLOCK,
     BRICK,
@@ -19,7 +20,8 @@ enum Type {
     PIPE,
     GOOMBA,
     KOOPA,
-    PLAYER
+    PLAYER,
+    G_COIN
 };
 
 enum Dir{
@@ -37,6 +39,7 @@ public:
     Point getXRange();
     Point getYRange();
 
+    virtual void update_new(){}
 
     // Mark to start animation
     void mark();
@@ -51,8 +54,17 @@ public:
         return type;
     }
 
+    void setPos(int x, int y){
+        pos.x = x;
+        pos.y = y;
+    }
+
     virtual void death();
     virtual void kill();
+
+    Object* ghost = nullptr;
+    bool has_ghost = false;
+    bool ghost_dead = false;
 protected:
     Point pos;
 

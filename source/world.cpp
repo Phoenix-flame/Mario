@@ -7,6 +7,8 @@ World::World(){
 
 
 void World::loop(){
+    ghostCollector();
+
     for(auto b:map->bricks){
         b->update();
     }
@@ -16,7 +18,6 @@ void World::loop(){
     for(unsigned int i = 0 ; i < map->goombas.size() ; i ++){
         if ((map->goombas[i]->getPos() + camera->getPos()).x < 700){
             map->goombas[i]->seen();
-            // if (i == 0){map->goombas[i]->dir = RIGHT;}
         } 
 
         if (map->goombas[i]->getPos().y > 500){
@@ -36,6 +37,27 @@ void World::loop(){
         }
         
         map->koopas[i]->update(map->objects);
+    }
+    for(unsigned int i = 0 ; i < ghosts.size(); i++){
+        if (ghosts[i]->ghost_dead){
+            ghosts.erase(ghosts.begin() + i);
+            continue;
+        }
+        if (ghosts[i]->getType() == G_COIN){
+            ((Coin*)ghosts[i])->update();
+        }
+        
+    }
+}
+
+void World::ghostCollector(){
+    for (auto obj:map->objects){
+        if (obj->has_ghost){
+            std::cout << "wohaha\n";
+            ghosts.push_back(obj->ghost);
+            obj->has_ghost = false;
+            obj->ghost = nullptr;
+        }
     }
 }
 

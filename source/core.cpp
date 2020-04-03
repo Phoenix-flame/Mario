@@ -3,7 +3,7 @@
 Core::Core(){
     this->win = new Window(640, 480, "Mario");
     this->world = new World();
-
+    // this->win->play_music("./assets/sounds/Super Mario Bros. theme music.ogg");
     FPS = 0;
 }
 
@@ -15,13 +15,17 @@ void Core::loop(){
         FPS = 1000000000.0/(now - start);
         start = now;
         frameTime = SDL_GetTicks();
-        if(!this->events()){
-            break;
-        }
-        
+
+        // Key events
+        if(!this->events()){break;}
+        // Key handlers and camera movment, Player state updater
         this->update();
+        // Update game state, Object state updater
         this->world->loop();
+        // Draw all objects whitin camera field
         this->draw();
+
+
         if(SDL_GetTicks() - frameTime < MIN_FRAME_RATE) {
             SDL_Delay(MIN_FRAME_RATE - (SDL_GetTicks () - frameTime));
         }
@@ -43,7 +47,7 @@ void Core::update(){
     }
     else if (KEY_LEFT_PRESSED){
         world->getPlayer()->update(world->getObjects(), -1);
-        if (player_x < 100){
+        if (player_x < 200){
             world->camera->move(5);
             world->camera->moveBackground(1);
         }
@@ -61,22 +65,21 @@ void Core::update(){
         }
     }
     else if(state == SLIDE && dir == LEFT){
-        if (player_x < 100){
+        if (player_x < 200){
             world->camera->move(5);
             world->camera->moveBackground(1);
         }
     }
-
-
-
     if(KEY_UP_PRESSED){
         if(world->getPlayer()->can_jump){
+            // win->play_sound_effect("assets/sounds/sound_effects/jump-small.wav");    
             world->getPlayer()->startJump();
             world->getPlayer()->can_jump = false;
         }
-        
     }
-
+    if (world->getPlayer()->getPos().y > 520){
+        exit(0);
+    }
 }
 
 
@@ -94,7 +97,6 @@ void Core::draw(){
 }
 
 void Core::drawBackground(){
-    
     win->draw_img(BACKGROUND,
                 Rectangle(world->camera->getPosBackground(), Point(1600, 480) + world->camera->getPosBackground()),
                 Rectangle(Point(0, 0), Point(2000, 1000)),
@@ -135,21 +137,18 @@ void Core::showDebug(){
 
 void Core::drawObjects(){
     Point offset = world->camera->getPos();
-    // Coin animation
-    for(auto c:world->map->coins){
-        if (c->coinIsAvailable){
-            win->draw_img(c->getImageCoin(),
-                 Rectangle(c->getCoinPos() + offset,
-                  c->getCoinPos() + c->getCoinSize() + offset), NULL_RECT,
-                 0, false);
-        }
-    }
+    
     for (auto b:world->getObjects()){
         win->draw_img(b->getImage(),
                  Rectangle(b->getPos() + offset, b->getPos() + b->getSize() + offset), NULL_RECT,
                  0, false);
     }
 
+    for (auto b:world->ghosts){
+        win->draw_img(b->getImage(),
+                 Rectangle(b->getPos() + offset, b->getPos() + b->getSize() + offset), NULL_RECT,
+                 0, ((Coin*)b)->flipped);
+    }
 
 
     Player * player = world->getPlayer();
@@ -172,7 +171,6 @@ bool Core::events(){
             
             break;
         case Event::KEY_PRESS:
-            std::cout << event.get_pressed_key() << std::endl;
             if (event.get_pressed_key() == 'q'){
                 return false;
             }
