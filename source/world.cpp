@@ -46,6 +46,9 @@ void World::loop(){
         if (ghosts[i]->getType() == G_COIN){
             ((Coin*)ghosts[i])->update();
         }
+        else if (ghosts[i]->getType() == G_TEXT){
+            ((Text*)ghosts[i])->update();
+        }
         
     }
 }
@@ -54,9 +57,11 @@ void World::ghostCollector(){
     for (auto obj:map->objects){
         if (obj->has_ghost){
             std::cout << "wohaha\n";
-            ghosts.push_back(obj->ghost);
+            for(auto g:obj->ghost){
+                ghosts.push_back(g);
+            }
             obj->has_ghost = false;
-            obj->ghost = nullptr;
+            obj->ghost.clear();
         }
     }
 }

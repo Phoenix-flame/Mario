@@ -21,7 +21,8 @@ enum Type {
     GOOMBA,
     KOOPA,
     PLAYER,
-    G_COIN
+    G_COIN,
+    G_TEXT
 };
 
 enum Dir{
@@ -62,7 +63,7 @@ public:
     virtual void death();
     virtual void kill();
 
-    Object* ghost = nullptr;
+    std::vector<Object*> ghost;
     bool has_ghost = false;
     bool ghost_dead = false;
 protected:

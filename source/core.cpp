@@ -143,8 +143,12 @@ void Core::drawObjects(){
                  Rectangle(b->getPos() + offset, b->getPos() + b->getSize() + offset), NULL_RECT,
                  0, false);
     }
-
+    // Text a(0, 0);
     for (auto b:world->ghosts){
+        if (b->getType() == G_TEXT){
+            win->show_text(((Text*)b)->text, b->getPos() + offset, WHITE, "assets/Roboto-Regular.ttf", 12);
+            continue;
+        }
         win->draw_img(b->getImage(),
                  Rectangle(b->getPos() + offset, b->getPos() + b->getSize() + offset), NULL_RECT,
                  0, ((Coin*)b)->flipped);

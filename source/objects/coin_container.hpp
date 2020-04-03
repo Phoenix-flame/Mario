@@ -1,5 +1,6 @@
 #include "object.hpp"
 #include "coin.hpp"
+#include "text.hpp"
 #include "../rsdl.hpp"
 
 #define COIN_BLOCK_FULL "assets/sprites/objects/bricks_blocks/question-1.png"
@@ -29,9 +30,18 @@ public:
                 if (!animationTimer.isStarted()){
                     animationTimer.start();
                     prevPos = pos;
-                    ghost = new Coin(pos.x, pos.y - 10);
-                    ghost->setPos(pos.x, pos.y - 10);
-                    ghost->ghost_dead = false;
+
+                    Coin* coin = new Coin(pos.x, pos.y - 10);
+                    ghost.push_back(coin);
+                    coin->setPos(pos.x, pos.y - 10);
+                    coin->ghost_dead = false;
+
+                    Text* text = new Text(pos.x, pos.y - 10);
+                    text->setPos(pos.x, pos.y - 10);
+                    text->ghost_dead = false;
+                    text->text = "+ 100";
+                    ghost.push_back(text);
+
                     has_ghost = true;
                 }
                 if (animationTimer.getTime() < 150){
