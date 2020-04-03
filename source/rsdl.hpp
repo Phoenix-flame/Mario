@@ -38,6 +38,15 @@ struct Rectangle {
   bool operator==(const Rectangle &);
 
   int x, y, w, h;
+  Point left_center;
+  Point right_center;
+  Point top_center;
+  Point bottom_center;
+  
+  Point left_top;
+  Point left_bottom;
+  Point right_top;
+  Point right_bottom;
 
 private:
   void init(int x, int y, int w, int h);

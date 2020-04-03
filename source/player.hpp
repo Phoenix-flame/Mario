@@ -152,6 +152,9 @@ private:
     int slide_enable = 0;
     
     double speed = 0;
+    bool collidedL = false;
+    bool collidedR = false;
+
 
     bool move_during_jump;
     int jump_speed_vertical;

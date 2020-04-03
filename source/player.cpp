@@ -7,29 +7,33 @@ void Player::update(std::vector<Object*> objs, int _dir){
     // Physics
     gravity(objs);
     jumpCollision(objs);
-    // collision(objs);
+    collision(objs);
     min_dist_to_platform = checkDistToPlatform(objs);
-    Point dist = checkDistToLR(objs);
-    std::cout << "toRight: " << dist.x << " toLeft: " << dist.y << std::endl;
 
-    bool collided = false;
-
-    // if (dist.x < 5 && trans_dir == dir){
-    //     speed = 0;
-    //     collided = true;
-    //     if (state == WALK || state == STAND){endMove();}
-    // }
 
     // Movement profile
     if (state == STAND && stop){
         funcToRun = &Player::stand;
     }
-    if (state == STAND && !stop && !collided) {
+    else if (state == STAND && !stop) {
         dir = trans_dir;
-        startMove();
-        funcToRun = &Player::normalMove;
+        if (dir == RIGHT && collidedR){
+            state = STAND;
+            speed = 0;
+            funcToRun = &Player::stand;
+        }
+        else if (dir == LEFT && collidedL){
+            state = STAND;
+            speed = 0;
+            funcToRun = &Player::stand;
+        }
+        else{
+            startMove();
+            funcToRun = &Player::normalMove;
+        }
+        
     }
-    else if (state == WALK && stop && !collided){
+    else if (state == WALK && stop){
         endMove();
         funcToRun = &Player::normalMove;
     }
@@ -37,10 +41,7 @@ void Player::update(std::vector<Object*> objs, int _dir){
         if (stop){
             speed = 0;
         }
-        else{
-            // if (speed == 0){
-            //     endJump();
-            // }
+        else if (!collidedR && !collidedL){
             dir = (stop)?STOP:trans_dir;
             if (dir == LEFT){speed = -5;}
             else if (dir == RIGHT){speed = +5;}
@@ -55,7 +56,7 @@ void Player::update(std::vector<Object*> objs, int _dir){
         if (stop){
             speed = 0;
         }
-        else{
+        else if(!collidedL && !collidedR){
             dir = (stop)?STOP:trans_dir;
             if (dir == LEFT){speed = -5;}
             else if (dir == RIGHT){speed = 5;}
@@ -205,6 +206,7 @@ void Player::updateFigure(){
 void Player::startMove(){
     state = WALK;
     slide_enable = 0;
+    
 }
 
 void Player::normalMove(){
@@ -506,49 +508,43 @@ void Player::jumpCollision(std::vector<Object*> objs){
 
 
 void Player::collision(std::vector<Object*> objs){
+    collidedL = false;
+    collidedR = false;
+
     for (auto o:objs){
         Rectangle o1(getPos(), getPos() + getSize());
         Rectangle o2(o->getPos(), o->getPos() + o->getSize());
-        double o1_center = o1.y + o1.h/2.0;
-        int o2_top = o2.y;
-        int o2_bottom = o2.y + o2.h;
-        
-        int o1_left = o1.x;
-        int o1_right = o1.x + o1.w;
-        int o2_left = o2.x;
-        int o2_right = o2.x + o2.w;
-
-        if (o1_center >= o2_top && o1_center <= o2_bottom){
-            if (o1_right <= o2_left && abs(o1_right - o2_left) <= 10){
-                if (state == WALK || state == SLIDE){
-                    std::cout << "here1" << std::endl;
-                    if (dir == RIGHT){
-                        std::cout << "here" << std::endl;
+        if ((o1.right_center.y >= o2.y && o1.right_center.y <= (o2.y + o2.h)) ||
+            (o1.y >= o2.y && o1.y <= (o2.y + o2.h)) ||
+            ((o1.y + o1.h - 3) >= o2.y && (o1.y + o1.h - 3) <= (o2.y + o2.h))){
+            if (abs(o1.right_center.x - o2.left_center.x) < 4){
+                if (dir == RIGHT){
+                    collidedR = true;
+                    speed = 0;  
+                    if (state == WALK || state == SLIDE){
+                        state = STAND;
+                    }
+                    else if (state == JUMP){
                         speed = 0;
-                        if (speed == 0){
-                            state = WALK;
-                            slide_enable = 0;
-                            slideTimer.reset();
-                        }
-                        // o->selected = true;
                     } 
+                    
                 }
-                if (state == JUMP){}
             }
-            else if (o1_left >= o2_right && abs(o1_left - o2_right) <= 5){
-                if (state == WALK || state == SLIDE){
-                    if (dir == LEFT){
-                        speed = -abs(o1_left - o2_right);
-                        if (speed == 0){
-                            state = WALK;
-                            slide_enable = 0;
-                            slideTimer.reset();
-                        }
-                        // o->selected = true;
+            else if (abs(o1.left_center.x - o2.right_center.x) < 4){
+                if(dir == LEFT){
+                    collidedL = true;
+                    speed = 0;
+                    if (state == WALK || state == SLIDE){
+                        state = STAND;
+                    } 
+                    else if (state == JUMP){
+                        speed = 0;
                     } 
                 }
             }
         }
+        
+        
     }
 }
 

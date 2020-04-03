@@ -370,6 +370,30 @@ void Rectangle::init(int _x, int _y, int _w, int _h) {
   y = _y;
   w = _w;
   h = _h;
+  // My Implementation
+  left_center.x = _x;
+  left_center.y = _y + _h/2.0;
+
+  right_center.x = _x + _w;
+  right_center.y = _y + _h/2.0;
+
+  top_center.x = _x + _w/2.0;
+  top_center.y = _y;
+
+  bottom_center.x = _x + _w/2.0;
+  bottom_center.y = _y + _h;
+
+  right_top.x = _x + _w;
+  right_top.y = _y;
+
+  right_bottom.x = _x + _w; 
+  right_bottom.y = _y + _h;
+
+  left_top.x = _x;
+  left_top.y = _y;
+
+  left_bottom.x = _x;
+  left_bottom.y = _y + _h;
 }
 
 Rectangle NULL_RECT(-1, -1, -1, -1);
