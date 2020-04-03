@@ -221,41 +221,45 @@ void Koopa::endFall(){
 
 
 void Koopa::collision(std::vector<Object*> objs){
-    for (auto o:objs){
-        if (o->getType() == GOOMBA || o->getType() == KOOPA){continue;}
+    for (auto o:objs){ // TODO Player is not in this list :)
+        if (o->getType() == KOOPA){continue;}
+
         Rectangle o1(getPos(), getPos() + getSize());
         Rectangle o2(o->getPos(), o->getPos() + o->getSize());
-        double o1_center = o1.y + o1.h/2.0;
-        int o2_top = o2.y;
-        int o2_bottom = o2.y + o2.h;
-        
-        int o1_left = o1.x;
-        int o1_right = o1.x + o1.w;
-        int o2_left = o2.x;
-        int o2_right = o2.x + o2.w;
-
-        if (o1_center >= o2_top && o1_center <= (o2_bottom)){
-            if (o1_right <= o2_left && abs(o1_right - o2_left) < 6){
+        if ((o1.right_center.y >= o2.y && o1.right_center.y <= (o2.y + o2.h)) ||
+            (o1.y >= o2.y && o1.y <= (o2.y + o2.h)) ||
+            ((o1.y + o1.h - 3) >= o2.y && (o1.y + o1.h - 3) <= (o2.y + o2.h))){
+            if (abs(o1.right_center.x - o2.left_center.x) < 6){
                 if (state == KOOPA_WALK_STATE){
                     if (dir == RIGHT){
                         dir = LEFT;
                     } 
                 }
                 else if (state == KOOPA_FAST_AND_FURIOUS_STATE){
-                    if (o->getType() == GOOMBA){
+                    if (o->getType() == GOOMBA || o->getType() == PLAYER){
                         o->death();
+                    }
+                    else{
+                        if (dir == RIGHT){
+                            dir = LEFT;
+                        } 
                     }
                 }
             }
-            else if (o1_left >= o2_right && abs(o1_left - o2_right) < 6){
+            else if (abs(o1.left_center.x - o2.right_center.x) < 6){
                 if (state == KOOPA_WALK_STATE){
                     if (dir == LEFT){
                         dir = RIGHT;
                     } 
                 }
                 else if (state == KOOPA_FAST_AND_FURIOUS_STATE){
-                    if (o->getType() == GOOMBA){
+                    if (o->getType() == GOOMBA || o->getType() == PLAYER){
                         o->death();
+                    }
+                    else{
+                        if (dir == LEFT){
+                            dir = RIGHT;
+                        }
                     }
                 }
             }
