@@ -7,7 +7,10 @@
 #include <vector>
 
 
-
+enum MushroomType{
+    M_RED,
+    M_HEALTH
+};
 
 
 enum Type {
@@ -22,7 +25,8 @@ enum Type {
     KOOPA,
     PLAYER,
     G_COIN,
-    G_TEXT
+    G_TEXT,
+    G_MUSHROOM
 };
 
 enum Dir{
@@ -60,15 +64,20 @@ public:
         pos.y = y;
     }
 
+    Point getOffset(){
+        return offsetAnimation;
+    }
+
     virtual void death();
     virtual void kill();
 
     std::vector<Object*> ghost;
     bool has_ghost = false;
     bool ghost_dead = false;
+
 protected:
     Point pos;
-
+    Point offsetAnimation;
     int xMin;
     int yMin;
 

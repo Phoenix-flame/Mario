@@ -15,6 +15,9 @@ void World::loop(){
     for(auto c:map->coins){
         c->update();
     }
+    for(auto f:map->fires){
+        f->update();
+    }
     for(unsigned int i = 0 ; i < map->goombas.size() ; i ++){
         if ((map->goombas[i]->getPos() + camera->getPos()).x < 700){
             map->goombas[i]->seen();
@@ -48,6 +51,9 @@ void World::loop(){
         }
         else if (ghosts[i]->getType() == G_TEXT){
             ((Text*)ghosts[i])->update();
+        }
+        else if (ghosts[i]->getType() ==G_MUSHROOM){
+            ((Mushroom*)ghosts[i])->update(map->objects);
         }
         
     }

@@ -19,7 +19,7 @@ public:
         }
 
         if (coinIsAvailable){
-            if (flip_cycle%3 == 0){
+            if (flip_cycle%4 == 0){
                 flipped = !flipped;
             }
             flip_cycle += 1;

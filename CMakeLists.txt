@@ -36,6 +36,8 @@ set(sources
     source/objects/goomba.cpp
     source/objects/koopa_troopa.hpp
     source/objects/koopa_troopa.cpp
+    source/objects/mushroom.hpp
+    source/objects/mushroom.cpp
     source/objects/pipes.hpp
 )
 

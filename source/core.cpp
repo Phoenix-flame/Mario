@@ -138,12 +138,6 @@ void Core::showDebug(){
 void Core::drawObjects(){
     Point offset = world->camera->getPos();
     
-    for (auto b:world->getObjects()){
-        win->draw_img(b->getImage(),
-                 Rectangle(b->getPos() + offset, b->getPos() + b->getSize() + offset), NULL_RECT,
-                 0, false);
-    }
-    // Text a(0, 0);
     for (auto b:world->ghosts){
         if (b->getType() == G_TEXT){
             win->show_text(((Text*)b)->text, b->getPos() + offset, WHITE, "assets/Roboto-Regular.ttf", 12);
@@ -154,12 +148,21 @@ void Core::drawObjects(){
                  0, ((Coin*)b)->flipped);
     }
 
+    for (auto b:world->getObjects()){
+        win->draw_img(b->getImage(),
+                 Rectangle(b->getPos() + offset, b->getPos() + b->getSize() + offset), NULL_RECT,
+                 0, false);
+    }
+
+
 
     Player * player = world->getPlayer();
     win->draw_img(player->getImage(),
                  Rectangle(player->getPos() + offset, player->getPos() + player->getSize() + offset), NULL_RECT,
                  0, false);
 
+
+    
 
 }
 
@@ -172,13 +175,12 @@ bool Core::events(){
         case Event::QUIT:
             return false;
         case Event::LCLICK:
-            
             break;
         case Event::KEY_PRESS:
             if (event.get_pressed_key() == 'q'){
                 return false;
             }
-            else if (event.get_pressed_key() == 'R'){
+            else if (event.get_pressed_key() == 'R' || event.get_pressed_key() == ' '){
                 world->getPlayer()->can_jump = true;
                 KEY_UP_PRESSED = true;
             }
