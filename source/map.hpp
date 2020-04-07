@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+
 #include "rsdl.hpp"
 #include "objects/block.hpp"
 #include "objects/ground.hpp"
@@ -38,6 +39,8 @@ public:
     std::vector<Pipe*> pipes;
     std::vector<Object*> objects;
     std::vector<Object*> Ghosts;
+
+    std::vector<Object*> staticObjects;
 
     
 private:

@@ -37,6 +37,7 @@ void Core::update(){
     int player_x = world->getPlayer()->getPos().x + world->camera->getPos().x;
     State state = world->getPlayer()->getState();
     Dir dir = world->getPlayer()->getDir();
+    
     if(KEY_RIGHT_PRESSED){
         world->getPlayer()->update(world->getObjects(), 1);
         if (player_x > 400){
@@ -138,7 +139,7 @@ void Core::showDebug(){
 void Core::drawObjects(){
     Point offset = world->camera->getPos();
     
-    for (auto b:world->ghosts){
+    for (auto b:world->getGhosts()){
         if (b->getType() == G_TEXT){
             win->show_text(((Text*)b)->text, b->getPos() + offset, WHITE, "assets/Roboto-Regular.ttf", 12);
             continue;

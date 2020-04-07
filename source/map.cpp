@@ -19,31 +19,37 @@ Map::Map(std::string filepath){
                 Block* tmp = new Block(x, y);
                 this->blocks.push_back(tmp);
                 this->objects.push_back(tmp);
+                this->staticObjects.push_back(tmp);
             }
             else if(line[x] == '#'){
                 Ground* tmp = new Ground(x, y);
                 this->grounds.push_back(tmp);
                 this->objects.push_back(tmp);
+                this->staticObjects.push_back(tmp);
             }
             else if(line[x] == 'b'){
                 Brick* tmp = new Brick(x, y);
                 this->bricks.push_back(tmp);
                 this->objects.push_back(tmp);
+                this->staticObjects.push_back(tmp);
             }
             else if(line[x] == '?'){
                 CoinContainer* tmp = new CoinContainer(x, y);
                 this->coins.push_back(tmp);
                 this->objects.push_back(tmp);
+                this->staticObjects.push_back(tmp);
             }
             else if(line[x] == 'm'){
                 FireContainer* tmp = new FireContainer(x, y);
                 this->fires.push_back(tmp);
                 this->objects.push_back(tmp);
+                this->staticObjects.push_back(tmp);
             }
             else if(line[x] == 'h'){
                 HealthContainer* tmp = new HealthContainer(x, y);
                 this->healths.push_back(tmp);
                 this->objects.push_back(tmp);
+                this->staticObjects.push_back(tmp);
             }
             else if(line[x] == 'l'){
                 Goomba* tmp = new Goomba(x, y);
@@ -70,12 +76,14 @@ Map::Map(std::string filepath){
                             Pipe* tmp = new Pipe(x, y, "r");
                             pipes.push_back(tmp);
                             this->objects.push_back(tmp);
+                            this->staticObjects.push_back(tmp);
                             flag_pipes = false;
                         }
                         else{ // Left
                             Pipe* tmp = new Pipe(x, y, "l");
                             pipes.push_back(tmp);
                             this->objects.push_back(tmp);
+                            this->staticObjects.push_back(tmp);
                             flag_pipes = true;
                         }
                     }
@@ -86,12 +94,14 @@ Map::Map(std::string filepath){
                         Pipe* tmp = new Pipe(x, y, "hr");
                         pipes.push_back(tmp);
                         this->objects.push_back(tmp);
+                        this->staticObjects.push_back(tmp);
                         flag_pipes = false;
                     }
                     else{ // Left
                         Pipe* tmp = new Pipe(x, y, "hl");
                         pipes.push_back(tmp);
                         this->objects.push_back(tmp);
+                        this->staticObjects.push_back(tmp);
                         flag_pipes = true;
                     }
                     pipes_head.push_back(x);
@@ -100,60 +110,7 @@ Map::Map(std::string filepath){
         }
         y += 1;
     }
-    // this->objects.push_back(player);
+    this->objects.push_back(player);
     map_file.close();
 }
 
-// void Map::drawObjects(){
-//     for (auto b:blocks){
-//         win->draw_img(b.getImage(),
-//                  Rectangle(b.getPos() + offset, b.getPos() + b.getSize() + offset), NULL_RECT,
-//                  0, false);
-//     }
-//     for (auto g:grounds){
-//         win->draw_img(g.getImage(),
-//                  Rectangle(g.getPos() + offset, g.getPos() + g.getSize() + offset), NULL_RECT,
-//                  0, false);
-//     }
-//     for (auto b:bricks){
-//         win->draw_img(b.getImage(),
-//                  Rectangle(b.getPos() + offset, b.getPos() + b.getSize() + offset), NULL_RECT,
-//                  0, false);
-//     }
-
-//     for (auto b:coins){
-//         win->draw_img(b.getImage(),
-//                  Rectangle(b.getPos() + offset, b.getPos() + b.getSize() + offset), NULL_RECT,
-//                  0, false);
-//     }
-//     for (auto b:fires){
-//         win->draw_img(b.getImage(),
-//                  Rectangle(b.getPos() + offset, b.getPos() + b.getSize() + offset), NULL_RECT,
-//                  0, false);
-//     }
-//     for (auto b:healths){
-//         win->draw_img(b.getImage(),
-//                  Rectangle(b.getPos() + offset, b.getPos() + b.getSize() + offset), NULL_RECT,
-//                  0, false);
-//     }
-//     for (auto b:goombas){
-//         win->draw_img(b.getImage(),
-//                  Rectangle(b.getPos() + offset, b.getPos() + b.getSize() + offset), NULL_RECT,
-//                  0, false);
-//     }
-//     for (auto b:koopas){
-//         win->draw_img(b.getImage(),
-//                  Rectangle(b.getPos() + offset, b.getPos() + b.getSize() + offset), NULL_RECT,
-//                  0, false);
-//     }
-//     for (auto b:pipes){
-//         win->draw_img(b.getImage(),
-//                  Rectangle(b.getPos() + offset, b.getPos() + b.getSize() + offset), NULL_RECT,
-//                  0, false);
-//     }
-    
-
-//     win->draw_img(player->getImage(),
-//                  Rectangle(player->getPos() + offset, player->getPos() + player->getSize() + offset), NULL_RECT,
-//                  0, false);
-// }

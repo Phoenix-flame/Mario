@@ -119,14 +119,10 @@ public:
     void move_during_fall();
     void endFall();
 
-    // Base movment methods
-    void _moveX(int dx);
-    void _moveY(int dy);
-
     State getState(){return state;}
     Dir getDir(){return dir;}
 
-    void gravity(std::vector<Object*> objs);
+
     void jumpCollision(std::vector<Object*> objs);
 
     void kill(Object* obj);
@@ -137,10 +133,20 @@ public:
 
     double getSpeed(){return speed;}
 
+    // Collision Notification
+    void notifyCollisionLeft(Object*) override;
+    void notifyCollisionRight(Object*) override;
+    void notifyCollisionTop(Object*) override;
+    void notifyCollisionBottom(Object*) override;
+    void notifyFreeLeft() override;
+    void notifyFreeRight() override;
+    void notifyFreeTop() override;
+    void notifyFreeBottom() override;
 
 
     // Debug 
     Point min_dist_to_platform;
+    bool koopa_hit = false;
 private:
     void (Player::*funcToRun)();
     
@@ -149,10 +155,6 @@ private:
     Dir dir;
 
     Point checkDistToPlatform(std::vector<Object*> objs);
-    Point checkDistToLR(std::vector<Object*> objs);
-    int collisionGravity(Rectangle o1, Rectangle o2);
-    void collision(std::vector<Object*> objs);
-    void veryPreciseCollisionDetector(Object* o1, Object* o2);
 
     int slide_enable = 0;
     
@@ -178,5 +180,5 @@ private:
     Timer deathAnimation;
 
 
-    bool koopa_hit = false;
+    
 };

@@ -9,24 +9,37 @@
 #include "camera.hpp"
 #include "physics.hpp"
 
-
+struct GameState{
+    double progress = 0.0;
+    bool alive = true;
+    bool marioLevel = 1;
+};
 
 class World{
 public:
     World();
     void loop();
 
-    Player* getPlayer(){return map->player;}
+    
 
     std::vector<Object*> getObjects();
     Camera* camera;
     Map* map;
 
-    std::vector<Object*> ghosts;
+    
+    Player* getPlayer();
+    std::vector<Object*> getGhosts();
     
 private:
+    GameState* gameState;
+    void gravity();
+    int collisionGravity(Rectangle o1, Rectangle o2);
     
     void ghostCollector();
+    std::vector<Object*> ghosts;
+    
+    void collision(Object* obj);
+    
     Physics* physics;
 
 };

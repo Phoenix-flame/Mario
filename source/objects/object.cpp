@@ -62,3 +62,14 @@ void Object::mark(){
 void Object::death(){}
 
 void Object::kill(){}
+
+
+void Object::notifyCollisionLeft(Object* obj){}
+void Object::notifyCollisionRight(Object* obj){}
+void Object::notifyCollisionTop(Object* obj){}
+void Object::notifyCollisionBottom(Object* obj){}
+
+void Object::notifyFreeLeft(){}
+void Object::notifyFreeRight(){}
+void Object::notifyFreeTop(){}
+void Object::notifyFreeBottom(){}

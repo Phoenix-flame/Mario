@@ -68,6 +68,16 @@ public:
         return offsetAnimation;
     }
 
+    // Collision Notification
+    virtual void notifyCollisionLeft(Object*);
+    virtual void notifyCollisionRight(Object*);
+    virtual void notifyCollisionTop(Object*);
+    virtual void notifyCollisionBottom(Object*);
+    virtual void notifyFreeLeft();
+    virtual void notifyFreeRight();
+    virtual void notifyFreeTop();
+    virtual void notifyFreeBottom();
+
     virtual void death();
     virtual void kill();
 

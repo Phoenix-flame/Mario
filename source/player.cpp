@@ -4,10 +4,6 @@ void Player::update(std::vector<Object*> objs, int _dir){
     Dir trans_dir = (_dir == 1)?RIGHT:LEFT;
     bool stop = (_dir == 0)?true:false;
     
-    
-
-
-
     // Movement profile
     if (state == DEAD){
         speed = 0;
@@ -15,71 +11,72 @@ void Player::update(std::vector<Object*> objs, int _dir){
     }
     else{
         // Physics
-        gravity(objs);
         jumpCollision(objs);
-        collision(objs);
+        // collision(objs);
         min_dist_to_platform = checkDistToPlatform(objs);
     }
-
-    if (state == STAND && stop){
-        funcToRun = &Player::stand;
-    }
-    else if (state == STAND && !stop) {
-        dir = trans_dir;
-        if (dir == RIGHT && collidedR){
-            state = STAND;
-            speed = 0;
+    if (state != DEAD){
+        if (state == STAND && stop){
             funcToRun = &Player::stand;
         }
-        else if (dir == LEFT && collidedL){
-            state = STAND;
-            speed = 0;
-            funcToRun = &Player::stand;
+        else if (state == STAND && !stop) {
+            dir = trans_dir;
+            if (dir == RIGHT && collidedR){
+                state = STAND;
+                speed = 0;
+                funcToRun = &Player::stand;
+            }
+            else if (dir == LEFT && collidedL){
+                state = STAND;
+                speed = 0;
+                funcToRun = &Player::stand;
+            }
+            else{
+                startMove();
+                funcToRun = &Player::normalMove;
+            }
+            
         }
-        else{
-            startMove();
+        else if (state == WALK && stop){
+            endMove();
             funcToRun = &Player::normalMove;
         }
-        
-    }
-    else if (state == WALK && stop){
-        endMove();
-        funcToRun = &Player::normalMove;
-    }
-    else if (state == JUMP){
-        if (stop){
-            speed = 0;
+        else if (state == JUMP){
+            if (stop){
+                speed = 0;
+            }
+            else if (!collidedR && !collidedL){
+                dir = (stop)?STOP:trans_dir;
+                if (dir == LEFT){speed = -5;}
+                else if (dir == RIGHT){speed = +5;}
+                else{speed = 0;}
+            }
+            if (abs(jump_speed_vertical) > min_dist_to_platform.y){
+                jump_speed_vertical = -min_dist_to_platform.y;
+            }
+            funcToRun = &Player::jump;
         }
-        else if (!collidedR && !collidedL){
-            dir = (stop)?STOP:trans_dir;
-            if (dir == LEFT){speed = -5;}
-            else if (dir == RIGHT){speed = +5;}
-            else{speed = 0;}
-        }
-        if (abs(jump_speed_vertical) > min_dist_to_platform.y){
-            jump_speed_vertical = -min_dist_to_platform.y;
-        }
-        funcToRun = &Player::jump;
-    }
-    else if (state == FALL){
-        if (stop){
-            speed = 0;
-        }
-        else if(!collidedL && !collidedR){
-            dir = (stop)?STOP:trans_dir;
-            if (dir == LEFT){speed = -5;}
-            else if (dir == RIGHT){speed = 5;}
-            else{speed = 0;}
-        }
+        else if (state == FALL){
+            if (stop){
+                speed = 0;
+            }
+            else if(!collidedL && !collidedR){
+                dir = (stop)?STOP:trans_dir;
+                if (dir == LEFT){speed = -5;}
+                else if (dir == RIGHT){speed = 5;}
+                else{speed = 0;}
+            }
 
-        // It's important
-        if (fall_speed_vertical > min_dist_to_platform.x){
-            fall_speed_vertical = min_dist_to_platform.x;
-        }
+            // It's important
+            if (fall_speed_vertical > min_dist_to_platform.x){
+                fall_speed_vertical = min_dist_to_platform.x;
+            }
 
 
-        funcToRun = &Player::falling;
+            funcToRun = &Player::falling;
+        }
     }
+    
  
     // Update Player State
     (this->*funcToRun)();
@@ -336,7 +333,7 @@ void Player::endMove(){
 
 
 void Player::startJump(){
-    if (state == JUMP || state == FALL){return;} // You cannot initiate a jump during a jump
+    if (state == JUMP || state == FALL || state == DEAD){return;} // You cannot initiate a jump during a jump
     if (state == STAND){ 
         move_during_jump = false;
     }
@@ -400,77 +397,6 @@ void Player::endFall(){
 
 
 
-
-void Player::_moveX(int dx){
-    pos.x += dx;
-    xMin += dx;
-    xMax += dx;
-}
-void Player::_moveY(int dy){
-    pos.y += dy;
-    yMin += dy;
-    yMax += dy;
-}
-
-
-
-int Player::collisionGravity(Rectangle o1, Rectangle o2){
-    int o1_top = o1.y;
-    int o1_bottom = o1.y + o1.h;
-    int o2_top = o2.y;
-    int o2_bottom = o2.y + o2.h;
-    
-    int o1_left = o1.x;
-    int o1_right = o1.x + o1.w;
-    int o2_left = o2.x;
-    int o2_right = o2.x + o2.w;
-
-    if (o1_right >= o2_left && o1_left <= o2_right){
-        if (o1_bottom <= o2_top && abs(o1_bottom - o2_top) < 3){
-            return abs(o1_bottom - o2_top);
-        }
-    }
-
-    return -1;
-}
-
-
-void Player::gravity(std::vector<Object*> objs){
-    bool on_the_floor = false;
-    for (auto o:objs){
-        Rectangle o1(getPos(), getPos() + getSize());
-        Rectangle o2(o->getPos(), o->getPos() + o->getSize());
-        if (collisionGravity(o1, o2) != -1){
-            endFall();
-            on_the_floor = true;
-
-            // Kill enemies by jumping on their head :)
-            if (o->getType() == GOOMBA){  // TODO FIX THIS
-                kill(o);
-            }
-            else if (o->getType() == KOOPA){
-                if (!koopa_hit){
-                    kill(o);
-                    koopa_hit = true;
-                }
-                
-            }
-        }
-        else{
-            if (o->getType() == KOOPA){
-                koopa_hit = false;
-            }
-            o->selected = false;
-        }
-    }
-
-    if (!on_the_floor){
-        if (getState() != FALL){
-            startFall();
-        }
-        
-    }
-}
 
 Point Player::checkDistToPlatform(std::vector<Object*> objs){
     int min_dist_b = DBL_MAX;
@@ -562,114 +488,7 @@ void Player::jumpCollision(std::vector<Object*> objs){
     
 }
 
-void Player::veryPreciseCollisionDetector(Object* o1, Object* o2){
 
-}
-
-
-void Player::collision(std::vector<Object*> objs){
-    collidedL = false;
-    collidedR = false;
-
-    for (auto o:objs){
-        Rectangle o1(getPos(), getPos() + getSize());
-        Rectangle o2(o->getPos(), o->getPos() + o->getSize());
-        if ((o1.right_center.y >= o2.y && o1.right_center.y <= (o2.y + o2.h)) ||
-            (o1.y >= o2.y && o1.y <= (o2.y + o2.h)) ||
-            ((o1.y + o1.h - 3) >= o2.y && (o1.y + o1.h - 3) <= (o2.y + o2.h))){
-            if (abs(o1.right_center.x - o2.left_center.x) < 4){
-                if (dir == RIGHT){
-                    collidedR = true;
-                    speed = 0;  
-                    if (state == WALK || state == SLIDE){
-                        state = STAND;
-                    }
-                    else if (state == JUMP){
-                        speed = 0;
-                    } 
-                    if (o->getType() == GOOMBA){
-                        death();
-                    }
-                }
-            }
-            else if (abs(o1.left_center.x - o2.right_center.x) < 4){
-                if(dir == LEFT){
-                    collidedL = true;
-                    speed = 0;
-                    if (state == WALK || state == SLIDE){
-                        state = STAND;
-                    } 
-                    else if (state == JUMP){
-                        speed = 0;
-                    } 
-                    if (o->getType() == GOOMBA){
-                        death();
-                    }
-                }
-            }
-        } 
-    }
-}
-
-
-
-
-
-Point Player::checkDistToLR(std::vector<Object*> objs){
-    int min_dist_l = DBL_MAX;
-    int min_dist_r = DBL_MAX;
-    for (auto o:objs){
-        Rectangle o1(getPos(), getPos() + getSize());
-        Rectangle o2(o->getPos(), o->getPos() + o->getSize());
-        double o1_center = o1.y + o1.h/2.0;
-        int o2_top = o2.y;
-        int o2_bottom = o2.y + o2.h;
-        
-        int o1_left = o1.x;
-        int o1_right = o1.x + o1.w;
-        int o2_left = o2.x;
-        int o2_right = o2.x + o2.w;
-
-
-        int dist_l = -1;
-        int dist_r = -1;
-        if (o1_center >= o2_top && o1_center <= o2_bottom){
-            
-            if (o1_right <= o2_left){
-                dist_l = abs(o1_right - o2_left);
-            }
-            if (o1_left >= o2_right){
-                dist_r = abs(o1_left - o2_right);
-            }
-        }
-        
-        if (dist_l != -1){
-            if (dist_l < 100){
-                o->selected = true;
-            }
-            else{
-                o->selected = false; 
-            }
-            if (dist_l < min_dist_l){
-                min_dist_l = dist_l;
-            }
-        }
-        if (dist_r != -1){
-            if (dist_r < 100){
-                o->selected = true;
-            }
-            else{
-                o->selected = false; 
-            }
-            if (dist_r < min_dist_r){
-                min_dist_r = dist_r;
-            }
-        }
-
-    }
-
-    return Point(min_dist_l, min_dist_r);
-}
 
 
 
@@ -699,4 +518,78 @@ void Player::death_animation(){
     else if (deathAnimation.getTime() >= 350){
         falling();
     }
+}
+
+
+// Collision Notification
+void Player::notifyCollisionLeft(Object* obj){
+    if (state == DEAD){
+        return;
+    }
+    if(dir == LEFT){
+        collidedL = true;
+        speed = 0;
+        if (state == WALK || state == SLIDE){
+            state = STAND;
+        } 
+        else if (state == JUMP){
+            speed = 0;
+        } 
+        if (obj->getType() == GOOMBA){
+            death();
+        }
+    }
+}
+void Player::notifyCollisionRight(Object* obj){
+    if (state == DEAD){
+        return;
+    }
+    if (dir == RIGHT){
+        collidedR = true;
+        speed = 0;  
+        if (state == WALK || state == SLIDE){
+            state = STAND;
+        }
+        else if (state == JUMP){
+            speed = 0;
+        } 
+        if (obj->getType() == GOOMBA){
+            death();
+        }
+    }
+}
+void Player::notifyCollisionTop(Object* obj){
+
+}
+void Player::notifyCollisionBottom(Object* obj){
+    if (state == DEAD){
+        return;
+    }
+    endFall();
+
+    // Kill enemies by jumping on their head :)
+    if (obj->getType() == GOOMBA){  // TODO FIX THIS
+        kill(obj);
+    }
+    else if (obj->getType() == KOOPA){
+        // if (!koopa_hit){
+        //     kill(obj);
+        //     koopa_hit = true;
+        // }
+    }
+}
+
+void Player::notifyFreeLeft(){ collidedL = false; }
+void Player::notifyFreeRight(){ collidedR = false;}
+void Player::notifyFreeTop(){}
+void Player::notifyFreeBottom(){
+    if (state == DEAD){
+        return;
+    }
+    // if (obj->getType() == KOOPA){
+    //     koopa_hit = false;
+    // }
+    if (state != FALL){
+        startFall();
+    } 
 }
