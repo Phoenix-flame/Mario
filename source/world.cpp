@@ -3,6 +3,7 @@
 World::World(){
     this->camera = new Camera();
     this->map = new Map("assets/maps/1/1.txt");
+    this->gameState = new GameState();
 }
 
 
@@ -66,9 +67,11 @@ void World::loop(){
 void World::ghostCollector(){
     for (auto obj:map->objects){
         if (obj->has_ghost){
-            std::cout << "wohaha\n";
             for(auto g:obj->ghost){
                 ghosts.push_back(g);
+                if (g->getType() == G_TEXT){
+                    gameState->score += ((Text*)g)->score;
+                }
             }
             obj->has_ghost = false;
             obj->ghost.clear();
@@ -81,21 +84,10 @@ std::vector<Object*> World::getObjects(){
     return map->objects;
 }
 
-void World::gravity(){
-    
+GameState* World::getGameState(){
+    return gameState;
 }
 
-
-int World::collisionGravity(Rectangle o1, Rectangle o2){
-
-    if (o1.right_top.x >= o2.left_top.x && o1.left_top.x <= o2.right_top.x){
-        if (o1.bottom_center.y <= o2.top_center.y && abs(o1.bottom_center.y - o2.top_center.y) < 3){
-            return abs(o1.bottom_center.y - o2.top_center.y);
-        }
-    }
-
-    return -1;
-}
 
 
 Player* World::getPlayer(){

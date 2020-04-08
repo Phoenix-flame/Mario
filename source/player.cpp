@@ -471,8 +471,16 @@ void Player::notifyCollisionBottom(Object* obj){
     endFall();
 
     // Kill enemies by jumping on their head :)
-    if (obj->getType() == GOOMBA){  // TODO FIX THIS
+    if (obj->getType() == GOOMBA){
         kill(obj);
+        Text* text = new Text(pos.x, pos.y - 10);
+        text->setPos(pos.x, pos.y - 10);
+        text->ghost_dead = false;
+        text->text = "+ 150";
+        text->score = 150;
+        ghost.push_back(text);
+
+        has_ghost = true;
     }
     else if (obj->getType() == KOOPA){
         // if (!koopa_hit){

@@ -60,14 +60,24 @@ void Mushroom::endFall(){
 
 // Collision Notification
 void Mushroom::notifyCollisionLeft(Object* obj){
-    speed *= -1;
-    if (obj->getType() == PLAYER){
+    Type t = obj->getType();
+    if(t== KOOPA || t == GOOMBA){
+        return;
     }
+    if (t == PLAYER){
+    }
+    speed *= -1;
+    
 }
 void Mushroom::notifyCollisionRight(Object* obj){
-    speed *= -1;
-    if (obj->getType() == PLAYER){
+    Type t = obj->getType();
+    if(t== KOOPA || t == GOOMBA){
+        return;
     }
+    if (t == PLAYER){
+    }
+    speed *= -1;
+    
 }
 void Mushroom::notifyCollisionTop(Object* obj){
   

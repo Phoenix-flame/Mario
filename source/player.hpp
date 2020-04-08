@@ -2,6 +2,7 @@
 #include <vector>
 #include <functional>
 #include "timer.hpp"
+#include "objects/text.hpp"
 
 #define NORM_DEAD "assets/sprites/mario/normal/dead.png"
 #define NORM_JUMP_LEFT "assets/sprites/mario/normal/jumping-left.png"

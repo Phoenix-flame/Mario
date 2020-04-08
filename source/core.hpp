@@ -16,17 +16,20 @@ public:
 
     void loop();
     void update();
+    void resetGame();
     
     void showDebug();
     void drawObjects();
-
     void drawBackground();
+    void drawHood();
 private:
     World* world;
     Window* win;
 
     double FPS;
     int frameTime;
+    Timer* gameTimer;
+    Timer* endGameTimer;
 
     // Keyboard events
     bool KEY_UP_PRESSED = false;

@@ -4,14 +4,19 @@ Core::Core(){
     this->win = new Window(640, 480, "Mario");
     this->world = new World();
     // this->win->play_music("./assets/sounds/Super Mario Bros. theme music.ogg");
+    gameTimer = new Timer();
+    endGameTimer = new Timer();
+    gameTimer->start();
     FPS = 0;
 }
 
 
 void Core::loop(){
     int start = system_clock::now().time_since_epoch().count();
+    
     while (true){
         int now = system_clock::now().time_since_epoch().count();
+    
         FPS = 1000000000.0/(now - start);
         start = now;
         frameTime = SDL_GetTicks();
@@ -36,8 +41,17 @@ void Core::loop(){
 void Core::update(){
     int player_x = world->getPlayer()->getPos().x + world->camera->getPos().x;
     State state = world->getPlayer()->getState();
+    if (state == DEAD){
+        if (!endGameTimer->isStarted()){endGameTimer->start();}
+        
+        if (endGameTimer->getSecs() > 2){
+            resetGame();
+            return;
+        }
+        
+    }
     Dir dir = world->getPlayer()->getDir();
-    
+
     if(KEY_RIGHT_PRESSED){
         world->getPlayer()->update(1);
         if (player_x > 400){
@@ -78,9 +92,7 @@ void Core::update(){
             world->getPlayer()->can_jump = false;
         }
     }
-    if (world->getPlayer()->getPos().y > 520){
-        exit(0);
-    }
+
 }
 
 
@@ -90,7 +102,7 @@ void Core::draw(){
     win->clear();
     drawBackground();
     drawObjects();
-
+    drawHood();
     // this->showDebug();
 
 
@@ -131,6 +143,15 @@ void Core::showDebug(){
             win->draw_rect(Rectangle(start_object, start_object + o->getSize()), BLUE, 4U);
         }
     }
+}
+
+
+void Core::drawHood(){
+    win->show_text("Score: " + std::to_string(world->getGameState()->score),
+        Point(10, 10), WHITE, "assets/Roboto-Regular.ttf", 20);
+
+    win->show_text(std::to_string(gameTimer->getSecs()) + " s",
+        Point(580, 10), WHITE, "assets/Roboto-Regular.ttf", 20);
 }
 
 
@@ -207,4 +228,13 @@ bool Core::events(){
         default:;
     }
     return true;
+}
+
+
+void Core::resetGame(){
+    world = new World();
+    FPS = 0;
+    gameTimer->reset();
+    gameTimer->start();
+    endGameTimer->reset();
 }

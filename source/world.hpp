@@ -13,6 +13,7 @@ struct GameState{
     double progress = 0.0;
     bool alive = true;
     bool marioLevel = 1;
+    int score = 0;
 };
 
 class World{
@@ -29,6 +30,7 @@ public:
     
     Player* getPlayer();
     std::vector<Object*> getGhosts();
+    GameState* getGameState();
     
 private:
     GameState* gameState;

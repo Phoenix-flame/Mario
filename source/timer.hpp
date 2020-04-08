@@ -10,22 +10,23 @@ public:
     Timer(){time = 0;};
     void reset(){
         time = 0;
-        clock = 0;
         started = false;
+        clock = high_resolution_clock::now();
     }
     int getTime(){
         return SDL_GetTicks() - time;
     }
 
-    double getTicks(){
-        int cur = system_clock::now().time_since_epoch().count();
-        return (cur - clock)/1000000.0;
+    int getSecs(){
+        if (!started){ return 0;}
+        auto end = high_resolution_clock::now();
+        return (duration_cast<seconds>(end - clock).count());
     }
 
     void start(){
         time = SDL_GetTicks();
         started = true;
-        clock = system_clock::now().time_since_epoch().count();
+        clock = high_resolution_clock::now();
     }
     bool isStarted(){
         return started;
@@ -33,7 +34,7 @@ public:
 
 private:    
     int time;
-    int clock;
+    system_clock::time_point clock;
     bool started = false;
 };
 

@@ -1,3 +1,5 @@
+#ifndef _TEXT_HPP_
+#define _TEXT_HPP_
 
 #include "object.hpp"
 
@@ -30,7 +32,10 @@ public:
     bool flipped = false;
     bool done = false;
     std::string text;
+    int score;
 private:
     int flip_cycle = 0;
     Timer textAnimation;
 };
+
+#endif // !_TEXT_HPP_

@@ -40,6 +40,7 @@ public:
                     text->setPos(pos.x, pos.y - 10);
                     text->ghost_dead = false;
                     text->text = "+ 100";
+                    text->score = 100;
                     ghost.push_back(text);
 
                     has_ghost = true;

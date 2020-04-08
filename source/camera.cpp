@@ -8,6 +8,7 @@ Camera::Camera(){
 
 void Camera::move(int offset){
     if (this->pos.x + offset > 0){ canMove = false; return;}
+    if (this->pos.x + offset < -4770) { canMove = false; return;}
     this->pos.x += offset;
     canMove = true;
 
