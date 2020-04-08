@@ -3,6 +3,9 @@
 
 
 void Mushroom::update(){
+    if(pos.x > x_gravity_en){
+        gravity_en = true;
+    }
     if (state == M_FALL){
         funcToRun = &Mushroom::falling;
     }
@@ -77,6 +80,7 @@ void Mushroom::notifyFreeLeft(){}
 void Mushroom::notifyFreeRight(){}
 void Mushroom::notifyFreeTop(){}
 void Mushroom::notifyFreeBottom(){
+    if (!gravity_en){return;}
     if (state != M_FALL){
         startFall();
     }
