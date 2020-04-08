@@ -73,3 +73,6 @@ void Object::notifyFreeLeft(){}
 void Object::notifyFreeRight(){}
 void Object::notifyFreeTop(){}
 void Object::notifyFreeBottom(){}
+
+void Object::notifyDistToPlatform(int d){}
+void Object::notifyDistToCeil(int d){}

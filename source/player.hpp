@@ -94,7 +94,7 @@ public:
         funcToRun = &Player::stand;
     }
 
-    void update(std::vector<Object*> objs, int dir);
+    void update(int dir);
     void updateFigure();
 
     // Stand
@@ -123,8 +123,6 @@ public:
     Dir getDir(){return dir;}
 
 
-    void jumpCollision(std::vector<Object*> objs);
-
     void kill(Object* obj);
 
     void dead();
@@ -143,6 +141,9 @@ public:
     void notifyFreeTop() override;
     void notifyFreeBottom() override;
 
+    void notifyDistToPlatform(int d) override;
+    void notifyDistToCeil(int d) override;
+
 
     // Debug 
     Point min_dist_to_platform;
@@ -154,7 +155,6 @@ private:
     State state;
     Dir dir;
 
-    Point checkDistToPlatform(std::vector<Object*> objs);
 
     int slide_enable = 0;
     

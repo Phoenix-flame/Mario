@@ -77,6 +77,8 @@ public:
     virtual void notifyFreeRight();
     virtual void notifyFreeTop();
     virtual void notifyFreeBottom();
+    virtual void notifyDistToPlatform(int d);
+    virtual void notifyDistToCeil(int d);
 
     virtual void death();
     virtual void kill();

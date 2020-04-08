@@ -31,10 +31,21 @@ public:
             ghost_dead = false;
         }
 
-    void update(std::vector<Object*> objs);
+    void update();
 
     
+    // Collision Notification
+    void notifyCollisionLeft(Object*) override;
+    void notifyCollisionRight(Object*) override;
+    void notifyCollisionTop(Object*) override;
+    void notifyCollisionBottom(Object*) override;
+    void notifyFreeLeft() override;
+    void notifyFreeRight() override;
+    void notifyFreeTop() override;
+    void notifyFreeBottom() override;
 
+    void notifyDistToPlatform(int d) override;
+    void notifyDistToCeil(int d) override;
 
     
 private:
@@ -57,13 +68,6 @@ private:
     int y_target;
     int x_gravity_en;
     bool gravity_en = false;
-
-
-    // Physics
-    void gravity(std::vector<Object*> objs);
-    Point checkDistToPlatform(std::vector<Object*> objs);
-    int collisionGravity(Rectangle o1, Rectangle o2);
-    void collision(std::vector<Object*> objs);
 
 
     // MovementProfile

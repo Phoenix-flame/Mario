@@ -1,6 +1,6 @@
 #include "player.hpp"
 
-void Player::update(std::vector<Object*> objs, int _dir){
+void Player::update(int _dir){
     Dir trans_dir = (_dir == 1)?RIGHT:LEFT;
     bool stop = (_dir == 0)?true:false;
     
@@ -9,12 +9,7 @@ void Player::update(std::vector<Object*> objs, int _dir){
         speed = 0;
         funcToRun = &Player::death_animation;
     }
-    else{
-        // Physics
-        jumpCollision(objs);
-        // collision(objs);
-        min_dist_to_platform = checkDistToPlatform(objs);
-    }
+
     if (state != DEAD){
         if (state == STAND && stop){
             funcToRun = &Player::stand;
@@ -51,9 +46,7 @@ void Player::update(std::vector<Object*> objs, int _dir){
                 else if (dir == RIGHT){speed = +5;}
                 else{speed = 0;}
             }
-            if (abs(jump_speed_vertical) > min_dist_to_platform.y){
-                jump_speed_vertical = -min_dist_to_platform.y;
-            }
+            
             funcToRun = &Player::jump;
         }
         else if (state == FALL){
@@ -66,12 +59,6 @@ void Player::update(std::vector<Object*> objs, int _dir){
                 else if (dir == RIGHT){speed = 5;}
                 else{speed = 0;}
             }
-
-            // It's important
-            if (fall_speed_vertical > min_dist_to_platform.x){
-                fall_speed_vertical = min_dist_to_platform.x;
-            }
-
 
             funcToRun = &Player::falling;
         }
@@ -398,96 +385,6 @@ void Player::endFall(){
 
 
 
-Point Player::checkDistToPlatform(std::vector<Object*> objs){
-    int min_dist_b = DBL_MAX;
-    int min_dist_t = DBL_MAX;
-    for (auto o:objs){
-        Rectangle o1(getPos(), getPos() + getSize());
-        Rectangle o2(o->getPos(), o->getPos() + o->getSize());
-        int o1_top = o1.y;
-        int o1_bottom = o1.y + o1.h;
-        int o2_top = o2.y;
-        int o2_bottom = o2.y + o2.h;
-        
-        int o1_left = o1.x;
-        int o1_right = o1.x + o1.w;
-        int o2_left = o2.x;
-        int o2_right = o2.x + o2.w;
-
-
-        int dist_b = -1;
-        int dist_t = -1;
-        if (o1_right >= o2_left && o1_left <= o2_right){
-            if (o1_bottom <= o2_top){
-                dist_b = abs(o1_bottom - o2_top);
-            }
-            if (o1_top >= o2_bottom){
-                dist_t = abs(o1_top - o2_bottom);
-            }
-        }
-        
-        if (dist_b != -1){
-            if (dist_b < min_dist_b){
-                min_dist_b = dist_b;
-            }
-        }
-        if (dist_t != -1){
-            if (dist_t < min_dist_t){
-                min_dist_t = dist_t;
-            }
-        }
-
-    }
-    return Point(min_dist_b, min_dist_t);
-}
-
-
-void Player::jumpCollision(std::vector<Object*> objs){
-    Object* selected;
-    bool collision_with_center = false;
-    bool collided = false;
-    for (auto o:objs){
-        Rectangle o1(getPos(), getPos() + getSize());
-        Rectangle o2(o->getPos(), o->getPos() + o->getSize());
-
-        if ((o1.top_center.x >= o2.left_top.x && o1.top_center.x <= o2.right_top.x)){
-            if (o1.top_center.y >= o2.bottom_center.y && abs(o1.top_center.y - o2.bottom_center.y) < 5){
-                if (state == JUMP){
-                    endJump();
-                    collision_with_center = true;
-                    collided = true;
-
-                    o->mark();
-                    return;
-                }
-            }
-        }
-        else if (!collision_with_center){
-            if (o1.left_top.x >= o2.left_top.x && o1.left_top.x <= o2.right_top.x){
-                if (o1.top_center.y >= o2.bottom_center.y && abs(o1.top_center.y - o2.bottom_center.y) < 5){
-                    if (state == JUMP){
-                        collided = true;
-                        selected = o;
-                    }
-                }
-            }
-            else if (o1.right_top.x >= o2.left_top.x && o1.right_top.x <= o2.right_top.x){
-                if (o1.top_center.y >= o2.bottom_center.y && abs(o1.top_center.y - o2.bottom_center.y) < 5){
-                    if (state == JUMP){
-                        collided = true;
-                        selected = o;
-                    }
-                }
-            }
-        }
-    }
-    if (!collision_with_center && collided){
-        endJump();
-        selected->mark();
-    }
-    
-}
-
 
 
 
@@ -559,12 +456,18 @@ void Player::notifyCollisionRight(Object* obj){
     }
 }
 void Player::notifyCollisionTop(Object* obj){
-
+    if (state == DEAD){
+        return;
+    }
+    if (state == JUMP){
+        endJump();
+    }      
 }
 void Player::notifyCollisionBottom(Object* obj){
     if (state == DEAD){
         return;
     }
+    fall_speed_vertical = 0;
     endFall();
 
     // Kill enemies by jumping on their head :)
@@ -592,4 +495,21 @@ void Player::notifyFreeBottom(){
     if (state != FALL){
         startFall();
     } 
+    if (pos.y > 400){
+        death();
+    }
+}
+
+void Player::notifyDistToPlatform(int d){
+    if (state == DEAD){return;}
+    if (fall_speed_vertical > d){
+        fall_speed_vertical = d;
+    }
+}
+
+void Player::notifyDistToCeil(int d){
+    if (state == DEAD){return;}
+    if (abs(jump_speed_vertical) > d){
+        jump_speed_vertical = -d;
+    }
 }

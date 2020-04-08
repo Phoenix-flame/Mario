@@ -23,24 +23,26 @@ void World::loop(){
         if ((map->goombas[i]->getPos() + camera->getPos()).x < 700){
             map->goombas[i]->seen();
         } 
+        collision(map->goombas[i]);
+
 
         if (map->goombas[i]->getPos().y > 500){
             map->goombas.erase(map->goombas.begin() + i);
         }
         
-        map->goombas[i]->update(map->objects, map->player);
+        map->goombas[i]->update();
     }
 
     for(unsigned int i = 0 ; i < map->koopas.size() ; i ++){
         if ((map->koopas[i]->getPos() + camera->getPos()).x < 700){
             map->koopas[i]->seen();
         } 
-
+        collision(map->koopas[i]);
         if (map->koopas[i]->getPos().y > 500){
             map->koopas.erase(map->koopas.begin() + i);
         }
         
-        map->koopas[i]->update(map->objects);
+        map->koopas[i]->update();
     }
     for(unsigned int i = 0 ; i < ghosts.size(); i++){
         if (ghosts[i]->ghost_dead){
@@ -54,7 +56,8 @@ void World::loop(){
             ((Text*)ghosts[i])->update();
         }
         else if (ghosts[i]->getType() ==G_MUSHROOM){
-            ((Mushroom*)ghosts[i])->update(map->objects);
+            collision(ghosts[i]);
+            ((Mushroom*)ghosts[i])->update();
         }
         
     }
@@ -84,19 +87,10 @@ void World::gravity(){
 
 
 int World::collisionGravity(Rectangle o1, Rectangle o2){
-    int o1_top = o1.y;
-    int o1_bottom = o1.y + o1.h;
-    int o2_top = o2.y;
-    int o2_bottom = o2.y + o2.h;
-    
-    int o1_left = o1.x;
-    int o1_right = o1.x + o1.w;
-    int o2_left = o2.x;
-    int o2_right = o2.x + o2.w;
 
-    if (o1_right >= o2_left && o1_left <= o2_right){
-        if (o1_bottom <= o2_top && abs(o1_bottom - o2_top) < 3){
-            return abs(o1_bottom - o2_top);
+    if (o1.right_top.x >= o2.left_top.x && o1.left_top.x <= o2.right_top.x){
+        if (o1.bottom_center.y <= o2.top_center.y && abs(o1.bottom_center.y - o2.top_center.y) < 3){
+            return abs(o1.bottom_center.y - o2.top_center.y);
         }
     }
 
@@ -116,6 +110,10 @@ std::vector<Object*> World::getGhosts(){
 
 void World::collision(Object* obj){
     bool on_the_floor = false;
+    bool collision_with_center = false;
+    bool collided = false;
+    Object* selected;
+
     obj->notifyFreeLeft();
     obj->notifyFreeRight();
     for (auto o:getObjects()){
@@ -136,15 +134,54 @@ void World::collision(Object* obj){
         } 
 
         // Bottom collision
-        if (collisionGravity(o1, o2) != -1){
-            on_the_floor = true;
-            obj->notifyCollisionBottom(o);
+        if (o1.right_top.x >= o2.left_top.x && o1.left_top.x <= o2.right_top.x){
+            if (o1.bottom_center.y <= o2.top_center.y && abs(o1.bottom_center.y - o2.top_center.y) < 3){
+                on_the_floor = true;
+                obj->notifyCollisionBottom(o);
+            }
+            else{
+                obj->notifyDistToPlatform(abs(o1.bottom_center.y - o2.top_center.y));
+            }
         }
-        else{
-            // obj->notifyFreeBottom();
+
+
+        // Top Collision Just for player
+        if (obj->getType() == PLAYER){
+            if ((o1.top_center.x >= o2.left_top.x && o1.top_center.x <= o2.right_top.x)){
+                if (o1.top_center.y >= o2.bottom_center.y && abs(o1.top_center.y - o2.bottom_center.y) < 5){
+                    obj->notifyCollisionTop(o);
+                    collision_with_center = true;
+                    collided = true;
+                    o->mark();
+                    return;
+                }
+            }
+            else if (!collision_with_center){
+                if (o1.left_top.x >= o2.left_top.x && o1.left_top.x <= o2.right_top.x){
+                    if (o1.top_center.y >= o2.bottom_center.y && abs(o1.top_center.y - o2.bottom_center.y) < 5){
+                        if (((Player*)obj)->getState() == JUMP){
+                            collided = true;
+                            selected = o;
+                        }
+                    }
+                }
+                else if (o1.right_top.x >= o2.left_top.x && o1.right_top.x <= o2.right_top.x){
+                    if (o1.top_center.y >= o2.bottom_center.y && abs(o1.top_center.y - o2.bottom_center.y) < 5){
+                        if (((Player*)obj)->getState()  == JUMP){
+                            collided = true;
+                            selected = o;
+                        }
+                    }
+                }
+            }
         }
+        
     }
     if (!on_the_floor){
         obj->notifyFreeBottom();
+    }
+    if (obj->getType() == PLAYER && !collision_with_center && collided){
+        obj->notifyCollisionTop(selected);
+        selected->mark();
     }
 }

@@ -29,9 +29,7 @@ public:
 
 
 
-    void update(std::vector<Object*> objs);
-    void gravity(std::vector<Object*> objs);
-    void collision(std::vector<Object*> objs);
+    void update();
     void updateFigure();
 
     void startFall();
@@ -42,6 +40,19 @@ public:
         visited = true;
     }
 
+    // Collision Notification
+    void notifyCollisionLeft(Object*) override;
+    void notifyCollisionRight(Object*) override;
+    void notifyCollisionTop(Object*) override;
+    void notifyCollisionBottom(Object*) override;
+    void notifyFreeLeft() override;
+    void notifyFreeRight() override;
+    void notifyFreeTop() override;
+    void notifyFreeBottom() override;
+
+    void notifyDistToPlatform(int d) override;
+    void notifyDistToCeil(int d) override;
+
 
     void death() override;
 
@@ -49,9 +60,6 @@ public:
 private:
     KoopaState state;
     Dir dir;
-
-    int checkDistToPlatform(std::vector<Object*> objs);
-    int collisionGravity(Rectangle o1, Rectangle o2);
 
     bool visited = false; // koopa starts moving when it's seen once.
     bool dead = false;

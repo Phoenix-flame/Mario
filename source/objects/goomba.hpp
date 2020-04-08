@@ -17,9 +17,7 @@ class Goomba: public Object{
 public:
     Goomba(int x, int y);
 
-    void update(std::vector<Object*> objs, Object* player);
-    void gravity(std::vector<Object*> objs, Object* player);
-    void collision(std::vector<Object*> objs, Object* player);
+    void update();
     void updateFigure();
 
     void startFall();
@@ -33,6 +31,19 @@ public:
         visited = true;
     }
 
+    // Collision Notification
+    void notifyCollisionLeft(Object*) override;
+    void notifyCollisionRight(Object*) override;
+    void notifyCollisionTop(Object*) override;
+    void notifyCollisionBottom(Object*) override;
+    void notifyFreeLeft() override;
+    void notifyFreeRight() override;
+    void notifyFreeTop() override;
+    void notifyFreeBottom() override;
+
+    void notifyDistToPlatform(int d) override;
+    void notifyDistToCeil(int d) override;
+
 
     void death() override;
 
@@ -41,9 +52,6 @@ private:
     void (Goomba::*funcToRun)();
     GoombaState state;
     
-
-    int checkDistToPlatform(std::vector<Object*> objs, Object* player);
-    int collisionGravity(Rectangle o1, Rectangle o2);
 
     bool visited = false; // goombas start moving when they are seen once.
 

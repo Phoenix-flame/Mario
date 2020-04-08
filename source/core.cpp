@@ -39,7 +39,7 @@ void Core::update(){
     Dir dir = world->getPlayer()->getDir();
     
     if(KEY_RIGHT_PRESSED){
-        world->getPlayer()->update(world->getObjects(), 1);
+        world->getPlayer()->update(1);
         if (player_x > 400){
             world->camera->move(-5);
             world->camera->moveBackground(-1);
@@ -47,7 +47,7 @@ void Core::update(){
         
     }
     else if (KEY_LEFT_PRESSED){
-        world->getPlayer()->update(world->getObjects(), -1);
+        world->getPlayer()->update(-1);
         if (player_x < 200){
             world->camera->move(5);
             world->camera->moveBackground(1);
@@ -55,7 +55,7 @@ void Core::update(){
         
     }
     else{
-        world->getPlayer()->update(world->getObjects(), 0);
+        world->getPlayer()->update(0);
     }
 
     // Move camera when mario is sliding
