@@ -1,3 +1,7 @@
+#ifndef _PLAYER_HPP_
+#define _PLAYER_HPP_
+
+
 #include "objects/object.hpp"
 #include <vector>
 #include <functional>
@@ -122,6 +126,7 @@ public:
 
     State getState(){return state;}
     Dir getDir(){return dir;}
+    Level getLevel(){return level;}
 
 
     void kill(Object* obj);
@@ -149,6 +154,15 @@ public:
     // Debug 
     Point min_dist_to_platform;
     bool koopa_hit = false;
+
+
+    // Audio flags
+    bool coin_a = false;
+    bool enemy_stomp_a = false;
+    bool power_up_a = false;
+    bool jump_a = false;
+    bool death_a = false;
+
 private:
     void (Player::*funcToRun)();
     
@@ -183,3 +197,6 @@ private:
 
     
 };
+
+
+#endif // !_PLAYER_HPP_

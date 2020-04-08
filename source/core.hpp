@@ -1,4 +1,5 @@
 #include "world.hpp"
+#include "audio.hpp"
 #include <chrono>
 using namespace std::chrono;
 
@@ -25,6 +26,7 @@ public:
 private:
     World* world;
     Window* win;
+    Audio* audio;
 
     double FPS;
     int frameTime;

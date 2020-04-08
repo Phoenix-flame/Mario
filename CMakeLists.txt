@@ -24,6 +24,8 @@ set(sources
     source/physics.cpp
     source/camera.hpp
     source/camera.cpp
+    source/audio.hpp
+    source/audio.cpp
     source/objects/object.cpp
     source/objects/object.hpp
     source/objects/block.hpp

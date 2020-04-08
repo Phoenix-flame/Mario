@@ -144,7 +144,6 @@ void World::collision(Object* obj){
                     obj->notifyCollisionTop(o);
                     collision_with_center = true;
                     collided = true;
-                    o->mark();
                     return;
                 }
             }
@@ -174,6 +173,5 @@ void World::collision(Object* obj){
     }
     if (obj->getType() == PLAYER && !collision_with_center && collided){
         obj->notifyCollisionTop(selected);
-        selected->mark();
     }
 }

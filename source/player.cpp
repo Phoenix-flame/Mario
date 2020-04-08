@@ -321,6 +321,10 @@ void Player::endMove(){
 
 void Player::startJump(){
     if (state == JUMP || state == FALL || state == DEAD){return;} // You cannot initiate a jump during a jump
+    
+    // audio callback
+    jump_a = true;
+
     if (state == STAND){ 
         move_during_jump = false;
     }
@@ -390,6 +394,8 @@ void Player::endFall(){
 
 
 void Player::kill(Object* obj){
+    // Audio callback
+    enemy_stomp_a = true;
     obj->death();
 }
 
@@ -398,6 +404,10 @@ void Player::dead(){
 }
 
 void Player::death(){
+    if (state == DEAD){return;}
+    //Audio Callback
+    death_a = true;
+
     state = DEAD;
     speed = 0;
     terminal_speed = 100;
@@ -460,6 +470,13 @@ void Player::notifyCollisionTop(Object* obj){
         return;
     }
     if (state == JUMP){
+        // Audio callback
+        if(obj->getType() == COIN_CONTAINER){
+            coin_a = true;
+        }
+        
+
+        obj->mark();
         endJump();
     }      
 }

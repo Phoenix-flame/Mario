@@ -3,6 +3,7 @@
 Core::Core(){
     this->win = new Window(640, 480, "Mario");
     this->world = new World();
+    audio = new Audio(this->win);
     // this->win->play_music("./assets/sounds/Super Mario Bros. theme music.ogg");
     gameTimer = new Timer();
     endGameTimer = new Timer();
@@ -27,6 +28,8 @@ void Core::loop(){
         this->update();
         // Update game state, Object state updater
         this->world->loop();
+        // Handling sounds
+        this->audio->update(world->getPlayer());
         // Draw all objects whitin camera field
         this->draw();
 
@@ -237,4 +240,5 @@ void Core::resetGame(){
     gameTimer->reset();
     gameTimer->start();
     endGameTimer->reset();
+    audio->reset();
 }
