@@ -63,6 +63,8 @@ void Object::death(){}
 
 void Object::kill(){}
 
+void Object::destroy(){}
+
 
 void Object::notifyCollisionLeft(Object* obj){}
 void Object::notifyCollisionRight(Object* obj){}

@@ -59,7 +59,8 @@ enum State{
     DEAD,
     SLIDE,
     JUMP,
-    FALL
+    FALL,
+    POWER_UP
 };
 
 
@@ -133,6 +134,7 @@ public:
 
     void dead();
     void death() override;
+    void immediate_death();
     void death_animation();
 
     double getSpeed(){return speed;}
@@ -150,6 +152,9 @@ public:
     void notifyDistToPlatform(int d) override;
     void notifyDistToCeil(int d) override;
 
+    // Powerup
+    void powerup();
+    void powerupAnimation();
 
     // Debug 
     Point min_dist_to_platform;
@@ -162,6 +167,7 @@ public:
     bool power_up_a = false;
     bool jump_a = false;
     bool death_a = false;
+    bool brick_debris_a = false;
 
 private:
     void (Player::*funcToRun)();
@@ -193,6 +199,7 @@ private:
     Timer RW_Timer;
     Timer LW_Timer;
     Timer deathAnimation;
+    Timer immeunityTimer;
 
 
     

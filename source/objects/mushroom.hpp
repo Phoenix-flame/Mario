@@ -2,7 +2,7 @@
 #define _MUSHROOM_HPP_
 
 #include "object.hpp"
-
+#include "../player.hpp"
 #define RED_MUSHROOM_IMAGE "assets/sprites/objects/mushroom/red.png"
 #define HEALTH_MUSHROOM_IMAGE "assets/sprites/objects/mushroom/health.png"
 

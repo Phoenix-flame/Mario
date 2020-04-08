@@ -10,41 +10,47 @@ World::World(){
 void World::loop(){
     ghostCollector();
     collision(map->player);
-    
-    for(auto b:map->bricks){
-        b->update();
-    }
-    for(auto c:map->coins){
-        c->update();
-    }
-    for(auto f:map->fires){
-        f->update();
-    }
-    for(unsigned int i = 0 ; i < map->goombas.size() ; i ++){
-        if ((map->goombas[i]->getPos() + camera->getPos()).x < 700){
-            map->goombas[i]->seen();
-        } 
-        collision(map->goombas[i]);
-
-
-        if (map->goombas[i]->getPos().y > 500){
-            map->goombas.erase(map->goombas.begin() + i);
+    for(unsigned int i = 0 ; i < map->objects.size() ; i++){
+        Type t = map->objects[i]->getType();
+        if(t == PLAYER){continue;}
+        else if (t == BRICK){
+            ((Brick*)map->objects[i])->update();
+            if (((Brick*)map->objects[i])->broken){
+                map->objects.erase(map->objects.begin() + i);
+            }
         }
-        
-        map->goombas[i]->update();
+        else if (t == COIN_CONTAINER){
+            ((CoinContainer*)map->objects[i])->update();
+        }
+        else if (t == FIRE_CONTAINER){
+            ((FireContainer*)map->objects[i])->update();
+        }
+        else if (t == GOOMBA){
+            if ((map->objects[i]->getPos() + camera->getPos()).x < 700){
+                ((Goomba*)map->objects[i])->seen();
+            } 
+            collision(map->objects[i]);
+
+
+            if (map->objects[i]->getPos().y > 500){
+                map->objects.erase(map->objects.begin() + i);
+            }
+            
+            ((Goomba*)map->objects[i])->update();
+        }
+        else if (t == KOOPA){
+            if ((map->objects[i]->getPos() + camera->getPos()).x < 700){
+                ((Koopa*)map->objects[i])->seen();
+            } 
+            collision(map->objects[i]);
+            if (map->objects[i]->getPos().y > 500){
+                map->objects.erase(map->objects.begin() + i);
+            }
+            
+            ((Koopa*)map->objects[i])->update();
+        }
     }
 
-    for(unsigned int i = 0 ; i < map->koopas.size() ; i ++){
-        if ((map->koopas[i]->getPos() + camera->getPos()).x < 700){
-            map->koopas[i]->seen();
-        } 
-        collision(map->koopas[i]);
-        if (map->koopas[i]->getPos().y > 500){
-            map->koopas.erase(map->koopas.begin() + i);
-        }
-        
-        map->koopas[i]->update();
-    }
     for(unsigned int i = 0 ; i < ghosts.size(); i++){
         if (ghosts[i]->ghost_dead){
             ghosts.erase(ghosts.begin() + i);
@@ -101,6 +107,7 @@ std::vector<Object*> World::getGhosts(){
 
 
 void World::collision(Object* obj){
+    if (obj->dead) {return;}
     bool on_the_floor = false;
     bool collision_with_center = false;
     bool collided = false;
@@ -109,6 +116,7 @@ void World::collision(Object* obj){
     obj->notifyFreeLeft();
     obj->notifyFreeRight();
     for (auto o:getObjects()){
+        if (o->dead){continue;}
         Rectangle o1(obj->getPos(), obj->getPos() + obj->getSize());
         Rectangle o2(o->getPos(), o->getPos() + o->getSize());
         // Left and right collision

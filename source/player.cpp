@@ -238,20 +238,82 @@ void Player::updateFigure(){
         }
         break;
     case POWER:
-        if (state == STAND){
+        if (state == WALK){
+            if (dir == LEFT){
+                walk_right = 1;
+                if (walk_left == 1){
+                    image = WHITE_WALK_LEFT1;
+                    if (!LW_Timer.isStarted()) LW_Timer.start();
+                    if (LW_Timer.getTime() > 30){
+                        walk_left = 2;
+                        LW_Timer.reset();
+                    }
+                    
+                }
+                else if (walk_left == 2){
+                    image = WHITE_WALK_LEFT2; 
+                    if (!LW_Timer.isStarted()) LW_Timer.start();
+                    if (LW_Timer.getTime() > 30){
+                        walk_left = 3;
+                        LW_Timer.reset();
+                    }
+                }
+                else if (walk_left == 3){
+                    image = WHITE_WALK_LEFT3; 
+                    if (!LW_Timer.isStarted()) LW_Timer.start();
+                    if (LW_Timer.getTime() > 30){
+                        walk_left = 1;
+                        LW_Timer.reset();
+                    }
+                }
+            }
+            else if (dir == RIGHT){
+                walk_left = 1;
+                if (walk_right == 1){ 
+                    image = WHITE_WALK_RIGHT1; 
+                    if (!RW_Timer.isStarted()){
+                        RW_Timer.start();
+                    }
+                    if (RW_Timer.getTime() > 30){
+                        walk_right = 2;
+                        RW_Timer.reset();
+                    }
+                    
+                }
+                else if (walk_right == 2){
+                    image = WHITE_WALK_RIGHT2; 
+                    if (!RW_Timer.isStarted()){
+                        RW_Timer.start();
+                    }
+                    if (RW_Timer.getTime() > 30){
+                        walk_right = 3;
+                        RW_Timer.reset();
+                    }
+                }
+                else if (walk_right == 3){
+                    image = WHITE_WALK_RIGHT3; 
+                    if (!RW_Timer.isStarted()){
+                        RW_Timer.start();
+                    }
+                    if (RW_Timer.getTime() > 30){
+                        walk_right = 1;
+                        RW_Timer.reset();
+                    }
+                }
+            }
+        }
+        else if (state == STAND){
+            image = (dir == LEFT)?WHITE_STAND_LEFT:WHITE_STAND_RIGHT;
+        }
 
-        }
-        else if (state == WALK){
-
-        }
-        else if (state == DEAD){
-            
-        }
         else if (state == JUMP){
-            
+            image = (dir == LEFT)?WHITE_JUMP_LEFT:WHITE_JUMP_RIGHT;
         }
         else if (state == SLIDE){
-            
+            image = (dir == LEFT)?WHITE_SLIDE_LEFT:WHITE_SLIDE_RIGHT;
+        }
+        else if (state == FALL){
+            image = (dir == LEFT)?WHITE_JUMP_LEFT:WHITE_JUMP_RIGHT;
         }
         break;
     default:
@@ -404,10 +466,40 @@ void Player::dead(){
 }
 
 void Player::death(){
+    if(immeunityTimer.getTime() < 400){
+        return;
+    }
+    else{
+        immeunityTimer.reset();
+    }
     if (state == DEAD){return;}
-    //Audio Callback
-    death_a = true;
+    if (level == NORMAL){
+        //Audio Callback
+        death_a = true;
+        state = DEAD;
+        speed = 0;
+        terminal_speed = 100;
+    }
+    else{
+        if (level == BIG){
+            level = NORMAL;
+            size = Point(24, 32);
+            pos.y += 18;
+            immeunityTimer.start();
+        }
+        else if (level == POWER){
+            level = BIG;
+            immeunityTimer.start();
+        }
+    }
+    
+}
 
+void Player::immediate_death(){
+    level = NORMAL;
+    size = Point(24, 32);
+    pos.y += 18;
+    death_a = true;
     state = DEAD;
     speed = 0;
     terminal_speed = 100;
@@ -427,6 +519,10 @@ void Player::death_animation(){
     }
 }
 
+
+void Player::powerupAnimation(){
+
+}
 
 // Collision Notification
 void Player::notifyCollisionLeft(Object* obj){
@@ -466,17 +562,31 @@ void Player::notifyCollisionRight(Object* obj){
     }
 }
 void Player::notifyCollisionTop(Object* obj){
+    Type t = obj->getType();
     if (state == DEAD){
         return;
     }
     if (state == JUMP){
         // Audio callback
-        if(obj->getType() == COIN_CONTAINER){
+        if(t == COIN_CONTAINER){
             coin_a = true;
         }
         
-
-        obj->mark();
+        if (t == BRICK){
+            if (level == NORMAL )obj->mark();
+            else {
+                obj->destroy();
+                brick_debris_a = true;
+            } 
+            
+        }
+        else if (t == COIN_CONTAINER){
+            obj->mark();
+        }
+        else if(t = HEALTH_CONTAINER){
+            obj->mark();
+        }
+        
         endJump();
     }      
 }
@@ -521,7 +631,7 @@ void Player::notifyFreeBottom(){
         startFall();
     } 
     if (pos.y > 400){
-        death();
+        immediate_death();
     }
 }
 
@@ -536,5 +646,17 @@ void Player::notifyDistToCeil(int d){
     if (state == DEAD){return;}
     if (abs(jump_speed_vertical) > d){
         jump_speed_vertical = -d;
+    }
+}
+
+
+void Player::powerup(){
+    if (level == NORMAL){
+        level = BIG;
+        size = Point(24, 50);
+        pos.y -= 18; 
+    }
+    else if(level == BIG){
+        level = POWER;
     }
 }

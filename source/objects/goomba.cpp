@@ -114,6 +114,7 @@ void Goomba::death_animation(){
 void Goomba::death(){
     // Very simple death
     state = GOOMBA_DEAD_STATE;
+    dead = true; // Don't check collisions anymore
 }
 
 

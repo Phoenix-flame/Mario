@@ -83,6 +83,9 @@ public:
 
     virtual void death();
     virtual void kill();
+    virtual void destroy();
+
+    bool dead = false;
 
     std::vector<Object*> ghost;
     bool has_ghost = false;

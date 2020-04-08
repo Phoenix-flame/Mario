@@ -23,6 +23,10 @@ void Audio::update(Player* player){
         win->play_sound_effect(COIN_SOUND);
         player->coin_a = false;
     }
+    if(player->brick_debris_a){
+        win->play_sound_effect(BRICK_SMASH_SOUND);
+        player->brick_debris_a = false;
+    }
     if (player->death_a){
         win->stop_music();
         win->play_sound_effect(MARIO_DEATH_SOUND);

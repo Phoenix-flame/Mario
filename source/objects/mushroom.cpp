@@ -65,6 +65,9 @@ void Mushroom::notifyCollisionLeft(Object* obj){
         return;
     }
     if (t == PLAYER){
+        ((Player*)obj)->powerup();
+        ghost_dead = true;
+        return;
     }
     speed *= -1;
     
@@ -75,14 +78,28 @@ void Mushroom::notifyCollisionRight(Object* obj){
         return;
     }
     if (t == PLAYER){
+        ((Player*)obj)->powerup();
+        ghost_dead = true;
+        return;
     }
     speed *= -1;
     
 }
 void Mushroom::notifyCollisionTop(Object* obj){
-  
+    Type t = obj->getType();
+    if (t == PLAYER){
+        ((Player*)obj)->powerup();
+        ghost_dead = true;
+        return;
+    }
 }
 void Mushroom::notifyCollisionBottom(Object* obj){
+    Type t = obj->getType();
+    if (t == PLAYER){
+        ((Player*)obj)->powerup();
+        ghost_dead = true;
+        return;
+    }
     endFall();
 }
 
