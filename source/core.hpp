@@ -38,5 +38,6 @@ private:
     bool KEY_DOWN_PRESSED = false;
     bool KEY_LEFT_PRESSED = false;
     bool KEY_RIGHT_PRESSED = false;
+    bool KEY_SHIFT_PRESSED = false;
 
 };

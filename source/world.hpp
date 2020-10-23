@@ -21,27 +21,27 @@ public:
     World();
     void loop();
 
-    
+
 
     std::vector<Object*> getObjects();
     Camera* camera;
     Map* map;
 
-    
+
     Player* getPlayer();
     std::vector<Object*> getGhosts();
     GameState* getGameState();
-    
 private:
     GameState* gameState;
     void gravity();
     int collisionGravity(Rectangle o1, Rectangle o2);
-    
+
     void ghostCollector();
     std::vector<Object*> ghosts;
-    
+
     void collision(Object* obj);
-    
+    void preciseCollisionDetector(Rectangle& o1, Rectangle& o2);
+
     Physics* physics;
 
 };

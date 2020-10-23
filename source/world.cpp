@@ -25,6 +25,9 @@ void World::loop(){
         else if (t == FIRE_CONTAINER){
             ((FireContainer*)map->objects[i])->update();
         }
+        else if (t == HEALTH_CONTAINER){
+            ((HealthContainer*)map->objects[i])->update();
+        }
         else if (t == GOOMBA){
             if ((map->objects[i]->getPos() + camera->getPos()).x < 700){
                 ((Goomba*)map->objects[i])->seen();
@@ -65,6 +68,10 @@ void World::loop(){
         else if (ghosts[i]->getType() ==G_MUSHROOM){
             collision(ghosts[i]);
             ((Mushroom*)ghosts[i])->update();
+        }
+        else if (ghosts[i]->getType() ==G_FLOWER){
+            collision(ghosts[i]);
+            ((Flower*)ghosts[i])->update();
         }
         
     }
@@ -122,19 +129,44 @@ void World::collision(Object* obj){
         // Left and right collision
         if ((o1.right_center.y >= o2.y && o1.right_center.y <= (o2.y + o2.h)) ||
             (o1.y >= o2.y && o1.y <= (o2.y + o2.h)) ||
-            ((o1.y + o1.h - 3) >= o2.y && (o1.y + o1.h - 3) <= (o2.y + o2.h))){
-            if (abs(o1.right_center.x - o2.left_center.x) < 4){
-                // TODO notify either objects
+            ((o1.y + o1.h - 1) >= o2.y && (o1.y + o1.h - 1) <= (o2.y + o2.h))){
+            if (abs(o1.right_center.x - o2.left_center.x) < 5){
+                // TODO notify either objects Done
                 obj->notifyCollisionRight(o);
+                o->notifyCollisionLeft(obj);
             }
-            else if (abs(o1.left_center.x - o2.right_center.x) < 4){
-                // TODO notify either objects
+            else if (abs(o1.left_center.x - o2.right_center.x) < 5){
+                // TODO notify either objects Done
                 obj->notifyCollisionLeft(o);
+                o->notifyCollisionRight(obj);
             }
         } 
-
+        // if (){}
+        static int counter = 0;
         // Bottom collision
-        if (o1.right_top.x >= o2.left_top.x && o1.left_top.x <= o2.right_top.x){
+        int left = o1.left_bottom.x + 2;
+        int right = o1.right_bottom.x -2;
+        if ((o1.bottom_center.x >= o2.left_bottom.x && o1.bottom_center.x <= o2.right_bottom.x)){
+            if (o1.bottom_center.y <= o2.top_center.y && abs(o1.bottom_center.y - o2.top_center.y) < 3){
+                on_the_floor = true;
+                obj->notifyCollisionBottom(o);
+            }
+            else{
+                obj->notifyDistToPlatform(abs(o1.bottom_center.y - o2.top_center.y));
+            }
+        }
+        
+        else if (left >= o2.left_bottom.x && left <= o2.right_bottom.x){
+            if (o1.bottom_center.y <= o2.top_center.y && abs(o1.bottom_center.y - o2.top_center.y) < 3){
+                on_the_floor = true;
+                obj->notifyCollisionBottom(o);
+            }
+            else{
+                obj->notifyDistToPlatform(abs(o1.bottom_center.y - o2.top_center.y));
+            }
+        }
+        
+        else if (right >= o2.left_bottom.x && right <= o2.right_bottom.x){
             if (o1.bottom_center.y <= o2.top_center.y && abs(o1.bottom_center.y - o2.top_center.y) < 3){
                 on_the_floor = true;
                 obj->notifyCollisionBottom(o);
@@ -148,28 +180,37 @@ void World::collision(Object* obj){
         // Top Collision Just for player
         if (obj->getType() == PLAYER){
             if ((o1.top_center.x >= o2.left_top.x && o1.top_center.x <= o2.right_top.x)){
-                if (o1.top_center.y >= o2.bottom_center.y && abs(o1.top_center.y - o2.bottom_center.y) < 5){
+                if (o1.top_center.y >= o2.bottom_center.y && o1.top_center.y - o2.bottom_center.y < 5){
                     obj->notifyCollisionTop(o);
                     collision_with_center = true;
                     collided = true;
                     return;
                 }
+                else {
+                    obj->notifyDistToCeil(abs(o1.top_center.y - o2.bottom_center.y));
+                }
             }
             else if (!collision_with_center){
-                if (o1.left_top.x >= o2.left_top.x && o1.left_top.x <= o2.right_top.x){
-                    if (o1.top_center.y >= o2.bottom_center.y && abs(o1.top_center.y - o2.bottom_center.y) < 5){
+                if ((o1.left_top.x + 2) >= o2.left_top.x && (o1.left_top.x + 2) <= o2.right_top.x){
+                    if (o1.top_center.y >= o2.bottom_center.y && o1.top_center.y - o2.bottom_center.y < 5){
                         if (((Player*)obj)->getState() == JUMP){
                             collided = true;
                             selected = o;
                         }
                     }
+                    else {
+                        obj->notifyDistToCeil(abs(o1.top_center.y - o2.bottom_center.y));
+                    }
                 }
-                else if (o1.right_top.x >= o2.left_top.x && o1.right_top.x <= o2.right_top.x){
-                    if (o1.top_center.y >= o2.bottom_center.y && abs(o1.top_center.y - o2.bottom_center.y) < 5){
+                else if ((o1.right_top.x - 2) >= o2.left_top.x && (o1.right_top.x - 2) <= o2.right_top.x){
+                    if (o1.top_center.y >= o2.bottom_center.y && o1.top_center.y - o2.bottom_center.y < 5){
                         if (((Player*)obj)->getState()  == JUMP){
                             collided = true;
                             selected = o;
                         }
+                    }
+                    else {
+                        obj->notifyDistToCeil(abs(o1.top_center.y - o2.bottom_center.y));
                     }
                 }
             }

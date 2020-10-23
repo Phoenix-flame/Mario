@@ -5,6 +5,7 @@
 #include "../rsdl.hpp"
 #include "../timer.hpp"
 
+
 #include <vector>
 
 
@@ -22,13 +23,36 @@ enum Type {
     HEALTH_CONTAINER,
     COIN_CONTAINER,
     PIPE,
+    FLAG,
+    CLOUD,
     GOOMBA,
     KOOPA,
     PLAYER,
     G_COIN,
     G_TEXT,
-    G_MUSHROOM
+    G_MUSHROOM,
+    G_FLOWER,
+    G_BULLET
 };
+
+inline const char* ToString(Type v)
+{
+    switch (v)
+    {
+        case BLOCK:   return "BLOCK";
+        case BRICK:   return "BRICK";
+        case GROUND: return "GROUND";
+        case FIRE_CONTAINER:   return "FIRE_CONTAINER";
+        case HEALTH_CONTAINER:   return "HEALTH_CONTAINER";
+        case COIN_CONTAINER: return "COIN_CONTAINER";
+        case PIPE:   return "PIPE";
+        case GOOMBA:   return "GOOMBA";
+        case KOOPA: return "KOOPA";
+        case PLAYER: return "PLAYER";
+        default:      return "[Unknown State]";
+    }
+}
+
 
 enum Dir{
     STOP,
@@ -49,6 +73,7 @@ public:
 
     // Mark to start animation
     void mark();
+    bool flower = false;
 
     // Debug
     bool selected = false;
@@ -65,9 +90,11 @@ public:
         pos.y = y;
     }
 
-    Point getOffset(){
-        return offsetAnimation;
+    void setPos(Point p){
+        pos.x = p.x;
+        pos.y = p.y;
     }
+
 
     // Collision Notification
     virtual void notifyCollisionLeft(Object*);
@@ -91,9 +118,14 @@ public:
     bool has_ghost = false;
     bool ghost_dead = false;
 
+    Point posDuringAnimation;
+    bool animationIsStarted(){
+        return startAnimation;
+    }
+
+
 protected:
     Point pos;
-    Point offsetAnimation;
     int xMin;
     int yMin;
 

@@ -30,8 +30,6 @@ void Mushroom::riseLikeThePhoenix(){
 
 
 void Mushroom::run(){
-    
-
     _moveX(speed);
 }
 

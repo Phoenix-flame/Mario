@@ -7,6 +7,7 @@
 #include <functional>
 #include "timer.hpp"
 #include "objects/text.hpp"
+#include "objects/coin_container.hpp"
 
 #define NORM_DEAD "assets/sprites/mario/normal/dead.png"
 #define NORM_JUMP_LEFT "assets/sprites/mario/normal/jumping-left.png"
@@ -60,7 +61,8 @@ enum State{
     SLIDE,
     JUMP,
     FALL,
-    POWER_UP
+    POWER_UP,
+    WON
 };
 
 
@@ -75,6 +77,7 @@ inline const char* ToString(State v)
         case SLIDE:   return "SLIDE";
         case JUMP:   return "JUMP";
         case FALL: return "FALL";
+        case WON: return "WON";
         default:      return "[Unknown State]";
     }
 }
@@ -96,7 +99,7 @@ public:
         level = NORMAL;
         state = STAND;
         image = NORM_STAND_RIGHT;
-        size = Point(24, 32);
+        size = Point(22, 30);
         funcToRun = &Player::stand;
     }
 
@@ -111,6 +114,7 @@ public:
     void normalMove();
     void endMove();
 
+    void parade();
     
     
     // Jump Methods
@@ -129,10 +133,10 @@ public:
     Dir getDir(){return dir;}
     Level getLevel(){return level;}
 
+    void shoot();
 
     void kill(Object* obj);
 
-    void dead();
     void death() override;
     void immediate_death();
     void death_animation();
@@ -168,6 +172,9 @@ public:
     bool jump_a = false;
     bool death_a = false;
     bool brick_debris_a = false;
+    bool powerup_appears_a = false;
+    bool powerup_a = false;
+    bool win_a = false;
 
 private:
     void (Player::*funcToRun)();

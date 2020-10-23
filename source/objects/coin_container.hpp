@@ -1,3 +1,6 @@
+#ifndef _COIN_CONTAINER_HPP_
+#define _COIN_CONTAINER_HPP_
+
 #include "object.hpp"
 #include "coin.hpp"
 #include "text.hpp"
@@ -55,13 +58,13 @@ public:
                 else{
                     animationTimer.reset();
                     state = COIN_RELEASED;
+                    coinIsAvailable = false;
                 }
             }
         }
     }
 
-    bool coinIsAvailable = false;
-    bool sound_done = false;
+    bool coinIsAvailable = true;
 private:
     Timer animationTimer;
     
@@ -69,3 +72,5 @@ private:
     CoinState state;
 
 };
+
+#endif // !_COIN_CONTAINER_HPP_

@@ -23,6 +23,13 @@ public:
         return (duration_cast<seconds>(end - clock).count());
     }
 
+    int getMilliseconds(){
+        if (!started){ return 0;}
+        // std::cout << "here" << std::endl;
+        auto end = high_resolution_clock::now();
+        return (duration_cast<milliseconds>(end - clock).count());
+    }
+
     void start(){
         time = SDL_GetTicks();
         started = true;

@@ -12,6 +12,8 @@
 #define ENEMY_STOPM_SOUND "./assets/sounds/sound_effects/enemy-stomp.wav"
 #define POWER_UP_APPEAR_SOUND "./assets/sounds/sound_effects/powerup-appears.wav"
 #define MARIO_DEATH_SOUND "./assets/sounds/sound_effects/mario-death.wav"
+#define LEVEL_CLEAR_SOUND "./assets/sounds/sound_effects/level-clear.wav"
+
 
 class Audio{
 public:

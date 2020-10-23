@@ -89,11 +89,13 @@ void Core::update(){
         }
     }
     if(KEY_UP_PRESSED){
-        if(world->getPlayer()->can_jump){
-            // win->play_sound_effect("assets/sounds/sound_effects/jump-small.wav");    
+        if(world->getPlayer()->can_jump){  
             world->getPlayer()->startJump();
             world->getPlayer()->can_jump = false;
         }
+    }
+    if (KEY_SHIFT_PRESSED){
+        world->getPlayer()->shoot();
     }
 
 }
@@ -214,6 +216,9 @@ bool Core::events(){
             }
             else if (event.get_pressed_key() == 'P'){
                 KEY_LEFT_PRESSED = true;
+            }
+            else if (event.get_pressed_key() == 'z' || event.get_pressed_key() == 'Z'){
+                KEY_SHIFT_PRESSED = true;
             }
             break;
         case Event::KEY_RELEASE:

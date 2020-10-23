@@ -1,5 +1,9 @@
+#ifndef _FIRE_BLOCK_HPP_
+#define _FIRE_BLOCK_HPP_
+
 #include "object.hpp"
 #include "mushroom.hpp"
+#include "flower.hpp"
 
 #define FIRE_BLOCK_FULL "assets/sprites/objects/bricks_blocks/question-2.png"
 #define FIRE_BLOCK_EMPTY "assets/sprites/objects/bricks_blocks/question-empty.png"
@@ -22,32 +26,62 @@ public:
 
     void update(){
         if (startAnimation){
-            if (state == FIRE_NORMAL){
-                if (!animationTimer.isStarted()){
-                    animationTimer.start();
-                    prevPos = pos;
+            if (flower){
+                if (state == FIRE_NORMAL){
+                    if (!animationTimer.isStarted()){
+                        animationTimer.start();
+                        prevPos = pos;
 
-                    Mushroom* mushroom = new Mushroom(M_RED, pos);
-                    ghost.push_back(mushroom);
+                        Flower* flower = new Flower(pos);
+                        ghost.push_back(flower);
 
-                    has_ghost = true;
-                    offsetAnimation = pos;
-                }
-                if (animationTimer.getTime() < 150){
-                    _moveY(-1);
-                }
-                else if (prevPos.y != pos.y){
-                    image = FIRE_BLOCK_EMPTY;
-                    _moveY(+1);
-                }
-                else{
-                    animationTimer.reset();
-                    state = FIRE_RELEASED;
+                        has_ghost = true;
+                        posDuringAnimation = pos;
+                    }
+                    if (animationTimer.getTime() < 150){
+                        _moveY(-1);
+                    }
+                    else if (prevPos.y != pos.y){
+                        image = FIRE_BLOCK_EMPTY;
+                        _moveY(+1);
+                    }
+                    else{
+                        animationTimer.reset();
+                        state = FIRE_RELEASED;
+                        startAnimation = false;
+                        flower = false;
+                    }
                 }
             }
+            else{
+                if (state == FIRE_NORMAL){
+                    if (!animationTimer.isStarted()){
+                        animationTimer.start();
+                        prevPos = pos;
+
+                        Mushroom* mushroom = new Mushroom(M_RED, pos);
+                        ghost.push_back(mushroom);
+
+                        has_ghost = true;
+                        posDuringAnimation = pos;
+                    }
+                    if (animationTimer.getTime() < 150){
+                        _moveY(-1);
+                    }
+                    else if (prevPos.y != pos.y){
+                        image = FIRE_BLOCK_EMPTY;
+                        _moveY(+1);
+                    }
+                    else{
+                        animationTimer.reset();
+                        state = FIRE_RELEASED;
+                        startAnimation = false;
+                    }
+                }
+            }
+            
         }
     }
-
 private:
     FireState state;
     Timer animationTimer;
@@ -55,3 +89,5 @@ private:
     Point prevPos;
 
 };
+
+#endif // !_FIRE_BLOCK_

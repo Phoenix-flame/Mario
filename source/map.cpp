@@ -11,6 +11,7 @@ Map::Map(std::string filepath){
     std::string line;
     int y = 0;
     bool flag_pipes = false;
+    bool flag_flag = false;
     std::vector<int> pipes_head;
 
     while (std::getline(map_file, line)){
@@ -65,6 +66,19 @@ Map::Map(std::string filepath){
             else if(line[x] == 'M'){
                 // player = new Player(x, y);
                 player = new Player(5, 17);
+                
+            }
+            else if(line[x] == 'f'){
+                if (!flag_flag){
+                    Flag* tmp = new Flag(x, y, "h");
+                    this->objects.push_back(tmp);
+                    flag_flag = true;
+                }
+                else {
+                    Flag* tmp = new Flag(x, y, "b");
+                    this->objects.push_back(tmp);
+                }
+                
                 
             }
             else if(line[x] == '|'){

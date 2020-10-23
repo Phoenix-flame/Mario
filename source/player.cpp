@@ -63,8 +63,9 @@ void Player::update(int _dir){
             funcToRun = &Player::falling;
         }
     }
-    
- 
+    if (state == WON){
+        funcToRun = &Player::parade;
+    }
     // Update Player State
     (this->*funcToRun)();
     updateFigure();
@@ -79,7 +80,7 @@ void Player::updateFigure(){
         if (state == STAND){
             image = (dir == LEFT)?NORM_STAND_LEFT:NORM_STAND_RIGHT;
         }
-        else if (state == WALK){
+        else if (state == WALK || state == WON){
             if (dir == LEFT){
                 walk_right = 1;
                 if (walk_left == 1){
@@ -89,10 +90,9 @@ void Player::updateFigure(){
                         walk_left = 2;
                         LW_Timer.reset();
                     }
-                    
                 }
                 else if (walk_left == 2){
-                    image = NORM_WALK_LEFT2; 
+                    image = NORM_WALK_LEFT2;
                     if (!LW_Timer.isStarted()) LW_Timer.start();
                     if (LW_Timer.getTime() > 30){
                         walk_left = 3;
@@ -100,7 +100,7 @@ void Player::updateFigure(){
                     }
                 }
                 else if (walk_left == 3){
-                    image = NORM_WALK_LEFT3; 
+                    image = NORM_WALK_LEFT3;
                     if (!LW_Timer.isStarted()) LW_Timer.start();
                     if (LW_Timer.getTime() > 30){
                         walk_left = 1;
@@ -110,8 +110,8 @@ void Player::updateFigure(){
             }
             else if (dir == RIGHT){
                 walk_left = 1;
-                if (walk_right == 1){ 
-                    image = NORM_WALK_RIGHT1; 
+                if (walk_right == 1){
+                    image = NORM_WALK_RIGHT1;
                     if (!RW_Timer.isStarted()){
                         RW_Timer.start();
                     }
@@ -122,7 +122,7 @@ void Player::updateFigure(){
                     
                 }
                 else if (walk_right == 2){
-                    image = NORM_WALK_RIGHT2; 
+                    image = NORM_WALK_RIGHT2;
                     if (!RW_Timer.isStarted()){
                         RW_Timer.start();
                     }
@@ -132,7 +132,7 @@ void Player::updateFigure(){
                     }
                 }
                 else if (walk_right == 3){
-                    image = NORM_WALK_RIGHT3; 
+                    image = NORM_WALK_RIGHT3;
                     if (!RW_Timer.isStarted()){
                         RW_Timer.start();
                     }
@@ -160,7 +160,7 @@ void Player::updateFigure(){
         if (state == STAND){
             image = (dir == LEFT)?BIG_STAND_LEFT:BIG_STAND_RIGHT;
         }
-        else if (state == WALK){
+        else if (state == WALK || state == WON){
             if (dir == LEFT){
                 walk_right = 1;
                 if (walk_left == 1){
@@ -170,10 +170,10 @@ void Player::updateFigure(){
                         walk_left = 2;
                         LW_Timer.reset();
                     }
-                    
+
                 }
                 else if (walk_left == 2){
-                    image = BIG_WALK_LEFT2; 
+                    image = BIG_WALK_LEFT2;
                     if (!LW_Timer.isStarted()) LW_Timer.start();
                     if (LW_Timer.getTime() > 30){
                         walk_left = 3;
@@ -238,7 +238,7 @@ void Player::updateFigure(){
         }
         break;
     case POWER:
-        if (state == WALK){
+        if (state == WALK  || state == WON){
             if (dir == LEFT){
                 walk_right = 1;
                 if (walk_left == 1){
@@ -327,7 +327,11 @@ void Player::updateFigure(){
 void Player::startMove(){
     state = WALK;
     slide_enable = 0;
-    
+}
+
+
+void Player::parade(){
+    _moveX(5);
 }
 
 void Player::normalMove(){
@@ -461,12 +465,9 @@ void Player::kill(Object* obj){
     obj->death();
 }
 
-void Player::dead(){
-
-}
 
 void Player::death(){
-    if(immeunityTimer.getTime() < 400){
+    if(immeunityTimer.isStarted() && immeunityTimer.getMilliseconds() < 1500){
         return;
     }
     else{
@@ -477,13 +478,14 @@ void Player::death(){
         //Audio Callback
         death_a = true;
         state = DEAD;
+        dead = true;
         speed = 0;
         terminal_speed = 100;
     }
     else{
         if (level == BIG){
             level = NORMAL;
-            size = Point(24, 32);
+            size = Point(22, 30);
             pos.y += 18;
             immeunityTimer.start();
         }
@@ -492,15 +494,22 @@ void Player::death(){
             immeunityTimer.start();
         }
     }
-    
 }
 
 void Player::immediate_death(){
+    // Player state
     level = NORMAL;
-    size = Point(24, 32);
-    pos.y += 18;
-    death_a = true;
     state = DEAD;
+    dead = true;
+
+    // Sound effect
+    death_a = true;
+
+    // Player position and size
+    size = Point(22, 30);
+    pos.y += 18;
+
+    // Falling speeds
     speed = 0;
     terminal_speed = 100;
 }
@@ -526,6 +535,7 @@ void Player::powerupAnimation(){
 
 // Collision Notification
 void Player::notifyCollisionLeft(Object* obj){
+    if (state == WON ) { return; }
     if (state == DEAD){
         return;
     }
@@ -534,30 +544,40 @@ void Player::notifyCollisionLeft(Object* obj){
         speed = 0;
         if (state == WALK || state == SLIDE){
             state = STAND;
-        } 
+        }
         else if (state == JUMP){
-            speed = 0;
-        } 
+            if (speed < 0) speed = 0;
+        }
         if (obj->getType() == GOOMBA){
             death();
+        }
+        
+        if (obj->getType() == FLAG){
+            std::cout << "reached" << std::endl;
         }
     }
 }
 void Player::notifyCollisionRight(Object* obj){
+    if (state == WON) { return; }
     if (state == DEAD){
         return;
     }
     if (dir == RIGHT){
         collidedR = true;
-        speed = 0;  
+        speed = 0;
         if (state == WALK || state == SLIDE){
             state = STAND;
         }
         else if (state == JUMP){
-            speed = 0;
-        } 
+            if (speed > 0) speed = 0;
+        }
         if (obj->getType() == GOOMBA){
             death();
+        }
+        if (this->getPos().x >= 4730 && this->getState() != WON){
+            std::cout << "reached" << std::endl;
+            this->state = WON;
+            win_a = true;
         }
     }
 }
@@ -567,28 +587,36 @@ void Player::notifyCollisionTop(Object* obj){
         return;
     }
     if (state == JUMP){
-        // Audio callback
-        if(t == COIN_CONTAINER){
-            coin_a = true;
-        }
-        
+        std::cout << ToString(t) << std::endl;
         if (t == BRICK){
             if (level == NORMAL )obj->mark();
             else {
                 obj->destroy();
                 brick_debris_a = true;
-            } 
-            
+            }
         }
         else if (t == COIN_CONTAINER){
+            // Audio callback
+            if(((CoinContainer*)obj)->coinIsAvailable){
+                obj->mark();
+                coin_a = true;
+            }
+        }
+        else if(t == FIRE_CONTAINER){
+            if (level == NORMAL){
+                obj->mark();
+                powerup_appears_a = true;
+            }
+            else{
+                obj->flower = true;
+                obj->mark();
+            }
+        }
+        else if(t == HEALTH_CONTAINER){
             obj->mark();
         }
-        else if(t = HEALTH_CONTAINER){
-            obj->mark();
-        }
-        
         endJump();
-    }      
+    }
 }
 void Player::notifyCollisionBottom(Object* obj){
     if (state == DEAD){
@@ -610,10 +638,10 @@ void Player::notifyCollisionBottom(Object* obj){
         has_ghost = true;
     }
     else if (obj->getType() == KOOPA){
-        // if (!koopa_hit){
-        //     kill(obj);
-        //     koopa_hit = true;
-        // }
+        if (!koopa_hit){
+            kill(obj);
+            koopa_hit = true;
+        }
     }
 }
 
@@ -624,9 +652,8 @@ void Player::notifyFreeBottom(){
     if (state == DEAD){
         return;
     }
-    // if (obj->getType() == KOOPA){
-    //     koopa_hit = false;
-    // }
+
+    koopa_hit = false;
     if (state != FALL){
         startFall();
     } 
@@ -651,12 +678,19 @@ void Player::notifyDistToCeil(int d){
 
 
 void Player::powerup(){
+    powerup_a = true;
     if (level == NORMAL){
         level = BIG;
-        size = Point(24, 50);
+        size = Point(22, 48);
         pos.y -= 18; 
     }
     else if(level == BIG){
         level = POWER;
     }
+}
+
+
+void Player::shoot(){
+    // TODO check ammo
+    
 }

@@ -40,6 +40,8 @@ set(sources
     source/objects/koopa_troopa.cpp
     source/objects/mushroom.hpp
     source/objects/mushroom.cpp
+    source/objects/flower.hpp
+    source/objects/flower.cpp
     source/objects/pipes.hpp
 )
 

@@ -14,6 +14,7 @@
 #include "objects/goomba.hpp"
 #include "objects/koopa_troopa.hpp"
 #include "objects/pipes.hpp"
+#include "objects/flag.hpp"
 #include "objects/coin.hpp"
 #include "player.hpp"
 
