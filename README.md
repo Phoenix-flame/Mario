@@ -15,7 +15,6 @@ This structure makes everything much harder, because for example, a small 'pipe'
 In my opinion, this is not an optimal way to create game objects(anyway this has been noted in project description) either for checking physics or from memory perspective.
 By the way this was a hobby project, and maybe in the future i will change game structure. 
 
-![alt text](https://github.com/Phoenix-flame/Mario/blob/master/images/3.png?raw=true)
 
 ### Physics
 
@@ -60,3 +59,6 @@ All objects are inherited from 'Object' class. This class consists related funct
 
 
 ### Other
+Debug visual tools :)
+
+![alt text](https://github.com/Phoenix-flame/Mario/blob/master/images/3.png?raw=true)
