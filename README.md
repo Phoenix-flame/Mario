@@ -1,6 +1,9 @@
 # Mario
 This project is an implementation of Nintendo Mario game using SDL2, as a part of Advance Programming course at University of Tehran.
 
+![alt text](https://github.com/Phoenix-flame/Mario/blob/master/images/1.png?raw=true)
+
+
 ### Game Structure
 This game is a simple part of mario game(only world 1-1), so there is no need to use any game engine, I've implemented whole game from scratch using C++.
 
@@ -11,6 +14,8 @@ Game Map loads from a simple 'txt' file which is a grid of characters that each 
 This structure makes everything much harder, because for example, a small 'pipe' in game consists of 4 blocks that each one is stored in memory and considered in physics engine.
 In my opinion, this is not an optimal way to create game objects(anyway this has been noted in project description) either for checking physics or from memory perspective.
 By the way this was a hobby project, and maybe in the future i will change game structure. 
+
+![alt text](https://github.com/Phoenix-flame/Mario/blob/master/images/2.png?raw=true)
 
 ### Physics
 
