@@ -8,12 +8,12 @@ This project is an implementation of Nintendo Mario game using SDL2, as a part o
 This game is a simple part of mario game(only world 1-1), so there is no need to use any game engine, I've implemented whole game from scratch using C++.
 
 Main game's structure is implemented in Core class which contains all game engine functionality.
-Game loop, rendering, input handling and etc are all handled in this class.
+Game loop, rendering, input handling and ... are all handled in this class.
 
-Game Map loads from a simple 'txt' file which is a grid of characters that each one represent an object.
+Game Map loads from a simple 'txt' file which is a grid of characters that each one represents an object.
 This structure makes everything much harder, because for example, a small 'pipe' in game consists of 4 blocks that each one is stored in memory and considered in physics engine.
 In my opinion, this is not an optimal way to create game objects(anyway this has been noted in project description) either for checking physics or from memory perspective.
-By the way this was a hobby project, and maybe in the future i will change game structure. 
+By the way this was a hobby project, and maybe I will change game structure later. 
 
 
 ### Physics
