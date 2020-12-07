@@ -108,7 +108,7 @@ void Core::draw(){
     drawBackground();
     drawObjects();
     drawHood();
-    // this->showDebug();
+   	this->showDebug();
 
 
     win->update_screen();
