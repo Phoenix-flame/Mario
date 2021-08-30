@@ -1,4 +1,7 @@
 # Mario
+
+[![Readme Card](https://github-readme-stats.vercel.app/api/pin/?username=Phoenix-flame&repo=Mario&theme=vue-dark)](https://github.com/anuraghazra/github-readme-stats)
+
 This project is an implementation of Nintendo Mario game using SDL2, as a part of Advance Programming course at University of Tehran.
 
 ![alt text](https://github.com/Phoenix-flame/Mario/blob/master/images/1.png?raw=true)
