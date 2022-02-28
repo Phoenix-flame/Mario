@@ -6,6 +6,11 @@ This project is an implementation of Nintendo Mario game using SDL2, as a part o
 
 ![alt text](https://github.com/Phoenix-flame/Mario/blob/master/images/1.png?raw=true)
 
+### Requirement
+```
+sudo apt install libsdl2-dev libsdl2-mixer-dev libsdl2-ttf-dev libsdl2-image-dev
+```
+
 
 ### Game Structure
 This game is a simple part of mario game(only world 1-1), so there is no need to use any game engine, I've implemented whole game from scratch using C++.
