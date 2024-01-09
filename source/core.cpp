@@ -105,11 +105,12 @@ void Core::update(){
 
 void Core::draw(){
     win->clear();
-    drawBackground();
-    drawObjects();
-    drawHood();
+    this->drawBackground();
+    this->drawObjects();
+    this->drawHood();
+#if 0
    	this->showDebug();
-
+#endif
 
     win->update_screen();
 }

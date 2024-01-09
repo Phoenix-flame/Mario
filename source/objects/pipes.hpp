@@ -1,23 +1,26 @@
 #include "object.hpp"
 
-
-class Pipe: public Object{
+class Pipe : public Object
+{
 public:
-    Pipe(int x, int y, std::string type):Object(Point(x, y),
-        Point(24, 24), 
-        "",
-        PIPE){
+    Pipe(int x, int y, std::string type)
+        : Object(Point(x, y), Point(24, 24), "", PIPE)
+    {
 
-        if (type == "r"){
+        if (type == "r")
+        {
             image = "assets/sprites/objects/pipe/right.png";
         }
-        else if (type == "l"){
+        else if (type == "l")
+        {
             image = "assets/sprites/objects/pipe/left.png";
         }
-        else if (type == "hr"){
+        else if (type == "hr")
+        {
             image = "assets/sprites/objects/pipe/head-right.png";
         }
-        else if (type == "hl"){
+        else if (type == "hl")
+        {
             image = "assets/sprites/objects/pipe/head-left.png";
         }
     }

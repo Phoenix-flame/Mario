@@ -6,21 +6,21 @@
 #include <SDL2/SDL_mixer.h>
 #include <SDL2/SDL_ttf.h>
 
-
 #include <cstdlib>
 #include <iostream>
 #include <map>
 #include <stdexcept>
 #include <string>
 
-struct Point {
+struct Point
+{
   Point(int x, int y);
   Point() = default;
   int x;
   int y;
   Point operator+(const Point) const;
   Point operator-(const Point) const;
-  Point operator*(const int)const;
+  Point operator*(const int) const;
   Point operator/(const int) const;
   Point &operator+=(const Point);
   Point &operator-=(const Point);
@@ -31,7 +31,8 @@ struct Point {
 Point operator*(const int, const Point);
 std::ostream &operator<<(std::ostream &stream, const Point);
 
-struct Rectangle {
+struct Rectangle
+{
   Rectangle(int x, int y, int w, int h);
   Rectangle(Point top_left, Point bottom_right);
   Rectangle(Point top_left, int w, int h);
@@ -42,7 +43,7 @@ struct Rectangle {
   Point right_center;
   Point top_center;
   Point bottom_center;
-  
+
   Point left_top;
   Point left_bottom;
   Point right_top;
@@ -55,7 +56,8 @@ std::ostream &operator<<(std::ostream &stream, const Rectangle);
 
 extern Rectangle NULL_RECT;
 
-struct RGB {
+struct RGB
+{
   RGB(int r, int g, int b);
   Uint8 red;
   Uint8 green;
@@ -71,11 +73,13 @@ const RGB GREEN(0, 255, 0);
 const RGB BLUE(0, 0, 255);
 const RGB BLACK(0, 0, 0);
 
-class Event {
+class Event
+{
 public:
   Event();
   Event(SDL_Event _sdl_event);
-  enum EventType {
+  enum EventType
+  {
     NA,
     LCLICK,
     RCLICK,
@@ -96,7 +100,8 @@ protected:
   SDL_Event sdl_event;
 };
 
-class Window {
+class Window
+{
 public:
   Window(int width = 640, int height = 480, std::string title = "RSDL");
   ~Window();

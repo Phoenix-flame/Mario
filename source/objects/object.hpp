@@ -2,20 +2,18 @@
 #define _OBJECT_HPP_
 
 #include <string>
+#include <vector>
 #include "../rsdl.hpp"
 #include "../timer.hpp"
 
-
-#include <vector>
-
-
-enum MushroomType{
+enum MushroomType
+{
     M_RED,
     M_HEALTH
 };
 
-
-enum Type {
+enum Type
+{
     BLOCK,
     BRICK,
     GROUND,
@@ -35,32 +33,44 @@ enum Type {
     G_BULLET
 };
 
-inline const char* ToString(Type v)
+inline const char *ToString(Type v)
 {
     switch (v)
     {
-        case BLOCK:   return "BLOCK";
-        case BRICK:   return "BRICK";
-        case GROUND: return "GROUND";
-        case FIRE_CONTAINER:   return "FIRE_CONTAINER";
-        case HEALTH_CONTAINER:   return "HEALTH_CONTAINER";
-        case COIN_CONTAINER: return "COIN_CONTAINER";
-        case PIPE:   return "PIPE";
-        case GOOMBA:   return "GOOMBA";
-        case KOOPA: return "KOOPA";
-        case PLAYER: return "PLAYER";
-        default:      return "[Unknown State]";
+    case BLOCK:
+        return "BLOCK";
+    case BRICK:
+        return "BRICK";
+    case GROUND:
+        return "GROUND";
+    case FIRE_CONTAINER:
+        return "FIRE_CONTAINER";
+    case HEALTH_CONTAINER:
+        return "HEALTH_CONTAINER";
+    case COIN_CONTAINER:
+        return "COIN_CONTAINER";
+    case PIPE:
+        return "PIPE";
+    case GOOMBA:
+        return "GOOMBA";
+    case KOOPA:
+        return "KOOPA";
+    case PLAYER:
+        return "PLAYER";
+    default:
+        return "[Unknown State]";
     }
 }
 
-
-enum Dir{
+enum Dir
+{
     STOP,
     LEFT,
     RIGHT
 };
 
-class Object{
+class Object
+{
 public:
     Object(Point pos, Point size, std::string image, Type _type);
     std::string getImage();
@@ -69,7 +79,7 @@ public:
     Point getXRange();
     Point getYRange();
 
-    virtual void update_new(){}
+    virtual void update_new() {}
 
     // Mark to start animation
     void mark();
@@ -81,26 +91,28 @@ public:
     void _moveX(int dx);
     void _moveY(int dy);
 
-    Type getType(){
+    Type getType()
+    {
         return type;
     }
 
-    void setPos(int x, int y){
+    void setPos(int x, int y)
+    {
         pos.x = x;
         pos.y = y;
     }
 
-    void setPos(Point p){
+    void setPos(Point p)
+    {
         pos.x = p.x;
         pos.y = p.y;
     }
 
-
     // Collision Notification
-    virtual void notifyCollisionLeft(Object*);
-    virtual void notifyCollisionRight(Object*);
-    virtual void notifyCollisionTop(Object*);
-    virtual void notifyCollisionBottom(Object*);
+    virtual void notifyCollisionLeft(Object *);
+    virtual void notifyCollisionRight(Object *);
+    virtual void notifyCollisionTop(Object *);
+    virtual void notifyCollisionBottom(Object *);
     virtual void notifyFreeLeft();
     virtual void notifyFreeRight();
     virtual void notifyFreeTop();
@@ -114,15 +126,15 @@ public:
 
     bool dead = false;
 
-    std::vector<Object*> ghost;
+    std::vector<Object *> ghost;
     bool has_ghost = false;
     bool ghost_dead = false;
 
     Point posDuringAnimation;
-    bool animationIsStarted(){
+    bool animationIsStarted()
+    {
         return startAnimation;
     }
-
 
 protected:
     Point pos;
@@ -133,14 +145,15 @@ protected:
     int yMax;
 
     Point size;
-    
+
     bool startAnimation = false;
 
     std::string image;
 
     Type type;
 
-    double dist(Point& p1, Point& p2){
+    double dist(Point &p1, Point &p2)
+    {
         return sqrt(pow(p1.x - p2.x, 2) + pow(p1.y - p2.y, 2));
     }
 };

@@ -60,5 +60,6 @@
         "cfenv": "cpp",
         "valarray": "cpp",
         "random": "cpp"
-    }
+    },
+    "C_Cpp.errorSquiggles": "enabled"
 }

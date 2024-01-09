@@ -18,37 +18,28 @@
 #include "objects/coin.hpp"
 #include "player.hpp"
 
-
-
-
-class Map{
+class Map
+{
 public:
     Map(std::string filepath);
     void drawObjects();
     Point offset;
 
-    Player* player;
-    
-    std::vector<Block*> blocks;
-    std::vector<Ground*> grounds;
-    std::vector<Brick*> bricks;
-    std::vector<CoinContainer*> coins;
-    std::vector<FireContainer*> fires;
-    std::vector<HealthContainer*> healths;
-    std::vector<Goomba*> goombas;
-    std::vector<Koopa*> koopas;
-    std::vector<Pipe*> pipes;
-    std::vector<Object*> objects;
-    std::vector<Object*> Ghosts;
+    Player *player;
 
-    std::vector<Object*> staticObjects;
+    std::vector<Block *> blocks;
+    std::vector<Ground *> grounds;
+    std::vector<Brick *> bricks;
+    std::vector<CoinContainer *> coins;
+    std::vector<FireContainer *> fires;
+    std::vector<HealthContainer *> healths;
+    std::vector<Goomba *> goombas;
+    std::vector<Koopa *> koopas;
+    std::vector<Pipe *> pipes;
+    std::vector<Object *> objects;
+    std::vector<Object *> Ghosts;
 
-    
+    std::vector<Object *> staticObjects;
+
 private:
-    
-
-    
-
-    
-
 };

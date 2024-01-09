@@ -1,13 +1,12 @@
 #ifndef _PLAYER_HPP_
 #define _PLAYER_HPP_
 
-
-#include "objects/object.hpp"
 #include <vector>
 #include <functional>
 #include "timer.hpp"
 #include "objects/text.hpp"
 #include "objects/coin_container.hpp"
+#include "objects/object.hpp"
 
 #define NORM_DEAD "assets/sprites/mario/normal/dead.png"
 #define NORM_JUMP_LEFT "assets/sprites/mario/normal/jumping-left.png"
@@ -49,13 +48,15 @@
 #define BIG_WALK_RIGHT2 "assets/sprites/mario/big/walking-right-2.png"
 #define BIG_WALK_RIGHT3 "assets/sprites/mario/big/walking-right-3.png"
 
-enum Level{
+enum Level
+{
     NORMAL,
     POWER,
     BIG
 };
-enum State{
-    STAND, 
+enum State
+{
+    STAND,
     WALK,
     DEAD,
     SLIDE,
@@ -65,37 +66,49 @@ enum State{
     WON
 };
 
-
-
-inline const char* ToString(State v)
+inline const char *ToString(State v)
 {
     switch (v)
     {
-        case STAND:   return "STAND";
-        case WALK:   return "WALK";
-        case DEAD: return "DEAD";
-        case SLIDE:   return "SLIDE";
-        case JUMP:   return "JUMP";
-        case FALL: return "FALL";
-        case WON: return "WON";
-        default:      return "[Unknown State]";
+    case STAND:
+        return "STAND";
+    case WALK:
+        return "WALK";
+    case DEAD:
+        return "DEAD";
+    case SLIDE:
+        return "SLIDE";
+    case JUMP:
+        return "JUMP";
+    case FALL:
+        return "FALL";
+    case WON:
+        return "WON";
+    default:
+        return "[Unknown State]";
     }
 }
 
-inline const char* ToString(Dir v)
+inline const char *ToString(Dir v)
 {
     switch (v)
     {
-        case STOP:   return "STOP";
-        case LEFT:   return "LEFT";
-        case RIGHT: return "RIGHT";
-        default:      return "[Unknown Direction]";
+    case STOP:
+        return "STOP";
+    case LEFT:
+        return "LEFT";
+    case RIGHT:
+        return "RIGHT";
+    default:
+        return "[Unknown Direction]";
     }
 }
 
-class Player: public Object{
+class Player : public Object
+{
 public:
-    Player(int x, int y):Object(Point(x, y), Point(12, 16), "", PLAYER){
+    Player(int x, int y) : Object(Point(x, y), Point(12, 16), "", PLAYER)
+    {
         level = NORMAL;
         state = STAND;
         image = NORM_STAND_RIGHT;
@@ -115,8 +128,7 @@ public:
     void endMove();
 
     void parade();
-    
-    
+
     // Jump Methods
     void startJump();
     void jump();
@@ -129,25 +141,25 @@ public:
     void move_during_fall();
     void endFall();
 
-    State getState(){return state;}
-    Dir getDir(){return dir;}
-    Level getLevel(){return level;}
+    State getState() { return state; }
+    Dir getDir() { return dir; }
+    Level getLevel() { return level; }
 
     void shoot();
 
-    void kill(Object* obj);
+    void kill(Object *obj);
 
     void death() override;
     void immediate_death();
     void death_animation();
 
-    double getSpeed(){return speed;}
+    double getSpeed() { return speed; }
 
     // Collision Notification
-    void notifyCollisionLeft(Object*) override;
-    void notifyCollisionRight(Object*) override;
-    void notifyCollisionTop(Object*) override;
-    void notifyCollisionBottom(Object*) override;
+    void notifyCollisionLeft(Object *) override;
+    void notifyCollisionRight(Object *) override;
+    void notifyCollisionTop(Object *) override;
+    void notifyCollisionBottom(Object *) override;
     void notifyFreeLeft() override;
     void notifyFreeRight() override;
     void notifyFreeTop() override;
@@ -160,10 +172,9 @@ public:
     void powerup();
     void powerupAnimation();
 
-    // Debug 
+    // Debug
     Point min_dist_to_platform;
     bool koopa_hit = false;
-
 
     // Audio flags
     bool coin_a = false;
@@ -178,18 +189,16 @@ public:
 
 private:
     void (Player::*funcToRun)();
-    
+
     Level level;
     State state;
     Dir dir;
 
-
     int slide_enable = 0;
-    
+
     double speed = 0;
     bool collidedL = false;
     bool collidedR = false;
-
 
     bool move_during_jump;
     int jump_speed_vertical;
@@ -207,10 +216,6 @@ private:
     Timer LW_Timer;
     Timer deathAnimation;
     Timer immeunityTimer;
-
-
-    
 };
-
 
 #endif // !_PLAYER_HPP_

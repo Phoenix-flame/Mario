@@ -14,16 +14,16 @@
 #define MARIO_DEATH_SOUND "./assets/sounds/sound_effects/mario-death.wav"
 #define LEVEL_CLEAR_SOUND "./assets/sounds/sound_effects/level-clear.wav"
 
-
-class Audio{
+class Audio
+{
 public:
-    Audio(Window* win);
-    
-    void update(Player* player);
+    Audio(Window *win);
+
+    void update(Player *player);
     void reset();
-    
+
 private:
-    Window* win;
+    Window *win;
 };
 
 #endif // !_AUDIO_HPP_

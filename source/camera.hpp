@@ -1,14 +1,15 @@
 #include "rsdl.hpp"
 
-
-class Camera{
+class Camera
+{
 public:
     Camera();
 
     void move(int offset);
     void moveBackground(int offset);
     Point getPos();
-    Point getPosBackground(){
+    Point getPosBackground()
+    {
         return posBackground;
     }
 
