@@ -25,7 +25,7 @@ By the way this was a hobby project, and maybe I will change game structure late
 
 
 ### Physics
- WIP
+WIP
 
 ### Objects
 As mentioned above all objects are created from multiple blocks that are loaded from 'map.txt'.
