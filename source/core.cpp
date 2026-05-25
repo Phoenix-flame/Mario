@@ -200,14 +200,14 @@ void Core::showDebug(){
 
     // Player collision box and physics guide lines.
     Rectangle player_rect(screen_player_pos, screen_player_pos + player_size);
-    win->draw_rect(player_rect, YELLOW, 2U);
+    win->draw_rect(player_rect, player->isInvincible() ? CYAN : YELLOW, 2U);
     win->draw_line(Point(player_rect.left_center.x - 40, player_rect.left_center.y),
                    Point(player_rect.right_center.x + 40, player_rect.right_center.y), RED);
     win->draw_line(Point(player_rect.top_center.x, player_rect.top_center.y - 40),
                    Point(player_rect.bottom_center.x, player_rect.bottom_center.y + 40), RED);
     win->draw_line(Point(player_rect.x, player_rect.y - player->min_dist_to_platform.y),
                    Point(player_rect.x + player_rect.w, player_rect.y - player->min_dist_to_platform.y), GREEN);
-    win->show_text("PLAYER", Point(player_rect.x, player_rect.y - 18), YELLOW, font, 11);
+    win->show_text(player->isInvincible() ? "PLAYER INVINCIBLE" : "PLAYER", Point(player_rect.x, player_rect.y - 18), player->isInvincible() ? CYAN : YELLOW, font, 11);
 
     // Camera viewport / screen boundary.
     win->draw_rect(Rectangle(Point(0, 0), Point(640, 480)), MAGENTA, 1U);
@@ -292,6 +292,9 @@ void Core::drawObjects(){
     }
 
     for (auto b:world->getObjects()){
+        if (b->getType() == PLAYER && !((Player*)b)->shouldDraw()){
+            continue;
+        }
         win->draw_img(b->getImage(),
                  Rectangle(b->getPos() + offset, b->getPos() + b->getSize() + offset), NULL_RECT,
                  0, false);
@@ -300,9 +303,11 @@ void Core::drawObjects(){
 
 
     Player * player = world->getPlayer();
-    win->draw_img(player->getImage(),
-                 Rectangle(player->getPos() + offset, player->getPos() + player->getSize() + offset), NULL_RECT,
-                 0, false);
+    if (player->shouldDraw()){
+        win->draw_img(player->getImage(),
+                     Rectangle(player->getPos() + offset, player->getPos() + player->getSize() + offset), NULL_RECT,
+                     0, false);
+    }
 
 
     
