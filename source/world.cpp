@@ -49,6 +49,23 @@ namespace
         return obj->getType() == GOOMBA || obj->getType() == KOOPA;
     }
 
+    bool isPlayerEnemyPair(Object *a, Object *b)
+    {
+        return (a->getType() == PLAYER && isEnemy(b)) ||
+               (b->getType() == PLAYER && isEnemy(a));
+    }
+
+    bool shouldIgnoreEnemyCollision(Object *moving_obj, Object *solid_obj)
+    {
+        if (!isPlayerEnemyPair(moving_obj, solid_obj))
+        {
+            return false;
+        }
+
+        Player *player = (moving_obj->getType() == PLAYER) ? (Player *)moving_obj : (Player *)solid_obj;
+        return player->isInvincible();
+    }
+
     bool hasHorizontalOverlap(const Rectangle &a, const Rectangle &b)
     {
         return a.left_top.x < b.right_top.x && a.right_top.x > b.left_top.x;
@@ -335,7 +352,7 @@ void World::collision(Object *obj)
 
     for (auto o : getObjects())
     {
-        if (o->dead || o == obj)
+        if (o->dead || o == obj || shouldIgnoreEnemyCollision(obj, o))
         {
             continue;
         }
