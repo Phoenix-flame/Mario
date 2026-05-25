@@ -32,6 +32,7 @@ make
 | `P` | Move left |
 | `R` or `Space` | Jump |
 | `Z` | Shoot fireball when Mario has the fire power-up |
+| `D` | Toggle debug visual overlay |
 | `Q` | Quit |
 
 ## Codebase Overview
@@ -40,7 +41,7 @@ The game is intentionally implemented without a game engine. The main systems ar
 
 | Path | Purpose |
 | --- | --- |
-| `source/core.*` | Main game loop, input handling, frame timing, rendering orchestration, HUD, reset flow, and high-level player actions. |
+| `source/core.*` | Main game loop, input handling, frame timing, rendering orchestration, HUD, reset flow, debug overlay, and high-level player actions. |
 | `source/world.*` | Owns the active map, camera, game state, ghosts/transient objects, object updates, and collision dispatch. |
 | `source/map.*` | Loads the text-based level file and converts map symbols into game objects. |
 | `source/player.*` | Mario state machine, movement, jumping, level/power-up state, death, and sprite selection. |
@@ -59,7 +60,7 @@ The game is intentionally implemented without a game engine. The main systems ar
 2. Update player input state and camera movement.
 3. Run `World::loop()` to update objects, collect spawned ghost objects, and process collisions.
 4. Update audio.
-5. Draw the background, objects, player, ghosts, and HUD.
+5. Draw the background, objects, player, ghosts, HUD, and optional debug overlay.
 6. Delay as needed to keep the frame timing stable.
 
 ## Map System
@@ -134,7 +135,17 @@ Sprites are stored under `assets/sprites/`. Cloud sprites are stored in `assets/
 
 ## Debugging
 
-`Core::showDebug()` contains debug drawing helpers for FPS, player state, speed, collision rectangles, and selected objects. It is currently guarded by `#if 0` in `Core::draw()` and can be enabled during development.
+Press `D` while the game is running to toggle the debug visual overlay.
+
+The overlay shows:
+
+- FPS, score, timer, object count, and ghost count.
+- Player state, direction, speed, world position, and camera position.
+- Player collision box and center/collision guide lines.
+- Screen/camera viewport boundaries.
+- Visible object bounding boxes, object type labels, and dead-state markers.
+- Ghost/transient object bounding boxes and labels.
+- Physics helper markers such as object centers, top/bottom/left/right collision points, and the player's nearest-platform guide line.
 
 ![Debug screenshot](https://github.com/Phoenix-flame/Mario/blob/master/images/3.png?raw=true)
 
