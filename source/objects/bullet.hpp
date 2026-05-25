@@ -2,64 +2,31 @@
 #define _BULLET_HPP_
 
 #include "object.hpp"
-#include "../player.hpp"
+
+#define BULLET_IMAGE "assets/sprites/objects/flower.png"
 
 class Bullet : public Object
 {
 public:
-    Bullet(Point _pos) : Object(Point(0, 0),
-                                Point(20, 20),
-                                "",
-                                G_MUSHROOM)
-    {
-        funcToRun = &Bullet::riseLikeThePhoenix;
-
-        pos.x = _pos.x;
-        pos.y = _pos.y;
-
-        y_target = pos.y - size.y;
-        x_gravity_en = pos.x + size.x + 1;
-
-        ghost_dead = false;
-    }
+    Bullet(int x, int y, Dir dir);
 
     void update();
 
-    // Collision Notification
     void notifyCollisionLeft(Object *) override;
     void notifyCollisionRight(Object *) override;
     void notifyCollisionTop(Object *) override;
     void notifyCollisionBottom(Object *) override;
-    void notifyFreeLeft() override;
-    void notifyFreeRight() override;
-    void notifyFreeTop() override;
     void notifyFreeBottom() override;
-
     void notifyDistToPlatform(int d) override;
-    void notifyDistToCeil(int d) override;
 
 private:
-    void (Bullet::*funcToRun)();
+    void hit(Object *obj);
 
-    void riseLikeThePhoenix();
-    void run();
-
-    Timer riseTimer;
-
-    int speed = 2;
-    int fall_speed_vertical;
+    Dir dir;
+    int speed;
+    int vertical_speed;
     int fall_cycles = 0;
-    int terminal_speed = 10;
-    Point min_dist_to_platform;
-
-    int y_target;
-    int x_gravity_en;
-    bool gravity_en = false;
-
-    // MovementProfile
-    void startFall();
-    void falling();
-    void endFall();
+    int terminal_speed = 8;
 };
 
-#endif // !_BULLET_HPP
+#endif // !_BULLET_HPP_

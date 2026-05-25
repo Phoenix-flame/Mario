@@ -49,6 +49,7 @@ void World::loop()
             if (map->objects[i]->getPos().y > 500)
             {
                 map->objects.erase(map->objects.begin() + i);
+                continue;
             }
 
             ((Goomba *)map->objects[i])->update();
@@ -63,6 +64,7 @@ void World::loop()
             if (map->objects[i]->getPos().y > 500)
             {
                 map->objects.erase(map->objects.begin() + i);
+                continue;
             }
 
             ((Koopa *)map->objects[i])->update();
@@ -94,6 +96,11 @@ void World::loop()
             collision(ghosts[i]);
             ((Flower *)ghosts[i])->update();
         }
+        else if (ghosts[i]->getType() == G_BULLET)
+        {
+            collision(ghosts[i]);
+            ((Bullet *)ghosts[i])->update();
+        }
     }
 }
 
@@ -115,6 +122,11 @@ void World::ghostCollector()
             obj->ghost.clear();
         }
     }
+}
+
+void World::addGhost(Object *obj)
+{
+    ghosts.push_back(obj);
 }
 
 std::vector<Object *> World::getObjects()
@@ -152,7 +164,7 @@ void World::collision(Object *obj)
     obj->notifyFreeRight();
     for (auto o : getObjects())
     {
-        if (o->dead)
+        if (o->dead || o == obj)
         {
             continue;
         }
@@ -176,8 +188,6 @@ void World::collision(Object *obj)
                 o->notifyCollisionRight(obj);
             }
         }
-        // if (){}
-        static int counter = 0;
         // Bottom collision
         int left = o1.left_bottom.x + 2;
         int right = o1.right_bottom.x - 2;
@@ -220,8 +230,8 @@ void World::collision(Object *obj)
             }
         }
 
-        // Top Collision Just for player
-        if (obj->getType() == PLAYER)
+        // Top Collision Just for player and fireballs
+        if (obj->getType() == PLAYER || obj->getType() == G_BULLET)
         {
             if ((o1.top_center.x >= o2.left_top.x && o1.top_center.x <= o2.right_top.x))
             {
@@ -243,7 +253,7 @@ void World::collision(Object *obj)
                 {
                     if (o1.top_center.y >= o2.bottom_center.y && o1.top_center.y - o2.bottom_center.y < 5)
                     {
-                        if (((Player *)obj)->getState() == JUMP)
+                        if (obj->getType() == G_BULLET || ((Player *)obj)->getState() == JUMP)
                         {
                             collided = true;
                             selected = o;
@@ -258,7 +268,7 @@ void World::collision(Object *obj)
                 {
                     if (o1.top_center.y >= o2.bottom_center.y && o1.top_center.y - o2.bottom_center.y < 5)
                     {
-                        if (((Player *)obj)->getState() == JUMP)
+                        if (obj->getType() == G_BULLET || ((Player *)obj)->getState() == JUMP)
                         {
                             collided = true;
                             selected = o;
@@ -276,7 +286,7 @@ void World::collision(Object *obj)
     {
         obj->notifyFreeBottom();
     }
-    if (obj->getType() == PLAYER && !collision_with_center && collided)
+    if ((obj->getType() == PLAYER || obj->getType() == G_BULLET) && !collision_with_center && collided)
     {
         obj->notifyCollisionTop(selected);
     }

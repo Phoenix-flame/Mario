@@ -169,9 +169,21 @@ void Koopa::death()
     }
 }
 
+void Koopa::fireballDeath()
+{
+    Object::dead = true;
+    ghost_dead = true;
+    image = KOOPA_DEAD;
+}
+
 // Collision Notification
 void Koopa::notifyCollisionLeft(Object *obj)
 {
+    if (obj->getType() == G_BULLET)
+    {
+        fireballDeath();
+        return;
+    }
     if (state == KOOPA_WALK_STATE)
     {
         if (obj->getType() == PLAYER)
@@ -200,6 +212,11 @@ void Koopa::notifyCollisionLeft(Object *obj)
 }
 void Koopa::notifyCollisionRight(Object *obj)
 {
+    if (obj->getType() == G_BULLET)
+    {
+        fireballDeath();
+        return;
+    }
     if (state == KOOPA_WALK_STATE)
     {
         if (obj->getType() == PLAYER)
@@ -228,9 +245,18 @@ void Koopa::notifyCollisionRight(Object *obj)
 }
 void Koopa::notifyCollisionTop(Object *obj)
 {
+    if (obj->getType() == G_BULLET)
+    {
+        fireballDeath();
+    }
 }
 void Koopa::notifyCollisionBottom(Object *obj)
 {
+    if (obj->getType() == G_BULLET)
+    {
+        fireballDeath();
+        return;
+    }
     endFall();
 }
 

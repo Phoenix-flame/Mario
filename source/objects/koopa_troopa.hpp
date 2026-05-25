@@ -55,6 +55,7 @@ public:
     void notifyDistToCeil(int d) override;
 
     void death() override;
+    void fireballDeath();
 
     bool hitted = false;
 

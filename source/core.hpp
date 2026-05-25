@@ -1,5 +1,6 @@
 #include "world.hpp"
 #include "audio.hpp"
+#include "objects/bullet.hpp"
 #include <chrono>
 using namespace std::chrono;
 
@@ -32,6 +33,7 @@ private:
     int frameTime;
     Timer *gameTimer;
     Timer *endGameTimer;
+    Timer *shootTimer;
 
     // Keyboard events
     bool KEY_UP_PRESSED = false;

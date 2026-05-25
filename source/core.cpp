@@ -7,6 +7,7 @@ Core::Core(){
     // this->win->play_music("./assets/sounds/Super Mario Bros. theme music.ogg");
     gameTimer = new Timer();
     endGameTimer = new Timer();
+    shootTimer = new Timer();
     gameTimer->start();
     FPS = 0;
 }
@@ -95,7 +96,18 @@ void Core::update(){
         }
     }
     if (KEY_SHIFT_PRESSED){
-        world->getPlayer()->shoot();
+        Player *player = world->getPlayer();
+        if (player->getLevel() == POWER && (!shootTimer->isStarted() || shootTimer->getTime() > 250)){
+            Point pos = player->getPos();
+            Point size = player->getSize();
+            Dir fireDir = (player->getDir() == LEFT) ? LEFT : RIGHT;
+            int bullet_x = (fireDir == RIGHT) ? pos.x + size.x : pos.x - 16;
+            int bullet_y = pos.y + (size.y / 2) - 8;
+            world->addGhost(new Bullet(bullet_x, bullet_y, fireDir));
+            player->shoot();
+            shootTimer->reset();
+            shootTimer->start();
+        }
     }
 
 }
@@ -224,7 +236,7 @@ bool Core::events(){
             break;
         case Event::KEY_RELEASE:
 
-            if (event.get_pressed_key() == 'R'){
+            if (event.get_pressed_key() == 'R' || event.get_pressed_key() == ' '){
                 KEY_UP_PRESSED = false;
             }
             else if (event.get_pressed_key() == 'O'){
@@ -232,6 +244,9 @@ bool Core::events(){
             }
             else if (event.get_pressed_key() == 'P'){
                 KEY_LEFT_PRESSED = false;
+            }
+            else if (event.get_pressed_key() == 'z' || event.get_pressed_key() == 'Z'){
+                KEY_SHIFT_PRESSED = false;
             }
 
         default:;
@@ -246,5 +261,6 @@ void Core::resetGame(){
     gameTimer->reset();
     gameTimer->start();
     endGameTimer->reset();
+    shootTimer->reset();
     audio->reset();
 }
