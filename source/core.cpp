@@ -199,11 +199,6 @@ void Core::showDebug(){
 
         Rectangle bounds(p, p + s);
         win->draw_rect(bounds, GREEN, 2U);
-        for (auto part : body.parts){
-            Point part_pos = part.rect.left_top + camera;
-            Rectangle part_rect(part_pos, Point(part_pos.x + part.rect.w, part_pos.y + part.rect.h));
-            win->draw_rect(part_rect, CYAN, 1U);
-        }
 
         std::string label = std::string("BODY ") + ToString(body.type) + " x" + std::to_string(body.parts.size());
         win->show_text(label, Point(bounds.x, bounds.y - 10), GREEN, font, 9);
