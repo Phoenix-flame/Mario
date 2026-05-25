@@ -31,6 +31,7 @@ public:
     Player* getPlayer();
     std::vector<Object*> getGhosts();
     GameState* getGameState();
+    void addGhost(Object *obj);
 private:
     GameState* gameState;
     void gravity();
