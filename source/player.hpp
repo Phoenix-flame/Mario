@@ -48,6 +48,9 @@
 #define BIG_WALK_RIGHT2 "assets/sprites/mario/big/walking-right-2.png"
 #define BIG_WALK_RIGHT3 "assets/sprites/mario/big/walking-right-3.png"
 
+#define PLAYER_INVINCIBILITY_MS 1500
+#define PLAYER_FLASH_INTERVAL_MS 120
+
 enum Level
 {
     NORMAL,
@@ -144,6 +147,8 @@ public:
     State getState() { return state; }
     Dir getDir() { return dir; }
     Level getLevel() { return level; }
+    bool isInvincible();
+    bool shouldDraw();
 
     void shoot();
 
@@ -215,7 +220,7 @@ private:
     Timer RW_Timer;
     Timer LW_Timer;
     Timer deathAnimation;
-    Timer immeunityTimer;
+    Timer immunityTimer;
 };
 
 #endif // !_PLAYER_HPP_
