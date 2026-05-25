@@ -75,7 +75,7 @@ void Bullet::notifyCollisionBottom(Object *obj)
         return;
     }
 
-    vertical_speed = -4;
+    vertical_speed = -5;
 }
 
 void Bullet::notifyFreeBottom()
