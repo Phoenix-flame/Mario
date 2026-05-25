@@ -120,9 +120,9 @@ void Core::draw(){
     this->drawBackground();
     this->drawObjects();
     this->drawHood();
-#if 0
-   	this->showDebug();
-#endif
+    if (debugEnabled){
+        this->showDebug();
+    }
 
     win->update_screen();
 }
@@ -135,32 +135,93 @@ void Core::drawBackground(){
 }
 
 void Core::showDebug(){
-    win->show_text("FPS: " + std::to_string(FPS), Point(10, 10), BLACK, "assets/Roboto-Regular.ttf", 20);
-    win->show_text("State: " + std::string(ToString(world->getPlayer()->getState())),
-     world->getPlayer()->getPos() + Point(15, -15) + world->camera->getPos(),
-     WHITE, "assets/Roboto-Regular.ttf", 15);
-     win->show_text("Speed: " + std::to_string(world->getPlayer()->getSpeed()),
-     world->getPlayer()->getPos() + Point(15, -30) + world->camera->getPos(),
-     WHITE, "assets/Roboto-Regular.ttf", 15);
-    
-    Point pos_player = world->getPlayer()->getPos() + world->camera->getPos();
-    Point size_player = world->getPlayer()->getSize();
-    win->draw_rect(Rectangle(pos_player, pos_player + world->getPlayer()->getSize()), WHITE, 1U);
-    
-    win->draw_line(Point(pos_player.x - 50, pos_player.y + size_player.y/2.0), 
-                   Point(pos_player.x + size_player.x + 50, pos_player.y + size_player.y/2.0), RED);
+    const std::string font = "assets/Roboto-Regular.ttf";
+    const Point camera = world->camera->getPos();
+    Player *player = world->getPlayer();
+    Point player_pos = player->getPos();
+    Point player_size = player->getSize();
+    Point screen_player_pos = player_pos + camera;
 
-    win->draw_line(Point(pos_player.x + size_player.x/2.0, pos_player.y - 50), 
-                   Point(pos_player.x + size_player.x/2.0, pos_player.y + size_player.y + 50), RED);
+    win->fill_rect(Rectangle(Point(0, 0), Point(270, 122)), BLACK);
+    win->show_text("DEBUG: ON (D to toggle)", Point(8, 6), YELLOW, font, 14);
+    win->show_text("FPS: " + std::to_string((int)FPS), Point(8, 24), WHITE, font, 13);
+    win->show_text("Player: " + std::string(ToString(player->getState())) + " / " + std::string(ToString(player->getDir())), Point(8, 42), WHITE, font, 13);
+    win->show_text("Speed: " + std::to_string(player->getSpeed()), Point(8, 60), WHITE, font, 13);
+    win->show_text("World: (" + std::to_string(player_pos.x) + ", " + std::to_string(player_pos.y) + ")", Point(8, 78), WHITE, font, 13);
+    win->show_text("Camera: (" + std::to_string(camera.x) + ", " + std::to_string(camera.y) + ")", Point(8, 96), WHITE, font, 13);
 
-    win->draw_line(Point(pos_player.x, pos_player.y - world->getPlayer()->min_dist_to_platform.y),
-    Point(pos_player.x + size_player.x, pos_player.y - world->getPlayer()->min_dist_to_platform.y));
-    for (auto o:world->getObjects()){
-        if (o->selected){
-            Point start_object = o->getPos() + world->camera->getPos();
-            win->draw_rect(Rectangle(start_object, start_object + o->getSize()), BLUE, 4U);
+    win->fill_rect(Rectangle(Point(430, 0), Point(640, 82)), BLACK);
+    win->show_text("Objects: " + std::to_string(world->getObjects().size()), Point(438, 8), CYAN, font, 13);
+    win->show_text("Ghosts: " + std::to_string(world->getGhosts().size()), Point(438, 26), CYAN, font, 13);
+    win->show_text("Score: " + std::to_string(world->getGameState()->score), Point(438, 44), CYAN, font, 13);
+    win->show_text("Time: " + std::to_string(gameTimer->getSecs()) + "s", Point(438, 62), CYAN, font, 13);
+
+    // Player collision box and physics guide lines.
+    Rectangle player_rect(screen_player_pos, screen_player_pos + player_size);
+    win->draw_rect(player_rect, YELLOW, 2U);
+    win->draw_line(Point(player_rect.left_center.x - 40, player_rect.left_center.y),
+                   Point(player_rect.right_center.x + 40, player_rect.right_center.y), RED);
+    win->draw_line(Point(player_rect.top_center.x, player_rect.top_center.y - 40),
+                   Point(player_rect.bottom_center.x, player_rect.bottom_center.y + 40), RED);
+    win->draw_line(Point(player_rect.x, player_rect.y - player->min_dist_to_platform.y),
+                   Point(player_rect.x + player_rect.w, player_rect.y - player->min_dist_to_platform.y), GREEN);
+    win->show_text("PLAYER", Point(player_rect.x, player_rect.y - 18), YELLOW, font, 11);
+
+    // Camera viewport / screen boundary.
+    win->draw_rect(Rectangle(Point(0, 0), Point(640, 480)), MAGENTA, 1U);
+    win->draw_line(Point(0, 240), Point(640, 240), MAGENTA);
+    win->draw_line(Point(320, 0), Point(320, 480), MAGENTA);
+
+    int visible_count = 0;
+    for (auto o : world->getObjects()){
+        if (o == player){
+            continue;
         }
+
+        Point p = o->getPos() + camera;
+        Point s = o->getSize();
+        if (p.x + s.x < 0 || p.x > 640 || p.y + s.y < 0 || p.y > 480){
+            continue;
+        }
+
+        Rectangle rect(p, p + s);
+        RGB color = o->dead ? RED : BLUE;
+        if (o->getType() == GOOMBA || o->getType() == KOOPA){
+            color = MAGENTA;
+        }
+        else if (o->getType() == BLOCK || o->getType() == BRICK || o->getType() == GROUND || o->getType() == PIPE){
+            color = GREEN;
+        }
+
+        win->draw_rect(rect, color, 1U);
+        win->draw_point(rect.top_center, RED);
+        win->draw_point(rect.bottom_center, CYAN);
+        win->draw_point(rect.left_center, YELLOW);
+        win->draw_point(rect.right_center, YELLOW);
+
+        if (visible_count < 35){
+            std::string label = std::string(ToString(o->getType()));
+            if (o->dead){
+                label += " DEAD";
+            }
+            win->show_text(label, Point(rect.x, rect.y - 10), color, font, 9);
+        }
+        visible_count++;
     }
+
+    for (auto g : world->getGhosts()){
+        Point p = g->getPos() + camera;
+        Point s = g->getSize();
+        if (p.x + s.x < 0 || p.x > 640 || p.y + s.y < 0 || p.y > 480){
+            continue;
+        }
+
+        Rectangle rect(p, p + s);
+        win->draw_rect(rect, CYAN, 1U);
+        win->show_text(std::string(ToString(g->getType())), Point(rect.x, rect.y - 10), CYAN, font, 9);
+    }
+
+    win->show_text("visible objects: " + std::to_string(visible_count), Point(438, 96), YELLOW, font, 12);
 }
 
 
@@ -219,6 +280,9 @@ bool Core::events(){
         case Event::KEY_PRESS:
             if (event.get_pressed_key() == 'q'){
                 return false;
+            }
+            else if (event.get_pressed_key() == 'd' || event.get_pressed_key() == 'D'){
+                debugEnabled = !debugEnabled;
             }
             else if (event.get_pressed_key() == 'R' || event.get_pressed_key() == ' '){
                 world->getPlayer()->can_jump = true;
