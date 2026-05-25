@@ -109,6 +109,10 @@ public:
   void draw_img(std::string filename, Rectangle dst = NULL_RECT,
                 Rectangle src = NULL_RECT, double angle = 0,
                 bool flip_horizontal = false, bool flip_vertical = false);
+  void draw_img_with_color_key(std::string filename, RGB transparent_color,
+                               Rectangle dst = NULL_RECT,
+                               Rectangle src = NULL_RECT, double angle = 0,
+                               bool flip_horizontal = false, bool flip_vertical = false);
   void show_text(std::string input, Point src, RGB color = WHITE,
                  std::string font_addr = "FreeSans.ttf", int size = 24);
   void draw_point(Point, RGB color = WHITE);
