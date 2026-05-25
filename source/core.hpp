@@ -35,6 +35,8 @@ private:
     Timer *endGameTimer;
     Timer *shootTimer;
 
+    bool debugEnabled = false;
+
     // Keyboard events
     bool KEY_UP_PRESSED = false;
     bool KEY_DOWN_PRESSED = false;
