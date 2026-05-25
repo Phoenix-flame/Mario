@@ -79,6 +79,16 @@ namespace
         return a.left_top.x < b.right_top.x && a.right_top.x > b.left_top.x;
     }
 
+    bool horizontalOverlap(const Rectangle &a, const Rectangle &b)
+    {
+        return a.x < b.x + b.w && a.x + a.w > b.x;
+    }
+
+    bool verticalOverlap(const Rectangle &a, const Rectangle &b)
+    {
+        return a.y < b.y + b.h && a.y + a.h > b.y;
+    }
+
     bool expandedBoundsOverlap(const Rectangle &moving, const Rectangle &bounds)
     {
         const int MARGIN = 16;
@@ -122,18 +132,19 @@ namespace
                t == BLOCK || t == GROUND;
     }
 
-    CollisionSide detectSideCollision(const Rectangle &moving, const Rectangle &solid)
+    CollisionSide detectSideCollision(const Rectangle &moving, const CollisionPart &part)
     {
+        const Rectangle &solid = part.rect;
         if (!hasVerticalOverlapForSideCollision(moving, solid))
         {
             return COLLISION_NONE;
         }
 
-        if (abs(moving.right_center.x - solid.left_center.x) < SIDE_COLLISION_TOLERANCE)
+        if (part.exposed_left && abs(moving.right_center.x - solid.left_center.x) < SIDE_COLLISION_TOLERANCE)
         {
             return COLLISION_RIGHT;
         }
-        if (abs(moving.left_center.x - solid.right_center.x) < SIDE_COLLISION_TOLERANCE)
+        if (part.exposed_right && abs(moving.left_center.x - solid.right_center.x) < SIDE_COLLISION_TOLERANCE)
         {
             return COLLISION_LEFT;
         }
@@ -196,6 +207,44 @@ namespace
         {
             moving_obj->notifyCollisionLeft(solid_obj);
             solid_obj->notifyCollisionRight(moving_obj);
+        }
+    }
+
+    void calculateExposedFaces(CollisionBody &body)
+    {
+        for (unsigned int i = 0; i < body.parts.size(); i++)
+        {
+            CollisionPart &part = body.parts[i];
+            part.exposed_top = true;
+            part.exposed_bottom = true;
+            part.exposed_left = true;
+            part.exposed_right = true;
+
+            for (unsigned int j = 0; j < body.parts.size(); j++)
+            {
+                if (i == j)
+                {
+                    continue;
+                }
+
+                const Rectangle &other = body.parts[j].rect;
+                if (other.x + other.w == part.rect.x && verticalOverlap(part.rect, other))
+                {
+                    part.exposed_left = false;
+                }
+                if (part.rect.x + part.rect.w == other.x && verticalOverlap(part.rect, other))
+                {
+                    part.exposed_right = false;
+                }
+                if (other.y + other.h == part.rect.y && horizontalOverlap(part.rect, other))
+                {
+                    part.exposed_top = false;
+                }
+                if (part.rect.y + part.rect.h == other.y && horizontalOverlap(part.rect, other))
+                {
+                    part.exposed_bottom = false;
+                }
+            }
         }
     }
 }
@@ -414,6 +463,7 @@ void World::rebuildCollisionBodies()
             }
         }
 
+        calculateExposedFaces(body);
         collisionBodies.push_back(body);
     }
 }
@@ -457,7 +507,9 @@ void World::collision(Object *obj)
     obj->notifyFreeLeft();
     obj->notifyFreeRight();
 
-    auto processCollisionTarget = [&](Object *target, const Rectangle &solid_rect) -> bool {
+    auto processCollisionTarget = [&](const CollisionPart &part) -> bool {
+        Object *target = part.object;
+        const Rectangle &solid_rect = part.rect;
         if (target->dead || target == obj || shouldIgnoreEnemyCollision(obj, target))
         {
             return false;
@@ -465,9 +517,9 @@ void World::collision(Object *obj)
 
         Rectangle moving_rect(obj->getPos(), obj->getPos() + obj->getSize());
 
-        notifySideCollision(obj, target, detectSideCollision(moving_rect, solid_rect));
+        notifySideCollision(obj, target, detectSideCollision(moving_rect, part));
 
-        if (detectBottomCollision(moving_rect, solid_rect))
+        if (part.exposed_top && detectBottomCollision(moving_rect, solid_rect))
         {
             if (isLandingOnTop(moving_rect, solid_rect))
             {
@@ -485,7 +537,11 @@ void World::collision(Object *obj)
             return false;
         }
 
-        if (detectTopCenterCollision(moving_rect, solid_rect))
+        bool top_center_on_part = detectTopCenterCollision(moving_rect, solid_rect);
+        bool top_corner_on_part = detectTopLeftCornerCollision(moving_rect, solid_rect) ||
+                                  detectTopRightCornerCollision(moving_rect, solid_rect);
+
+        if (part.exposed_bottom && top_center_on_part)
         {
             if (hitsSolidCeiling(moving_rect, solid_rect))
             {
@@ -503,14 +559,7 @@ void World::collision(Object *obj)
             return false;
         }
 
-        if (top_center_collision)
-        {
-            return false;
-        }
-
-        bool top_corner_overlaps = detectTopLeftCornerCollision(moving_rect, solid_rect) ||
-                                   detectTopRightCornerCollision(moving_rect, solid_rect);
-        if (!top_corner_overlaps)
+        if (top_center_collision || !part.exposed_bottom || !top_corner_on_part)
         {
             return false;
         }
@@ -541,7 +590,7 @@ void World::collision(Object *obj)
 
         for (auto &part : body.parts)
         {
-            if (processCollisionTarget(part.object, part.rect))
+            if (processCollisionTarget(part))
             {
                 return;
             }
@@ -555,8 +604,8 @@ void World::collision(Object *obj)
             continue;
         }
 
-        Rectangle solid_rect(o->getPos(), o->getPos() + o->getSize());
-        if (processCollisionTarget(o, solid_rect))
+        CollisionPart dynamic_part(o, objectRect(o));
+        if (processCollisionTarget(dynamic_part))
         {
             return;
         }
