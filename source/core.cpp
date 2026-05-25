@@ -128,14 +128,8 @@ void Core::draw(){
 }
 
 void Core::drawBackground(){
-    win->draw_img(BACKGROUND,
-                Rectangle(world->camera->getPosBackground(), Point(1600, 480) + world->camera->getPosBackground()),
-                Rectangle(Point(0, 0), Point(2000, 1000)),
-                0, false);
-
-    // Hide baked-in fixed clouds and draw a moving cloud layer instead.
     const RGB SKY_BLUE(92, 148, 252);
-    win->fill_rect(Rectangle(Point(0, 0), Point(640, 250)), SKY_BLUE);
+    win->fill_rect(Rectangle(Point(0, 0), Point(640, 480)), SKY_BLUE);
 
     static int cloud_offset = 0;
     static int last_cloud_tick = SDL_GetTicks();
@@ -146,23 +140,26 @@ void Core::drawBackground(){
         last_cloud_tick = current_tick;
     }
 
-    auto draw_cloud = [this](int x, int y, int size) {
-        win->fill_circle(Point(x, y), size, WHITE);
-        win->fill_circle(Point(x + size, y - size / 2), size + 4, WHITE);
-        win->fill_circle(Point(x + size * 2, y), size, WHITE);
-        win->fill_rect(Rectangle(Point(x - size, y), Point(x + size * 3, y + size)), WHITE);
+    auto draw_cloud = [this](int x, int y, int tile_size) {
+        const std::string path = "assets/sprites/objects/cloud/";
+        win->draw_img(path + "cloud_left_top.bmp", Rectangle(Point(x, y), Point(x + tile_size, y + tile_size)), NULL_RECT, 0, false);
+        win->draw_img(path + "cloud_center_top.bmp", Rectangle(Point(x + tile_size, y), Point(x + tile_size * 2, y + tile_size)), NULL_RECT, 0, false);
+        win->draw_img(path + "cloud_right_top.bmp", Rectangle(Point(x + tile_size * 2, y), Point(x + tile_size * 3, y + tile_size)), NULL_RECT, 0, false);
+        win->draw_img(path + "cloud_left_bot.bmp", Rectangle(Point(x, y + tile_size), Point(x + tile_size, y + tile_size * 2)), NULL_RECT, 0, false);
+        win->draw_img(path + "cloud_center_bot.bmp", Rectangle(Point(x + tile_size, y + tile_size), Point(x + tile_size * 2, y + tile_size * 2)), NULL_RECT, 0, false);
+        win->draw_img(path + "cloud_right_bot.bmp", Rectangle(Point(x + tile_size * 2, y + tile_size), Point(x + tile_size * 3, y + tile_size * 2)), NULL_RECT, 0, false);
     };
 
     const int period = 760;
     int parallax = world->camera->getPosBackground().x / 2;
     int bases[5] = {80, 230, 390, 560, 720};
-    int ys[5] = {75, 120, 60, 145, 95};
-    int sizes[5] = {18, 14, 20, 16, 13};
+    int ys[5] = {70, 120, 55, 145, 95};
+    int tile_sizes[5] = {20, 16, 22, 18, 16};
 
     for (int i = 0; i < 5; i++)
     {
         int x = (bases[i] + parallax - cloud_offset) % period;
-        while (x < -80)
+        while (x < -100)
         {
             x += period;
         }
@@ -170,7 +167,7 @@ void Core::drawBackground(){
         {
             x -= period;
         }
-        draw_cloud(x, ys[i], sizes[i]);
+        draw_cloud(x, ys[i], tile_sizes[i]);
     }
 }
 
