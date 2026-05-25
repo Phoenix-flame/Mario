@@ -12,7 +12,8 @@ enum KoopaState
     KOOPA_WALK_STATE,
     KOOPA_FALL_STATE,
     KOOPA_ATTACK_STATE,
-    KOOPA_FAST_AND_FURIOUS_STATE
+    KOOPA_FAST_AND_FURIOUS_STATE,
+    KOOPA_FIREBALL_DEATH_STATE
 };
 
 class Koopa : public Object
@@ -26,7 +27,9 @@ public:
 
         state = KOOPA_WALK_STATE;
         dir = LEFT;
-        int speed = -1;
+        speed = -1;
+        fall_speed_vertical = 0;
+        fall_speed_horizontal = 0;
     }
 
     void update();
@@ -56,6 +59,7 @@ public:
 
     void death() override;
     void fireballDeath();
+    void fireballDeathAnimation();
 
     bool hitted = false;
 
