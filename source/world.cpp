@@ -1,5 +1,126 @@
 #include "world.hpp"
 
+namespace
+{
+    const int SIDE_COLLISION_TOLERANCE = 5;
+    const int TOP_COLLISION_TOLERANCE = 5;
+    const int BOTTOM_COLLISION_TOLERANCE = 3;
+    const int EDGE_INSET = 2;
+
+    enum CollisionSide
+    {
+        COLLISION_NONE,
+        COLLISION_LEFT,
+        COLLISION_RIGHT,
+        COLLISION_TOP,
+        COLLISION_BOTTOM
+    };
+
+    bool pointInsideHorizontalSpan(int x, const Rectangle &rect)
+    {
+        return x >= rect.left_bottom.x && x <= rect.right_bottom.x;
+    }
+
+    bool pointInsideVerticalSpan(int y, const Rectangle &rect)
+    {
+        return y >= rect.y && y <= (rect.y + rect.h);
+    }
+
+    bool hasVerticalOverlapForSideCollision(const Rectangle &moving, const Rectangle &solid)
+    {
+        return pointInsideVerticalSpan(moving.right_center.y, solid) ||
+               pointInsideVerticalSpan(moving.y, solid) ||
+               pointInsideVerticalSpan(moving.y + moving.h - 1, solid);
+    }
+
+    bool supportsTopCollision(Object *obj)
+    {
+        return obj->getType() == PLAYER || obj->getType() == G_BULLET;
+    }
+
+    bool shouldApplyTopCornerCollision(Object *obj)
+    {
+        return obj->getType() == G_BULLET || ((Player *)obj)->getState() == JUMP;
+    }
+
+    CollisionSide detectSideCollision(const Rectangle &moving, const Rectangle &solid)
+    {
+        if (!hasVerticalOverlapForSideCollision(moving, solid))
+        {
+            return COLLISION_NONE;
+        }
+
+        if (abs(moving.right_center.x - solid.left_center.x) < SIDE_COLLISION_TOLERANCE)
+        {
+            return COLLISION_RIGHT;
+        }
+        if (abs(moving.left_center.x - solid.right_center.x) < SIDE_COLLISION_TOLERANCE)
+        {
+            return COLLISION_LEFT;
+        }
+
+        return COLLISION_NONE;
+    }
+
+    bool isLandingOnTop(const Rectangle &moving, const Rectangle &solid)
+    {
+        return moving.bottom_center.y <= solid.top_center.y &&
+               abs(moving.bottom_center.y - solid.top_center.y) < BOTTOM_COLLISION_TOLERANCE;
+    }
+
+    bool bottomProbeOverlapsSolid(int probe_x, const Rectangle &solid)
+    {
+        return pointInsideHorizontalSpan(probe_x, solid);
+    }
+
+    bool detectBottomCollision(const Rectangle &moving, const Rectangle &solid)
+    {
+        int left_probe = moving.left_bottom.x + EDGE_INSET;
+        int right_probe = moving.right_bottom.x - EDGE_INSET;
+
+        return bottomProbeOverlapsSolid(moving.bottom_center.x, solid) ||
+               bottomProbeOverlapsSolid(left_probe, solid) ||
+               bottomProbeOverlapsSolid(right_probe, solid);
+    }
+
+    bool hitsSolidCeiling(const Rectangle &moving, const Rectangle &solid)
+    {
+        return moving.top_center.y >= solid.bottom_center.y &&
+               moving.top_center.y - solid.bottom_center.y < TOP_COLLISION_TOLERANCE;
+    }
+
+    bool detectTopCenterCollision(const Rectangle &moving, const Rectangle &solid)
+    {
+        return moving.top_center.x >= solid.left_top.x && moving.top_center.x <= solid.right_top.x;
+    }
+
+    bool detectTopLeftCornerCollision(const Rectangle &moving, const Rectangle &solid)
+    {
+        int left_probe = moving.left_top.x + EDGE_INSET;
+        return left_probe >= solid.left_top.x && left_probe <= solid.right_top.x;
+    }
+
+    bool detectTopRightCornerCollision(const Rectangle &moving, const Rectangle &solid)
+    {
+        int right_probe = moving.right_top.x - EDGE_INSET;
+        return right_probe >= solid.left_top.x && right_probe <= solid.right_top.x;
+    }
+
+    void notifySideCollision(Object *moving_obj, Object *solid_obj, CollisionSide side)
+    {
+        if (side == COLLISION_RIGHT)
+        {
+            moving_obj->notifyCollisionRight(solid_obj);
+            solid_obj->notifyCollisionLeft(moving_obj);
+        }
+        else if (side == COLLISION_LEFT)
+        {
+            moving_obj->notifyCollisionLeft(solid_obj);
+            solid_obj->notifyCollisionRight(moving_obj);
+        }
+    }
+}
+
 World::World()
 {
     this->camera = new Camera();
@@ -155,139 +276,92 @@ void World::collision(Object *obj)
     {
         return;
     }
+
     bool on_the_floor = false;
-    bool collision_with_center = false;
-    bool collided = false;
-    Object *selected;
+    bool top_center_collision = false;
+    bool top_corner_collision = false;
+    Object *top_corner_object = nullptr;
 
     obj->notifyFreeLeft();
     obj->notifyFreeRight();
+
     for (auto o : getObjects())
     {
         if (o->dead || o == obj)
         {
             continue;
         }
-        Rectangle o1(obj->getPos(), obj->getPos() + obj->getSize());
-        Rectangle o2(o->getPos(), o->getPos() + o->getSize());
-        // Left and right collision
-        if ((o1.right_center.y >= o2.y && o1.right_center.y <= (o2.y + o2.h)) ||
-            (o1.y >= o2.y && o1.y <= (o2.y + o2.h)) ||
-            ((o1.y + o1.h - 1) >= o2.y && (o1.y + o1.h - 1) <= (o2.y + o2.h)))
+
+        Rectangle moving_rect(obj->getPos(), obj->getPos() + obj->getSize());
+        Rectangle solid_rect(o->getPos(), o->getPos() + o->getSize());
+
+        notifySideCollision(obj, o, detectSideCollision(moving_rect, solid_rect));
+
+        if (detectBottomCollision(moving_rect, solid_rect))
         {
-            if (abs(o1.right_center.x - o2.left_center.x) < 5)
-            {
-                // TODO notify either objects Done
-                obj->notifyCollisionRight(o);
-                o->notifyCollisionLeft(obj);
-            }
-            else if (abs(o1.left_center.x - o2.right_center.x) < 5)
-            {
-                // TODO notify either objects Done
-                obj->notifyCollisionLeft(o);
-                o->notifyCollisionRight(obj);
-            }
-        }
-        // Bottom collision
-        int left = o1.left_bottom.x + 2;
-        int right = o1.right_bottom.x - 2;
-        if ((o1.bottom_center.x >= o2.left_bottom.x && o1.bottom_center.x <= o2.right_bottom.x))
-        {
-            if (o1.bottom_center.y <= o2.top_center.y && abs(o1.bottom_center.y - o2.top_center.y) < 3)
+            if (isLandingOnTop(moving_rect, solid_rect))
             {
                 on_the_floor = true;
                 obj->notifyCollisionBottom(o);
             }
             else
             {
-                obj->notifyDistToPlatform(abs(o1.bottom_center.y - o2.top_center.y));
+                obj->notifyDistToPlatform(abs(moving_rect.bottom_center.y - solid_rect.top_center.y));
             }
         }
 
-        else if (left >= o2.left_bottom.x && left <= o2.right_bottom.x)
+        if (!supportsTopCollision(obj))
         {
-            if (o1.bottom_center.y <= o2.top_center.y && abs(o1.bottom_center.y - o2.top_center.y) < 3)
-            {
-                on_the_floor = true;
-                obj->notifyCollisionBottom(o);
-            }
-            else
-            {
-                obj->notifyDistToPlatform(abs(o1.bottom_center.y - o2.top_center.y));
-            }
+            continue;
         }
 
-        else if (right >= o2.left_bottom.x && right <= o2.right_bottom.x)
+        if (detectTopCenterCollision(moving_rect, solid_rect))
         {
-            if (o1.bottom_center.y <= o2.top_center.y && abs(o1.bottom_center.y - o2.top_center.y) < 3)
+            if (hitsSolidCeiling(moving_rect, solid_rect))
             {
-                on_the_floor = true;
-                obj->notifyCollisionBottom(o);
+                obj->notifyCollisionTop(o);
+                top_center_collision = true;
+                top_corner_collision = true;
+                return;
             }
-            else
-            {
-                obj->notifyDistToPlatform(abs(o1.bottom_center.y - o2.top_center.y));
-            }
+
+            obj->notifyDistToCeil(abs(moving_rect.top_center.y - solid_rect.bottom_center.y));
+            continue;
         }
 
-        // Top Collision Just for player and fireballs
-        if (obj->getType() == PLAYER || obj->getType() == G_BULLET)
+        if (top_center_collision)
         {
-            if ((o1.top_center.x >= o2.left_top.x && o1.top_center.x <= o2.right_top.x))
+            continue;
+        }
+
+        bool top_corner_overlaps = detectTopLeftCornerCollision(moving_rect, solid_rect) ||
+                                   detectTopRightCornerCollision(moving_rect, solid_rect);
+        if (!top_corner_overlaps)
+        {
+            continue;
+        }
+
+        if (hitsSolidCeiling(moving_rect, solid_rect))
+        {
+            if (shouldApplyTopCornerCollision(obj))
             {
-                if (o1.top_center.y >= o2.bottom_center.y && o1.top_center.y - o2.bottom_center.y < 5)
-                {
-                    obj->notifyCollisionTop(o);
-                    collision_with_center = true;
-                    collided = true;
-                    return;
-                }
-                else
-                {
-                    obj->notifyDistToCeil(abs(o1.top_center.y - o2.bottom_center.y));
-                }
+                top_corner_collision = true;
+                top_corner_object = o;
             }
-            else if (!collision_with_center)
-            {
-                if ((o1.left_top.x + 2) >= o2.left_top.x && (o1.left_top.x + 2) <= o2.right_top.x)
-                {
-                    if (o1.top_center.y >= o2.bottom_center.y && o1.top_center.y - o2.bottom_center.y < 5)
-                    {
-                        if (obj->getType() == G_BULLET || ((Player *)obj)->getState() == JUMP)
-                        {
-                            collided = true;
-                            selected = o;
-                        }
-                    }
-                    else
-                    {
-                        obj->notifyDistToCeil(abs(o1.top_center.y - o2.bottom_center.y));
-                    }
-                }
-                else if ((o1.right_top.x - 2) >= o2.left_top.x && (o1.right_top.x - 2) <= o2.right_top.x)
-                {
-                    if (o1.top_center.y >= o2.bottom_center.y && o1.top_center.y - o2.bottom_center.y < 5)
-                    {
-                        if (obj->getType() == G_BULLET || ((Player *)obj)->getState() == JUMP)
-                        {
-                            collided = true;
-                            selected = o;
-                        }
-                    }
-                    else
-                    {
-                        obj->notifyDistToCeil(abs(o1.top_center.y - o2.bottom_center.y));
-                    }
-                }
-            }
+        }
+        else
+        {
+            obj->notifyDistToCeil(abs(moving_rect.top_center.y - solid_rect.bottom_center.y));
         }
     }
+
     if (!on_the_floor)
     {
         obj->notifyFreeBottom();
     }
-    if ((obj->getType() == PLAYER || obj->getType() == G_BULLET) && !collision_with_center && collided)
+
+    if (supportsTopCollision(obj) && !top_center_collision && top_corner_collision && top_corner_object != nullptr)
     {
-        obj->notifyCollisionTop(selected);
+        obj->notifyCollisionTop(top_corner_object);
     }
 }
