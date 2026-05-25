@@ -129,6 +129,7 @@ void Core::draw(){
 
 void Core::drawBackground(){
     const RGB SKY_BLUE(92, 148, 252);
+    const RGB CLOUD_TRANSPARENT(255, 0, 255);
     win->fill_rect(Rectangle(Point(0, 0), Point(640, 480)), SKY_BLUE);
 
     static int cloud_offset = 0;
@@ -140,14 +141,18 @@ void Core::drawBackground(){
         last_cloud_tick = current_tick;
     }
 
-    auto draw_cloud = [this](int x, int y, int tile_size) {
+    auto draw_cloud_tile = [this, CLOUD_TRANSPARENT](std::string filename, Rectangle dst) {
+        win->draw_img_with_color_key(filename, CLOUD_TRANSPARENT, dst, NULL_RECT, 0, false);
+    };
+
+    auto draw_cloud = [this, draw_cloud_tile](int x, int y, int tile_size) {
         const std::string path = "assets/sprites/objects/cloud/";
-        win->draw_img(path + "cloud_left_top.bmp", Rectangle(Point(x, y), Point(x + tile_size, y + tile_size)), NULL_RECT, 0, false);
-        win->draw_img(path + "cloud_center_top.bmp", Rectangle(Point(x + tile_size, y), Point(x + tile_size * 2, y + tile_size)), NULL_RECT, 0, false);
-        win->draw_img(path + "cloud_right_top.bmp", Rectangle(Point(x + tile_size * 2, y), Point(x + tile_size * 3, y + tile_size)), NULL_RECT, 0, false);
-        win->draw_img(path + "cloud_left_bot.bmp", Rectangle(Point(x, y + tile_size), Point(x + tile_size, y + tile_size * 2)), NULL_RECT, 0, false);
-        win->draw_img(path + "cloud_center_bot.bmp", Rectangle(Point(x + tile_size, y + tile_size), Point(x + tile_size * 2, y + tile_size * 2)), NULL_RECT, 0, false);
-        win->draw_img(path + "cloud_right_bot.bmp", Rectangle(Point(x + tile_size * 2, y + tile_size), Point(x + tile_size * 3, y + tile_size * 2)), NULL_RECT, 0, false);
+        draw_cloud_tile(path + "cloud_left_top.bmp", Rectangle(Point(x, y), Point(x + tile_size, y + tile_size)));
+        draw_cloud_tile(path + "cloud_center_top.bmp", Rectangle(Point(x + tile_size, y), Point(x + tile_size * 2, y + tile_size)));
+        draw_cloud_tile(path + "cloud_right_top.bmp", Rectangle(Point(x + tile_size * 2, y), Point(x + tile_size * 3, y + tile_size)));
+        draw_cloud_tile(path + "cloud_left_bot.bmp", Rectangle(Point(x, y + tile_size), Point(x + tile_size, y + tile_size * 2)));
+        draw_cloud_tile(path + "cloud_center_bot.bmp", Rectangle(Point(x + tile_size, y + tile_size), Point(x + tile_size * 2, y + tile_size * 2)));
+        draw_cloud_tile(path + "cloud_right_bot.bmp", Rectangle(Point(x + tile_size * 2, y + tile_size), Point(x + tile_size * 3, y + tile_size * 2)));
     };
 
     const int period = 760;
