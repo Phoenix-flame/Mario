@@ -5,7 +5,7 @@ namespace
 {
     const int SIDE_COLLISION_TOLERANCE = 5;
     const int SIDE_PENETRATION_TOLERANCE = 8;
-    const int TOP_PENETRATION_TOLERANCE = 10;
+    const int TOP_PENETRATION_TOLERANCE = 16;
     const int TOP_COLLISION_TOLERANCE = 5;
     const int BOTTOM_COLLISION_TOLERANCE = 3;
     const int EDGE_INSET = 2;
@@ -57,6 +57,13 @@ namespace
         return t == BRICK || t == COIN_CONTAINER || t == FIRE_CONTAINER || t == HEALTH_CONTAINER || t == BLOCK || t == GROUND;
     }
 
+    bool canUseTopPenetrationResolution(Object *obj)
+    {
+        Type t = obj->getType();
+        return t == PLAYER || t == GOOMBA || t == KOOPA ||
+               t == G_MUSHROOM || t == G_FLOWER || t == G_BULLET;
+    }
+
     CollisionSide detectSideCollision(const Rectangle &moving, const CollisionPart &part)
     {
         const Rectangle &solid = part.rect;
@@ -78,8 +85,9 @@ namespace
         return moving.bottom_center.y <= solid.top_center.y && abs(moving.bottom_center.y - solid.top_center.y) < BOTTOM_COLLISION_TOLERANCE;
     }
 
-    bool isShallowTopPenetration(const Rectangle &moving, const Rectangle &solid)
+    bool isShallowTopPenetration(Object *obj, const Rectangle &moving, const Rectangle &solid)
     {
+        if (!canUseTopPenetrationResolution(obj)) return false;
         int penetration = moving.y + moving.h - solid.y;
         return moving.y < solid.y && penetration > 0 && penetration <= TOP_PENETRATION_TOLERANCE;
     }
@@ -291,7 +299,7 @@ void World::collision(Object *obj)
         moving_rect = Rectangle(obj->getPos(), obj->getPos() + obj->getSize());
         if (part.exposed_top && detectBottomCollision(moving_rect, solid_rect))
         {
-            if (isLandingOnTop(moving_rect, solid_rect) || isShallowTopPenetration(moving_rect, solid_rect))
+            if (isLandingOnTop(moving_rect, solid_rect) || isShallowTopPenetration(obj, moving_rect, solid_rect))
             {
                 separateTopCollision(obj, solid_rect);
                 on_the_floor = true;
