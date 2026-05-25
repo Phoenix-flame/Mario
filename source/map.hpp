@@ -16,6 +16,7 @@
 #include "objects/pipes.hpp"
 #include "objects/flag.hpp"
 #include "objects/coin.hpp"
+#include "objects/bullet.hpp"
 #include "player.hpp"
 
 class Map
