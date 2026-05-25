@@ -8,6 +8,7 @@
 
 enum MushroomState
 {
+    M_RISE,
     M_RUN,
     M_FALL
 };
@@ -22,6 +23,7 @@ public:
     {
         this->type = _type;
         image = (type == M_RED) ? RED_MUSHROOM_IMAGE : HEALTH_MUSHROOM_IMAGE;
+        state = M_RISE;
         funcToRun = &Mushroom::riseLikeThePhoenix;
 
         pos.x = _pos.x;
@@ -30,6 +32,7 @@ public:
         y_target = pos.y - size.y;
         x_gravity_en = pos.x + size.x + 1;
 
+        fall_speed_vertical = 0;
         ghost_dead = false;
     }
 
@@ -68,6 +71,9 @@ private:
     int y_target;
     int x_gravity_en;
     bool gravity_en = false;
+
+    bool isStaticPlatform(Object *obj);
+    bool isFallingBesidePlatformEdge(Object *obj);
 
     // MovementProfile
     void startFall();
