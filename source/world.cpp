@@ -234,13 +234,19 @@ namespace
     {
         if (side == COLLISION_RIGHT)
         {
-            separateSideCollision(moving_obj, solid_rect, side);
+            if (moving_obj->getType() == PLAYER)
+            {
+                separateSideCollision(moving_obj, solid_rect, side);
+            }
             moving_obj->notifyCollisionRight(solid_obj);
             solid_obj->notifyCollisionLeft(moving_obj);
         }
         else if (side == COLLISION_LEFT)
         {
-            separateSideCollision(moving_obj, solid_rect, side);
+            if (moving_obj->getType() == PLAYER)
+            {
+                separateSideCollision(moving_obj, solid_rect, side);
+            }
             moving_obj->notifyCollisionLeft(solid_obj);
             solid_obj->notifyCollisionRight(moving_obj);
         }
