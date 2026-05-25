@@ -6,6 +6,7 @@ namespace
     const int TOP_COLLISION_TOLERANCE = 5;
     const int BOTTOM_COLLISION_TOLERANCE = 3;
     const int EDGE_INSET = 2;
+    const int BLOCK_BUMP_ENEMY_Y_TOLERANCE = 6;
 
     enum CollisionSide
     {
@@ -41,6 +42,29 @@ namespace
     bool shouldApplyTopCornerCollision(Object *obj)
     {
         return obj->getType() == G_BULLET || ((Player *)obj)->getState() == JUMP;
+    }
+
+    bool isEnemy(Object *obj)
+    {
+        return obj->getType() == GOOMBA || obj->getType() == KOOPA;
+    }
+
+    bool hasHorizontalOverlap(const Rectangle &a, const Rectangle &b)
+    {
+        return a.left_top.x < b.right_top.x && a.right_top.x > b.left_top.x;
+    }
+
+    bool isStandingOnPlatform(const Rectangle &enemy, const Rectangle &platform)
+    {
+        return hasHorizontalOverlap(enemy, platform) &&
+               abs(enemy.bottom_center.y - platform.top_center.y) <= BLOCK_BUMP_ENEMY_Y_TOLERANCE;
+    }
+
+    bool canBumpEnemies(Object *obj)
+    {
+        Type t = obj->getType();
+        return t == BRICK || t == COIN_CONTAINER || t == FIRE_CONTAINER || t == HEALTH_CONTAINER ||
+               t == BLOCK || t == GROUND;
     }
 
     CollisionSide detectSideCollision(const Rectangle &moving, const Rectangle &solid)
@@ -270,6 +294,30 @@ std::vector<Object *> World::getGhosts()
     return ghosts;
 }
 
+void World::hitEnemiesAbove(Object *platform)
+{
+    if (!canBumpEnemies(platform))
+    {
+        return;
+    }
+
+    Rectangle platform_rect(platform->getPos(), platform->getPos() + platform->getSize());
+
+    for (auto obj : map->objects)
+    {
+        if (obj->dead || !isEnemy(obj))
+        {
+            continue;
+        }
+
+        Rectangle enemy_rect(obj->getPos(), obj->getPos() + obj->getSize());
+        if (isStandingOnPlatform(enemy_rect, platform_rect))
+        {
+            obj->death();
+        }
+    }
+}
+
 void World::collision(Object *obj)
 {
     if (obj->dead)
@@ -320,6 +368,10 @@ void World::collision(Object *obj)
             if (hitsSolidCeiling(moving_rect, solid_rect))
             {
                 obj->notifyCollisionTop(o);
+                if (obj->getType() == PLAYER)
+                {
+                    hitEnemiesAbove(o);
+                }
                 top_center_collision = true;
                 top_corner_collision = true;
                 return;
@@ -363,5 +415,9 @@ void World::collision(Object *obj)
     if (supportsTopCollision(obj) && !top_center_collision && top_corner_collision && top_corner_object != nullptr)
     {
         obj->notifyCollisionTop(top_corner_object);
+        if (obj->getType() == PLAYER)
+        {
+            hitEnemiesAbove(top_corner_object);
+        }
     }
 }
