@@ -19,8 +19,18 @@ struct GameState{
 struct CollisionPart{
     Object *object;
     Rectangle rect;
+    bool exposed_top;
+    bool exposed_bottom;
+    bool exposed_left;
+    bool exposed_right;
 
-    CollisionPart(Object *_object, Rectangle _rect) : object(_object), rect(_rect) {}
+    CollisionPart(Object *_object, Rectangle _rect) :
+        object(_object),
+        rect(_rect),
+        exposed_top(true),
+        exposed_bottom(true),
+        exposed_left(true),
+        exposed_right(true) {}
 };
 
 struct CollisionBody{
