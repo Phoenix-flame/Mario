@@ -1,4 +1,5 @@
 #include "bullet.hpp"
+#include "koopa_troopa.hpp"
 
 Bullet::Bullet(int x, int y, Dir _dir) : Object(Point(0, 0), Point(16, 16), BULLET_IMAGE, G_BULLET)
 {
@@ -10,8 +11,8 @@ Bullet::Bullet(int x, int y, Dir _dir) : Object(Point(0, 0), Point(16, 16), BULL
     yMax = pos.y + size.y;
 
     dir = (_dir == LEFT) ? LEFT : RIGHT;
-    speed = (dir == LEFT) ? -8 : 8;
-    vertical_speed = 3;
+    speed = (dir == LEFT) ? -6 : 6;
+    vertical_speed = 2;
 }
 
 void Bullet::update()
@@ -19,7 +20,7 @@ void Bullet::update()
     _moveX(speed);
     _moveY(vertical_speed);
 
-    vertical_speed += (fall_cycles % 2 == 0) ? 1 : 0;
+    vertical_speed += 1;
     if (vertical_speed > terminal_speed)
     {
         vertical_speed = terminal_speed;
@@ -39,9 +40,13 @@ void Bullet::hit(Object *obj)
         return;
     }
 
-    if (obj->getType() == GOOMBA || obj->getType() == KOOPA)
+    if (obj->getType() == GOOMBA)
     {
         obj->death();
+    }
+    else if (obj->getType() == KOOPA)
+    {
+        ((Koopa *)obj)->fireballDeath();
     }
 
     ghost_dead = true;
@@ -70,7 +75,7 @@ void Bullet::notifyCollisionBottom(Object *obj)
         return;
     }
 
-    vertical_speed = -7;
+    vertical_speed = -4;
 }
 
 void Bullet::notifyFreeBottom()
