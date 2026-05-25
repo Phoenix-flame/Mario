@@ -5,6 +5,11 @@ void Player::update(int _dir)
     Dir trans_dir = (_dir == 1) ? RIGHT : LEFT;
     bool stop = (_dir == 0) ? true : false;
 
+    if (isInvincible() == false && immunityTimer.isStarted())
+    {
+        immunityTimer.reset();
+    }
+
     // Movement profile
     if (state == DEAD)
     {
@@ -102,6 +107,21 @@ void Player::update(int _dir)
     // Update Player State
     (this->*funcToRun)();
     updateFigure();
+}
+
+bool Player::isInvincible()
+{
+    return immunityTimer.isStarted() && immunityTimer.getMilliseconds() < PLAYER_INVINCIBILITY_MS;
+}
+
+bool Player::shouldDraw()
+{
+    if (!isInvincible())
+    {
+        return true;
+    }
+
+    return ((immunityTimer.getMilliseconds() / PLAYER_FLASH_INTERVAL_MS) % 2) == 0;
 }
 
 void Player::updateFigure()
@@ -593,13 +613,9 @@ void Player::kill(Object *obj)
 
 void Player::death()
 {
-    if (immeunityTimer.isStarted() && immeunityTimer.getMilliseconds() < 1500)
+    if (isInvincible())
     {
         return;
-    }
-    else
-    {
-        immeunityTimer.reset();
     }
     if (state == DEAD)
     {
@@ -621,13 +637,14 @@ void Player::death()
             level = NORMAL;
             size = Point(22, 30);
             pos.y += 18;
-            immeunityTimer.start();
         }
         else if (level == POWER)
         {
             level = BIG;
-            immeunityTimer.start();
         }
+
+        immunityTimer.reset();
+        immunityTimer.start();
     }
 }
 
@@ -682,6 +699,14 @@ void Player::notifyCollisionLeft(Object *obj)
     {
         return;
     }
+    if (obj->getType() == GOOMBA || obj->getType() == KOOPA)
+    {
+        if (!isInvincible())
+        {
+            death();
+        }
+        return;
+    }
     if (dir == LEFT)
     {
         collidedL = true;
@@ -694,10 +719,6 @@ void Player::notifyCollisionLeft(Object *obj)
         {
             if (speed < 0)
                 speed = 0;
-        }
-        if (obj->getType() == GOOMBA)
-        {
-            death();
         }
 
         if (obj->getType() == FLAG)
@@ -716,6 +737,14 @@ void Player::notifyCollisionRight(Object *obj)
     {
         return;
     }
+    if (obj->getType() == GOOMBA || obj->getType() == KOOPA)
+    {
+        if (!isInvincible())
+        {
+            death();
+        }
+        return;
+    }
     if (dir == RIGHT)
     {
         collidedR = true;
@@ -728,10 +757,6 @@ void Player::notifyCollisionRight(Object *obj)
         {
             if (speed > 0)
                 speed = 0;
-        }
-        if (obj->getType() == GOOMBA)
-        {
-            death();
         }
         if (this->getPos().x >= 4730 && this->getState() != WON)
         {
