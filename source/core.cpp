@@ -192,11 +192,12 @@ void Core::showDebug(){
     win->show_text("World: (" + std::to_string(player_pos.x) + ", " + std::to_string(player_pos.y) + ")", Point(8, 78), WHITE, font, 13);
     win->show_text("Camera: (" + std::to_string(camera.x) + ", " + std::to_string(camera.y) + ")", Point(8, 96), WHITE, font, 13);
 
-    win->fill_rect(Rectangle(Point(430, 0), Point(640, 82)), BLACK);
+    win->fill_rect(Rectangle(Point(430, 0), Point(640, 104)), BLACK);
     win->show_text("Objects: " + std::to_string(world->getObjects().size()), Point(438, 8), CYAN, font, 13);
-    win->show_text("Ghosts: " + std::to_string(world->getGhosts().size()), Point(438, 26), CYAN, font, 13);
-    win->show_text("Score: " + std::to_string(world->getGameState()->score), Point(438, 44), CYAN, font, 13);
-    win->show_text("Time: " + std::to_string(gameTimer->getSecs()) + "s", Point(438, 62), CYAN, font, 13);
+    win->show_text("Bodies: " + std::to_string(world->getCollisionBodies().size()), Point(438, 26), CYAN, font, 13);
+    win->show_text("Ghosts: " + std::to_string(world->getGhosts().size()), Point(438, 44), CYAN, font, 13);
+    win->show_text("Score: " + std::to_string(world->getGameState()->score), Point(438, 62), CYAN, font, 13);
+    win->show_text("Time: " + std::to_string(gameTimer->getSecs()) + "s", Point(438, 80), CYAN, font, 13);
 
     // Player collision box and physics guide lines.
     Rectangle player_rect(screen_player_pos, screen_player_pos + player_size);
@@ -214,9 +215,35 @@ void Core::showDebug(){
     win->draw_line(Point(0, 240), Point(640, 240), MAGENTA);
     win->draw_line(Point(320, 0), Point(320, 480), MAGENTA);
 
+    int visible_body_count = 0;
+    for (auto body : world->getCollisionBodies()){
+        Point p = body.bounds.getPos ? Point(0, 0) : Point(body.bounds.x, body.bounds.y);
+        p += camera;
+        Point s(body.bounds.w, body.bounds.h);
+        if (p.x + s.x < 0 || p.x > 640 || p.y + s.y < 0 || p.y > 480){
+            continue;
+        }
+
+        Rectangle bounds(p, p + s);
+        win->draw_rect(bounds, GREEN, 2U);
+        for (auto part : body.parts){
+            Point part_pos = part.rect.left_top + camera;
+            Rectangle part_rect(part_pos, Point(part_pos.x + part.rect.w, part_pos.y + part.rect.h));
+            win->draw_rect(part_rect, CYAN, 1U);
+        }
+
+        std::string label = std::string("BODY ") + ToString(body.type) + " x" + std::to_string(body.parts.size());
+        win->show_text(label, Point(bounds.x, bounds.y - 10), GREEN, font, 9);
+        visible_body_count++;
+    }
+
     int visible_count = 0;
     for (auto o : world->getObjects()){
         if (o == player){
+            continue;
+        }
+        if (o->getType() == BLOCK || o->getType() == BRICK || o->getType() == GROUND || o->getType() == PIPE ||
+            o->getType() == COIN_CONTAINER || o->getType() == FIRE_CONTAINER || o->getType() == HEALTH_CONTAINER){
             continue;
         }
 
@@ -230,9 +257,6 @@ void Core::showDebug(){
         RGB color = o->dead ? RED : BLUE;
         if (o->getType() == GOOMBA || o->getType() == KOOPA){
             color = MAGENTA;
-        }
-        else if (o->getType() == BLOCK || o->getType() == BRICK || o->getType() == GROUND || o->getType() == PIPE){
-            color = GREEN;
         }
 
         win->draw_rect(rect, color, 1U);
@@ -263,7 +287,8 @@ void Core::showDebug(){
         win->show_text(std::string(ToString(g->getType())), Point(rect.x, rect.y - 10), CYAN, font, 9);
     }
 
-    win->show_text("visible objects: " + std::to_string(visible_count), Point(438, 96), YELLOW, font, 12);
+    win->show_text("visible bodies: " + std::to_string(visible_body_count), Point(438, 118), YELLOW, font, 12);
+    win->show_text("visible dynamic: " + std::to_string(visible_count), Point(438, 134), YELLOW, font, 12);
 }
 
 
