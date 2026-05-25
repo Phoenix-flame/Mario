@@ -2,8 +2,15 @@
 
 void Koopa::update()
 {
-    if (!visited)
+    if (!visited && state != KOOPA_FIREBALL_DEATH_STATE)
     {
+        return;
+    }
+
+    if (state == KOOPA_FIREBALL_DEATH_STATE)
+    {
+        fireballDeathAnimation();
+        updateFigure();
         return;
     }
 
@@ -51,7 +58,11 @@ void Koopa::update()
 
 void Koopa::updateFigure()
 {
-    if (state == KOOPA_WALK_STATE)
+    if (state == KOOPA_FIREBALL_DEATH_STATE)
+    {
+        image = KOOPA_DEAD;
+    }
+    else if (state == KOOPA_WALK_STATE)
     {
         if (dir == RIGHT)
         {
@@ -120,7 +131,7 @@ void Koopa::updateFigure()
 
 void Koopa::startFall()
 {
-    if (state == KOOPA_ATTACK_STATE)
+    if (state == KOOPA_ATTACK_STATE || state == KOOPA_FIREBALL_DEATH_STATE)
     {
         return;
     }
@@ -143,7 +154,7 @@ void Koopa::falling()
 
 void Koopa::endFall()
 {
-    if (state == KOOPA_ATTACK_STATE)
+    if (state == KOOPA_ATTACK_STATE || state == KOOPA_FIREBALL_DEATH_STATE)
     {
         return;
     }
@@ -155,7 +166,7 @@ void Koopa::endFall()
 
 void Koopa::death()
 {
-    // Very simple death
+    // Mario stomp keeps the original shell behavior.
     dead = true;
     if (state == KOOPA_WALK_STATE)
     {
@@ -171,14 +182,48 @@ void Koopa::death()
 
 void Koopa::fireballDeath()
 {
-    Object::dead = true;
-    ghost_dead = true;
+    if (state == KOOPA_FIREBALL_DEATH_STATE)
+    {
+        return;
+    }
+
+    // Keep Object::dead false while the animation is running. World::collision()
+    // skips dead objects, so setting it here would freeze the launched Koopa.
+    dead = true;
+    visited = true;
+    state = KOOPA_FIREBALL_DEATH_STATE;
     image = KOOPA_DEAD;
+    fall_speed_vertical = -7;
+    fall_speed_horizontal = (dir == LEFT) ? -1 : 1;
+    fall_cycles = 0;
+}
+
+void Koopa::fireballDeathAnimation()
+{
+    _moveY(fall_speed_vertical);
+    _moveX(fall_speed_horizontal);
+
+    fall_speed_vertical += (fall_cycles % 2 == 0) ? 1 : 0;
+    if (fall_speed_vertical > 12)
+    {
+        fall_speed_vertical = 12;
+    }
+    fall_cycles += 1;
+
+    if (pos.y > 520)
+    {
+        Object::dead = true;
+        ghost_dead = true;
+    }
 }
 
 // Collision Notification
 void Koopa::notifyCollisionLeft(Object *obj)
 {
+    if (state == KOOPA_FIREBALL_DEATH_STATE)
+    {
+        return;
+    }
     if (obj->getType() == G_BULLET)
     {
         fireballDeath();
@@ -212,6 +257,10 @@ void Koopa::notifyCollisionLeft(Object *obj)
 }
 void Koopa::notifyCollisionRight(Object *obj)
 {
+    if (state == KOOPA_FIREBALL_DEATH_STATE)
+    {
+        return;
+    }
     if (obj->getType() == G_BULLET)
     {
         fireballDeath();
@@ -245,6 +294,10 @@ void Koopa::notifyCollisionRight(Object *obj)
 }
 void Koopa::notifyCollisionTop(Object *obj)
 {
+    if (state == KOOPA_FIREBALL_DEATH_STATE)
+    {
+        return;
+    }
     if (obj->getType() == G_BULLET)
     {
         fireballDeath();
@@ -252,6 +305,10 @@ void Koopa::notifyCollisionTop(Object *obj)
 }
 void Koopa::notifyCollisionBottom(Object *obj)
 {
+    if (state == KOOPA_FIREBALL_DEATH_STATE)
+    {
+        return;
+    }
     if (obj->getType() == G_BULLET)
     {
         fireballDeath();
@@ -265,7 +322,7 @@ void Koopa::notifyFreeRight() {}
 void Koopa::notifyFreeTop() {}
 void Koopa::notifyFreeBottom()
 {
-    if (state != KOOPA_FALL_STATE)
+    if (state != KOOPA_FALL_STATE && state != KOOPA_FIREBALL_DEATH_STATE)
     {
         startFall();
     }
@@ -273,6 +330,10 @@ void Koopa::notifyFreeBottom()
 
 void Koopa::notifyDistToPlatform(int d)
 {
+    if (state == KOOPA_FIREBALL_DEATH_STATE)
+    {
+        return;
+    }
     if (fall_speed_vertical > d)
     {
         fall_speed_vertical = d;
