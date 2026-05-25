@@ -96,7 +96,7 @@ bool Mushroom::isFallingBesidePlatformEdge(Object *obj)
 
 bool Mushroom::isEmergingFromPlatform(Object *obj)
 {
-    if (state != M_RISE || !isStaticPlatform(obj))
+    if (!isStaticPlatform(obj))
     {
         return false;
     }
@@ -104,13 +104,14 @@ bool Mushroom::isEmergingFromPlatform(Object *obj)
     Rectangle mushroom_rect(pos, pos + size);
     Rectangle platform_rect(obj->getPos(), obj->getPos() + obj->getSize());
 
-    return mushroom_rect.x < platform_rect.x + platform_rect.w &&
-           mushroom_rect.x + mushroom_rect.w > platform_rect.x &&
-           mushroom_rect.y < platform_rect.y + platform_rect.h &&
-           mushroom_rect.y + mushroom_rect.h > platform_rect.y;
+    bool overlaps_platform = mushroom_rect.x < platform_rect.x + platform_rect.w &&
+                             mushroom_rect.x + mushroom_rect.w > platform_rect.x &&
+                             mushroom_rect.y < platform_rect.y + platform_rect.h &&
+                             mushroom_rect.y + mushroom_rect.h > platform_rect.y;
+
+    return overlaps_platform && (state == M_RISE || !gravity_en);
 }
 
-// Collision Notification
 void Mushroom::notifyCollisionLeft(Object *obj)
 {
     Type t = obj->getType();
