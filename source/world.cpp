@@ -4,6 +4,7 @@
 namespace
 {
     const int SIDE_COLLISION_TOLERANCE = 5;
+    const int SIDE_PENETRATION_TOLERANCE = 8;
     const int TOP_COLLISION_TOLERANCE = 5;
     const int BOTTOM_COLLISION_TOLERANCE = 3;
     const int EDGE_INSET = 2;
@@ -30,9 +31,7 @@ namespace
 
     bool hasVerticalOverlapForSideCollision(const Rectangle &moving, const Rectangle &solid)
     {
-        return pointInsideVerticalSpan(moving.right_center.y, solid) ||
-               pointInsideVerticalSpan(moving.y, solid) ||
-               pointInsideVerticalSpan(moving.y + moving.h - 1, solid);
+        return moving.y < solid.y + solid.h && moving.y + moving.h > solid.y;
     }
 
     bool supportsTopCollision(Object *obj)
@@ -140,6 +139,26 @@ namespace
             return COLLISION_NONE;
         }
 
+        int overlap_y = std::min(moving.y + moving.h, solid.y + solid.h) - std::max(moving.y, solid.y);
+        if (overlap_y <= EDGE_INSET)
+        {
+            return COLLISION_NONE;
+        }
+
+        int penetration_from_left = moving.x + moving.w - solid.x;
+        int penetration_from_right = solid.x + solid.w - moving.x;
+
+        if (part.exposed_left && moving.x < solid.x && penetration_from_left > 0 &&
+            penetration_from_left <= SIDE_PENETRATION_TOLERANCE)
+        {
+            return COLLISION_RIGHT;
+        }
+        if (part.exposed_right && moving.x + moving.w > solid.x + solid.w && penetration_from_right > 0 &&
+            penetration_from_right <= SIDE_PENETRATION_TOLERANCE)
+        {
+            return COLLISION_LEFT;
+        }
+
         if (part.exposed_left && abs(moving.right_center.x - solid.left_center.x) < SIDE_COLLISION_TOLERANCE)
         {
             return COLLISION_RIGHT;
@@ -196,15 +215,32 @@ namespace
         return right_probe >= solid.left_top.x && right_probe <= solid.right_top.x;
     }
 
-    void notifySideCollision(Object *moving_obj, Object *solid_obj, CollisionSide side)
+    void separateSideCollision(Object *moving_obj, const Rectangle &solid, CollisionSide side)
+    {
+        Point pos = moving_obj->getPos();
+        Point size = moving_obj->getSize();
+
+        if (side == COLLISION_RIGHT)
+        {
+            moving_obj->setPos(solid.x - size.x, pos.y);
+        }
+        else if (side == COLLISION_LEFT)
+        {
+            moving_obj->setPos(solid.x + solid.w, pos.y);
+        }
+    }
+
+    void notifySideCollision(Object *moving_obj, Object *solid_obj, const Rectangle &solid_rect, CollisionSide side)
     {
         if (side == COLLISION_RIGHT)
         {
+            separateSideCollision(moving_obj, solid_rect, side);
             moving_obj->notifyCollisionRight(solid_obj);
             solid_obj->notifyCollisionLeft(moving_obj);
         }
         else if (side == COLLISION_LEFT)
         {
+            separateSideCollision(moving_obj, solid_rect, side);
             moving_obj->notifyCollisionLeft(solid_obj);
             solid_obj->notifyCollisionRight(moving_obj);
         }
@@ -517,8 +553,9 @@ void World::collision(Object *obj)
 
         Rectangle moving_rect(obj->getPos(), obj->getPos() + obj->getSize());
 
-        notifySideCollision(obj, target, detectSideCollision(moving_rect, part));
+        notifySideCollision(obj, target, solid_rect, detectSideCollision(moving_rect, part));
 
+        moving_rect = Rectangle(obj->getPos(), obj->getPos() + obj->getSize());
         if (part.exposed_top && detectBottomCollision(moving_rect, solid_rect))
         {
             if (isLandingOnTop(moving_rect, solid_rect))
