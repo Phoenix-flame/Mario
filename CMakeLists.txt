@@ -41,6 +41,8 @@ set(sources
     source/objects/mushroom.cpp
     source/objects/flower.hpp
     source/objects/flower.cpp
+    source/objects/bullet.hpp
+    source/objects/bullet.cpp
     source/objects/pipes.hpp
 )
 
