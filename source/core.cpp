@@ -198,7 +198,60 @@ void Core::showDebug(){
         }
 
         Rectangle bounds(p, p + s);
-        win->draw_rect(bounds, GREEN, 2U);
+
+        auto horizontalOverlap = [](const Rectangle &a, const Rectangle &b) {
+            return a.x < b.x + b.w && a.x + a.w > b.x;
+        };
+        auto verticalOverlap = [](const Rectangle &a, const Rectangle &b) {
+            return a.y < b.y + b.h && a.y + a.h > b.y;
+        };
+
+        for (unsigned int i = 0; i < body.parts.size(); i++){
+            Rectangle part = body.parts[i].rect;
+            bool has_left_neighbor = false;
+            bool has_right_neighbor = false;
+            bool has_top_neighbor = false;
+            bool has_bottom_neighbor = false;
+
+            for (unsigned int j = 0; j < body.parts.size(); j++){
+                if (i == j){ continue; }
+
+                Rectangle other = body.parts[j].rect;
+                if (other.x + other.w == part.x && verticalOverlap(part, other)){
+                    has_left_neighbor = true;
+                }
+                if (part.x + part.w == other.x && verticalOverlap(part, other)){
+                    has_right_neighbor = true;
+                }
+                if (other.y + other.h == part.y && horizontalOverlap(part, other)){
+                    has_top_neighbor = true;
+                }
+                if (part.y + part.h == other.y && horizontalOverlap(part, other)){
+                    has_bottom_neighbor = true;
+                }
+            }
+
+            Point top_left(part.x + camera.x, part.y + camera.y);
+            Point top_right(part.x + part.w + camera.x, part.y + camera.y);
+            Point bottom_left(part.x + camera.x, part.y + part.h + camera.y);
+            Point bottom_right(part.x + part.w + camera.x, part.y + part.h + camera.y);
+
+            if (!has_top_neighbor){
+                win->draw_line(top_left, top_right, GREEN);
+            }
+            if (!has_bottom_neighbor){
+                win->draw_line(bottom_left, bottom_right, GREEN);
+            }
+            if (!has_left_neighbor){
+                win->draw_line(top_left, bottom_left, GREEN);
+            }
+            if (!has_right_neighbor){
+                win->draw_line(top_right, bottom_right, GREEN);
+            }
+        }
+
+        // Thin outer rectangle shows the broad-phase bounds. Green lines are the exact non-convex boundary.
+        win->draw_rect(bounds, BLUE, 1U);
 
         std::string label = std::string("BODY ") + ToString(body.type) + " x" + std::to_string(body.parts.size());
         win->show_text(label, Point(bounds.x, bounds.y - 10), GREEN, font, 9);
