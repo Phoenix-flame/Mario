@@ -1,4 +1,5 @@
 #include "world.hpp"
+#include <algorithm>
 
 namespace
 {
@@ -49,6 +50,13 @@ namespace
         return obj->getType() == GOOMBA || obj->getType() == KOOPA;
     }
 
+    bool isStaticCollisionTile(Object *obj)
+    {
+        Type t = obj->getType();
+        return t == BLOCK || t == BRICK || t == GROUND || t == PIPE ||
+               t == COIN_CONTAINER || t == FIRE_CONTAINER || t == HEALTH_CONTAINER;
+    }
+
     bool isPlayerEnemyPair(Object *a, Object *b)
     {
         return (a->getType() == PLAYER && isEnemy(b)) ||
@@ -69,6 +77,37 @@ namespace
     bool hasHorizontalOverlap(const Rectangle &a, const Rectangle &b)
     {
         return a.left_top.x < b.right_top.x && a.right_top.x > b.left_top.x;
+    }
+
+    bool hasVerticalOverlap(const Rectangle &a, const Rectangle &b)
+    {
+        return a.y < b.y + b.h && a.y + a.h > b.y;
+    }
+
+    bool rectanglesTouchOrOverlap(const Rectangle &a, const Rectangle &b)
+    {
+        bool horizontal_touch = a.x <= b.x + b.w && a.x + a.w >= b.x;
+        bool vertical_touch = a.y <= b.y + b.h && a.y + a.h >= b.y;
+        return horizontal_touch && vertical_touch;
+    }
+
+    bool boundsOverlap(const Rectangle &a, const Rectangle &b)
+    {
+        return hasHorizontalOverlap(a, b) && hasVerticalOverlap(a, b);
+    }
+
+    Rectangle objectRect(Object *obj)
+    {
+        return Rectangle(obj->getPos(), obj->getPos() + obj->getSize());
+    }
+
+    Rectangle mergeBounds(const Rectangle &a, const Rectangle &b)
+    {
+        int left = std::min(a.x, b.x);
+        int top = std::min(a.y, b.y);
+        int right = std::max(a.x + a.w, b.x + b.w);
+        int bottom = std::max(a.y + a.h, b.y + b.h);
+        return Rectangle(Point(left, top), Point(right, bottom));
     }
 
     bool isStandingOnPlatform(const Rectangle &enemy, const Rectangle &platform)
@@ -167,10 +206,12 @@ World::World()
     this->camera = new Camera();
     this->map = new Map("assets/maps/1/1.txt");
     this->gameState = new GameState();
+    rebuildCollisionBodies();
 }
 
 void World::loop()
 {
+    rebuildCollisionBodies();
     ghostCollector();
     collision(map->player);
     for (unsigned int i = 0; i < map->objects.size(); i++)
@@ -186,6 +227,7 @@ void World::loop()
             if (((Brick *)map->objects[i])->broken)
             {
                 map->objects.erase(map->objects.begin() + i);
+                rebuildCollisionBodies();
             }
         }
         else if (t == COIN_CONTAINER)
@@ -211,6 +253,7 @@ void World::loop()
             if (map->objects[i]->getPos().y > 500)
             {
                 map->objects.erase(map->objects.begin() + i);
+                rebuildCollisionBodies();
                 continue;
             }
 
@@ -226,6 +269,7 @@ void World::loop()
             if (map->objects[i]->getPos().y > 500)
             {
                 map->objects.erase(map->objects.begin() + i);
+                rebuildCollisionBodies();
                 continue;
             }
 
@@ -296,6 +340,11 @@ std::vector<Object *> World::getObjects()
     return map->objects;
 }
 
+std::vector<CollisionBody> World::getCollisionBodies()
+{
+    return collisionBodies;
+}
+
 GameState *World::getGameState()
 {
     return gameState;
@@ -309,6 +358,65 @@ Player *World::getPlayer()
 std::vector<Object *> World::getGhosts()
 {
     return ghosts;
+}
+
+void World::rebuildCollisionBodies()
+{
+    collisionBodies.clear();
+
+    std::vector<Object *> tiles;
+    for (auto obj : map->objects)
+    {
+        if (!obj->dead && isStaticCollisionTile(obj))
+        {
+            tiles.push_back(obj);
+        }
+    }
+
+    std::vector<bool> visited(tiles.size(), false);
+    for (unsigned int i = 0; i < tiles.size(); i++)
+    {
+        if (visited[i])
+        {
+            continue;
+        }
+
+        Type type = tiles[i]->getType();
+        Rectangle first_rect = objectRect(tiles[i]);
+        CollisionBody body(type, first_rect);
+
+        std::queue<unsigned int> q;
+        q.push(i);
+        visited[i] = true;
+
+        while (!q.empty())
+        {
+            unsigned int idx = q.front();
+            q.pop();
+
+            Object *tile = tiles[idx];
+            Rectangle tile_rect = objectRect(tile);
+            body.parts.push_back(CollisionPart(tile, tile_rect));
+            body.bounds = mergeBounds(body.bounds, tile_rect);
+
+            for (unsigned int j = 0; j < tiles.size(); j++)
+            {
+                if (visited[j] || tiles[j]->getType() != type)
+                {
+                    continue;
+                }
+
+                Rectangle candidate_rect = objectRect(tiles[j]);
+                if (rectanglesTouchOrOverlap(tile_rect, candidate_rect))
+                {
+                    visited[j] = true;
+                    q.push(j);
+                }
+            }
+        }
+
+        collisionBodies.push_back(body);
+    }
 }
 
 void World::hitEnemiesAbove(Object *platform)
@@ -350,24 +458,22 @@ void World::collision(Object *obj)
     obj->notifyFreeLeft();
     obj->notifyFreeRight();
 
-    for (auto o : getObjects())
-    {
-        if (o->dead || o == obj || shouldIgnoreEnemyCollision(obj, o))
+    auto processCollisionTarget = [&](Object *target, const Rectangle &solid_rect) -> bool {
+        if (target->dead || target == obj || shouldIgnoreEnemyCollision(obj, target))
         {
-            continue;
+            return false;
         }
 
         Rectangle moving_rect(obj->getPos(), obj->getPos() + obj->getSize());
-        Rectangle solid_rect(o->getPos(), o->getPos() + o->getSize());
 
-        notifySideCollision(obj, o, detectSideCollision(moving_rect, solid_rect));
+        notifySideCollision(obj, target, detectSideCollision(moving_rect, solid_rect));
 
         if (detectBottomCollision(moving_rect, solid_rect))
         {
             if (isLandingOnTop(moving_rect, solid_rect))
             {
                 on_the_floor = true;
-                obj->notifyCollisionBottom(o);
+                obj->notifyCollisionBottom(target);
             }
             else
             {
@@ -377,37 +483,37 @@ void World::collision(Object *obj)
 
         if (!supportsTopCollision(obj))
         {
-            continue;
+            return false;
         }
 
         if (detectTopCenterCollision(moving_rect, solid_rect))
         {
             if (hitsSolidCeiling(moving_rect, solid_rect))
             {
-                obj->notifyCollisionTop(o);
+                obj->notifyCollisionTop(target);
                 if (obj->getType() == PLAYER)
                 {
-                    hitEnemiesAbove(o);
+                    hitEnemiesAbove(target);
                 }
                 top_center_collision = true;
                 top_corner_collision = true;
-                return;
+                return true;
             }
 
             obj->notifyDistToCeil(abs(moving_rect.top_center.y - solid_rect.bottom_center.y));
-            continue;
+            return false;
         }
 
         if (top_center_collision)
         {
-            continue;
+            return false;
         }
 
         bool top_corner_overlaps = detectTopLeftCornerCollision(moving_rect, solid_rect) ||
                                    detectTopRightCornerCollision(moving_rect, solid_rect);
         if (!top_corner_overlaps)
         {
-            continue;
+            return false;
         }
 
         if (hitsSolidCeiling(moving_rect, solid_rect))
@@ -415,12 +521,45 @@ void World::collision(Object *obj)
             if (shouldApplyTopCornerCollision(obj))
             {
                 top_corner_collision = true;
-                top_corner_object = o;
+                top_corner_object = target;
             }
         }
         else
         {
             obj->notifyDistToCeil(abs(moving_rect.top_center.y - solid_rect.bottom_center.y));
+        }
+
+        return false;
+    };
+
+    Rectangle moving_rect(obj->getPos(), obj->getPos() + obj->getSize());
+    for (auto &body : collisionBodies)
+    {
+        if (!boundsOverlap(moving_rect, body.bounds))
+        {
+            continue;
+        }
+
+        for (auto &part : body.parts)
+        {
+            if (processCollisionTarget(part.object, part.rect))
+            {
+                return;
+            }
+        }
+    }
+
+    for (auto o : getObjects())
+    {
+        if (isStaticCollisionTile(o))
+        {
+            continue;
+        }
+
+        Rectangle solid_rect(o->getPos(), o->getPos() + o->getSize());
+        if (processCollisionTarget(o, solid_rect))
+        {
+            return;
         }
     }
 
