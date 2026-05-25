@@ -6,7 +6,12 @@ void Mushroom::update()
     {
         gravity_en = true;
     }
-    if (state == M_FALL)
+
+    if (state == M_RISE)
+    {
+        funcToRun = &Mushroom::riseLikeThePhoenix;
+    }
+    else if (state == M_FALL)
     {
         funcToRun = &Mushroom::falling;
     }
@@ -26,6 +31,7 @@ void Mushroom::riseLikeThePhoenix()
     }
     else
     {
+        state = M_RUN;
         funcToRun = &Mushroom::run;
     }
 }
@@ -38,7 +44,10 @@ void Mushroom::run()
 void Mushroom::startFall()
 {
     state = M_FALL;
-    fall_speed_vertical = 3;
+    if (fall_speed_vertical < 1)
+    {
+        fall_speed_vertical = 1;
+    }
     fall_cycles = 0;
 }
 
@@ -46,13 +55,43 @@ void Mushroom::falling()
 {
     _moveY(fall_speed_vertical);
     _moveX(speed);
+
     fall_speed_vertical += (fall_cycles % 2 == 0) ? 1 : 0;
+    if (fall_speed_vertical > terminal_speed)
+    {
+        fall_speed_vertical = terminal_speed;
+    }
     fall_cycles += 1;
 }
 
 void Mushroom::endFall()
 {
     state = M_RUN;
+    fall_speed_vertical = 0;
+    fall_cycles = 0;
+}
+
+bool Mushroom::isStaticPlatform(Object *obj)
+{
+    Type t = obj->getType();
+    return t == BLOCK || t == BRICK || t == GROUND || t == PIPE ||
+           t == COIN_CONTAINER || t == FIRE_CONTAINER || t == HEALTH_CONTAINER;
+}
+
+bool Mushroom::isFallingBesidePlatformEdge(Object *obj)
+{
+    if (state != M_FALL || !isStaticPlatform(obj))
+    {
+        return false;
+    }
+
+    Rectangle mushroom_rect(pos, pos + size);
+    Rectangle platform_rect(obj->getPos(), obj->getPos() + obj->getSize());
+
+    bool near_platform_top = mushroom_rect.bottom_center.y <= platform_rect.top_center.y + terminal_speed;
+    bool below_platform_top = mushroom_rect.bottom_center.y > platform_rect.top_center.y;
+
+    return near_platform_top || below_platform_top;
 }
 
 // Collision Notification
@@ -69,6 +108,10 @@ void Mushroom::notifyCollisionLeft(Object *obj)
         ghost_dead = true;
         return;
     }
+    if (isFallingBesidePlatformEdge(obj))
+    {
+        return;
+    }
     speed *= -1;
 }
 void Mushroom::notifyCollisionRight(Object *obj)
@@ -82,6 +125,10 @@ void Mushroom::notifyCollisionRight(Object *obj)
     {
         ((Player *)obj)->powerup();
         ghost_dead = true;
+        return;
+    }
+    if (isFallingBesidePlatformEdge(obj))
+    {
         return;
     }
     speed *= -1;
@@ -105,6 +152,12 @@ void Mushroom::notifyCollisionBottom(Object *obj)
         ghost_dead = true;
         return;
     }
+
+    if (!isStaticPlatform(obj))
+    {
+        return;
+    }
+
     endFall();
 }
 
@@ -113,7 +166,7 @@ void Mushroom::notifyFreeRight() {}
 void Mushroom::notifyFreeTop() {}
 void Mushroom::notifyFreeBottom()
 {
-    if (!gravity_en)
+    if (!gravity_en || state == M_RISE)
     {
         return;
     }
@@ -125,7 +178,7 @@ void Mushroom::notifyFreeBottom()
 
 void Mushroom::notifyDistToPlatform(int d)
 {
-    if (fall_speed_vertical > d)
+    if (state == M_FALL && d >= 0 && fall_speed_vertical > d)
     {
         fall_speed_vertical = d;
     }
