@@ -41,6 +41,7 @@ private:
     std::vector<Object*> ghosts;
 
     void collision(Object* obj);
+    void hitEnemiesAbove(Object *platform);
     void preciseCollisionDetector(Rectangle& o1, Rectangle& o2);
 
     Physics* physics;
