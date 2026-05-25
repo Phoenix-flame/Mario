@@ -410,7 +410,7 @@ Point Point::operator-(const Point p) const { return (*this) + (-1) * p; }
 
 Point Point::operator*(const int c) const { return Point(x * c, y * c); }
 
-Point Point::operator/(const int c) const { return Point(x / c); }
+Point Point::operator/(const int c) const { return Point(x / c, y / c); }
 
 Point operator*(const int c, const Point p) { return p * c; }
 
