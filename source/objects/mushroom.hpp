@@ -74,6 +74,7 @@ private:
 
     bool isStaticPlatform(Object *obj);
     bool isFallingBesidePlatformEdge(Object *obj);
+    bool isEmergingFromPlatform(Object *obj);
 
     // MovementProfile
     void startFall();
