@@ -211,6 +211,52 @@ void Window::draw_img(string filename, Rectangle dst, Rectangle src,
   SDL_RenderCopyEx(renderer, res, src_ptr, dst_ptr, angle, NULL, flip);
 }
 
+void Window::draw_img_with_color_key(string filename, RGB transparent_color,
+                                     Rectangle dst, Rectangle src,
+                                     double angle, bool flip_horizontal,
+                                     bool flip_vertical)
+{
+  string cache_key = filename + ":colorkey:" +
+                     to_string(transparent_color.red) + ":" +
+                     to_string(transparent_color.green) + ":" +
+                     to_string(transparent_color.blue);
+
+  SDL_Texture *res = texture_cache[cache_key];
+  if (res == NULL)
+  {
+    SDL_Surface *surface = IMG_Load(filename.c_str());
+    if (surface == NULL)
+      throw runtime_error("Failed to load image: \"" + filename + "\". " +
+                          "make sure you are using the correct address.");
+
+    SDL_SetColorKey(surface, SDL_TRUE,
+                    SDL_MapRGB(surface->format,
+                               transparent_color.red,
+                               transparent_color.green,
+                               transparent_color.blue));
+
+    res = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_FreeSurface(surface);
+
+    if (res == NULL)
+      throw runtime_error("Failed to create texture from image: \"" + filename + "\".");
+
+    SDL_SetTextureBlendMode(res, SDL_BLENDMODE_BLEND);
+    texture_cache[cache_key] = res;
+  }
+
+  SDL_RendererFlip flip = (SDL_RendererFlip)((flip_horizontal ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE) |
+                                             (flip_vertical ? SDL_FLIP_VERTICAL : SDL_FLIP_NONE));
+
+  SDL_Rect sdl_dst = {dst.x, dst.y, dst.w, dst.h};
+  SDL_Rect *dst_ptr = (dst == NULL_RECT ? NULL : &sdl_dst);
+
+  SDL_Rect sdl_src = {src.x, src.y, src.w, src.h};
+  SDL_Rect *src_ptr = (src == NULL_RECT ? NULL : &sdl_src);
+
+  SDL_RenderCopyEx(renderer, res, src_ptr, dst_ptr, angle, NULL, flip);
+}
+
 void Window::update_screen() { SDL_RenderPresent(renderer); }
 
 void Window::fill_rect(Rectangle rect, RGB color)
@@ -364,7 +410,7 @@ Point Point::operator-(const Point p) const { return (*this) + (-1) * p; }
 
 Point Point::operator*(const int c) const { return Point(x * c, y * c); }
 
-Point Point::operator/(const int c) const { return Point(x / c, y / c); }
+Point Point::operator/(const int c) const { return Point(x / c); }
 
 Point operator*(const int c, const Point p) { return p * c; }
 
