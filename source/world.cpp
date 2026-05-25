@@ -79,9 +79,13 @@ namespace
         return a.left_top.x < b.right_top.x && a.right_top.x > b.left_top.x;
     }
 
-    bool hasVerticalOverlap(const Rectangle &a, const Rectangle &b)
+    bool expandedBoundsOverlap(const Rectangle &moving, const Rectangle &bounds)
     {
-        return a.y < b.y + b.h && a.y + a.h > b.y;
+        const int MARGIN = 16;
+        Rectangle expanded(Point(bounds.x - MARGIN, bounds.y - MARGIN),
+                           Point(bounds.x + bounds.w + MARGIN, bounds.y + bounds.h + MARGIN));
+        return moving.x < expanded.x + expanded.w && moving.x + moving.w > expanded.x &&
+               moving.y < expanded.y + expanded.h && moving.y + moving.h > expanded.y;
     }
 
     bool rectanglesTouchOrOverlap(const Rectangle &a, const Rectangle &b)
@@ -89,11 +93,6 @@ namespace
         bool horizontal_touch = a.x <= b.x + b.w && a.x + a.w >= b.x;
         bool vertical_touch = a.y <= b.y + b.h && a.y + a.h >= b.y;
         return horizontal_touch && vertical_touch;
-    }
-
-    bool boundsOverlap(const Rectangle &a, const Rectangle &b)
-    {
-        return hasHorizontalOverlap(a, b) && hasVerticalOverlap(a, b);
     }
 
     Rectangle objectRect(Object *obj)
@@ -535,7 +534,7 @@ void World::collision(Object *obj)
     Rectangle moving_rect(obj->getPos(), obj->getPos() + obj->getSize());
     for (auto &body : collisionBodies)
     {
-        if (!boundsOverlap(moving_rect, body.bounds))
+        if (!expandedBoundsOverlap(moving_rect, body.bounds))
         {
             continue;
         }
