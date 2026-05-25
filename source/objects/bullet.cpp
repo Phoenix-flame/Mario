@@ -1,70 +1,86 @@
 #include "bullet.hpp"
 
-// Collision Notification
-void Bullet::notifyCollisionLeft(Object *obj)
+Bullet::Bullet(int x, int y, Dir _dir) : Object(Point(0, 0), Point(16, 16), BULLET_IMAGE, G_BULLET)
 {
-    // Type t = obj->getType();
-    // if(t== KOOPA || t == GOOMBA){
-    //     return;
-    // }
-    // if (t == PLAYER){
-    //     ((Player*)obj)->powerup();
-    //     ghost_dead = true;
-    //     return;
-    // }
-    // speed *= -1;
-}
-void Bullet::notifyCollisionRight(Object *obj)
-{
-    // Type t = obj->getType();
-    // if(t== KOOPA || t == GOOMBA){
-    //     return;
-    // }
-    // if (t == PLAYER){
-    //     ((Player*)obj)->powerup();
-    //     ghost_dead = true;
-    //     return;
-    // }
-    // speed *= -1;
-}
-void Bullet::notifyCollisionTop(Object *obj)
-{
-    // Type t = obj->getType();
-    // if (t == PLAYER){
-    //     ((Player*)obj)->powerup();
-    //     ghost_dead = true;
-    //     return;
-    // }
-}
-void Bullet::notifyCollisionBottom(Object *obj)
-{
-    // Type t = obj->getType();
-    // if (t == PLAYER){
-    //     ((Player*)obj)->powerup();
-    //     ghost_dead = true;
-    //     return;
-    // }
-    // endFall();
+    pos = Point(x, y);
+    size = Point(16, 16);
+    xMin = pos.x;
+    xMax = pos.x + size.x;
+    yMin = pos.y;
+    yMax = pos.y + size.y;
+
+    dir = (_dir == LEFT) ? LEFT : RIGHT;
+    speed = (dir == LEFT) ? -8 : 8;
+    vertical_speed = 3;
 }
 
-void Bullet::notifyFreeLeft() {}
-void Bullet::notifyFreeRight() {}
-void Bullet::notifyFreeTop() {}
+void Bullet::update()
+{
+    _moveX(speed);
+    _moveY(vertical_speed);
+
+    vertical_speed += (fall_cycles % 2 == 0) ? 1 : 0;
+    if (vertical_speed > terminal_speed)
+    {
+        vertical_speed = terminal_speed;
+    }
+    fall_cycles += 1;
+
+    if (pos.y > 500 || pos.x < -100 || pos.x > 5200)
+    {
+        ghost_dead = true;
+    }
+}
+
+void Bullet::hit(Object *obj)
+{
+    if (obj->getType() == PLAYER || obj->getType() == G_BULLET)
+    {
+        return;
+    }
+
+    if (obj->getType() == GOOMBA || obj->getType() == KOOPA)
+    {
+        obj->death();
+    }
+
+    ghost_dead = true;
+}
+
+void Bullet::notifyCollisionLeft(Object *obj)
+{
+    hit(obj);
+}
+
+void Bullet::notifyCollisionRight(Object *obj)
+{
+    hit(obj);
+}
+
+void Bullet::notifyCollisionTop(Object *obj)
+{
+    hit(obj);
+}
+
+void Bullet::notifyCollisionBottom(Object *obj)
+{
+    if (obj->getType() == PLAYER || obj->getType() == GOOMBA || obj->getType() == KOOPA)
+    {
+        hit(obj);
+        return;
+    }
+
+    vertical_speed = -7;
+}
+
 void Bullet::notifyFreeBottom()
 {
-    // if (!gravity_en){return;}
-    // if (state != M_FALL){
-    //     startFall();
-    // }
 }
 
 void Bullet::notifyDistToPlatform(int d)
 {
-    // if (fall_speed_vertical > d){
-    //     fall_speed_vertical = d;
-    // }
-}
-
-void Bullet::notifyDistToCeil(int d)
-{
+    if (vertical_speed > d)
+    {
+        vertical_speed = d;
+    }
 }
