@@ -94,6 +94,22 @@ bool Mushroom::isFallingBesidePlatformEdge(Object *obj)
     return near_platform_top || below_platform_top;
 }
 
+bool Mushroom::isEmergingFromPlatform(Object *obj)
+{
+    if (state != M_RISE || !isStaticPlatform(obj))
+    {
+        return false;
+    }
+
+    Rectangle mushroom_rect(pos, pos + size);
+    Rectangle platform_rect(obj->getPos(), obj->getPos() + obj->getSize());
+
+    return mushroom_rect.x < platform_rect.x + platform_rect.w &&
+           mushroom_rect.x + mushroom_rect.w > platform_rect.x &&
+           mushroom_rect.y < platform_rect.y + platform_rect.h &&
+           mushroom_rect.y + mushroom_rect.h > platform_rect.y;
+}
+
 // Collision Notification
 void Mushroom::notifyCollisionLeft(Object *obj)
 {
@@ -108,7 +124,7 @@ void Mushroom::notifyCollisionLeft(Object *obj)
         ghost_dead = true;
         return;
     }
-    if (isFallingBesidePlatformEdge(obj))
+    if (isEmergingFromPlatform(obj) || isFallingBesidePlatformEdge(obj))
     {
         return;
     }
@@ -127,7 +143,7 @@ void Mushroom::notifyCollisionRight(Object *obj)
         ghost_dead = true;
         return;
     }
-    if (isFallingBesidePlatformEdge(obj))
+    if (isEmergingFromPlatform(obj) || isFallingBesidePlatformEdge(obj))
     {
         return;
     }
