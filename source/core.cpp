@@ -132,6 +132,46 @@ void Core::drawBackground(){
                 Rectangle(world->camera->getPosBackground(), Point(1600, 480) + world->camera->getPosBackground()),
                 Rectangle(Point(0, 0), Point(2000, 1000)),
                 0, false);
+
+    // Hide baked-in fixed clouds and draw a moving cloud layer instead.
+    const RGB SKY_BLUE(92, 148, 252);
+    win->fill_rect(Rectangle(Point(0, 0), Point(640, 250)), SKY_BLUE);
+
+    static int cloud_offset = 0;
+    static int last_cloud_tick = SDL_GetTicks();
+    int current_tick = SDL_GetTicks();
+    if (current_tick - last_cloud_tick > 45)
+    {
+        cloud_offset = (cloud_offset + 1) % 760;
+        last_cloud_tick = current_tick;
+    }
+
+    auto draw_cloud = [this](int x, int y, int size) {
+        win->fill_circle(Point(x, y), size, WHITE);
+        win->fill_circle(Point(x + size, y - size / 2), size + 4, WHITE);
+        win->fill_circle(Point(x + size * 2, y), size, WHITE);
+        win->fill_rect(Rectangle(Point(x - size, y), Point(x + size * 3, y + size)), WHITE);
+    };
+
+    const int period = 760;
+    int parallax = world->camera->getPosBackground().x / 2;
+    int bases[5] = {80, 230, 390, 560, 720};
+    int ys[5] = {75, 120, 60, 145, 95};
+    int sizes[5] = {18, 14, 20, 16, 13};
+
+    for (int i = 0; i < 5; i++)
+    {
+        int x = (bases[i] + parallax - cloud_offset) % period;
+        while (x < -80)
+        {
+            x += period;
+        }
+        while (x > 680)
+        {
+            x -= period;
+        }
+        draw_cloud(x, ys[i], sizes[i]);
+    }
 }
 
 void Core::showDebug(){
