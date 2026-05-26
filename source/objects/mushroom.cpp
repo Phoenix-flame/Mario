@@ -42,6 +42,19 @@ void Mushroom::run()
     _moveX(speed);
 }
 
+void Mushroom::bumpUp()
+{
+    if (state == M_RISE)
+    {
+        return;
+    }
+
+    gravity_en = true;
+    state = M_FALL;
+    fall_speed_vertical = -5;
+    fall_cycles = 0;
+}
+
 void Mushroom::startFall()
 {
     state = M_FALL;
@@ -166,7 +179,7 @@ void Mushroom::notifyCollisionBottom(Object *obj)
         return;
     }
 
-    if (!isStaticPlatform(obj) || state == M_RISE)
+    if (!isStaticPlatform(obj) || state == M_RISE || fall_speed_vertical < 0)
     {
         return;
     }
