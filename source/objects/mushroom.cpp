@@ -25,12 +25,13 @@ void Mushroom::update()
 
 void Mushroom::riseLikeThePhoenix()
 {
-    if (pos.y != y_target)
+    if (pos.y > y_target)
     {
         _moveY(-1);
     }
     else
     {
+        pos.y = y_target;
         state = M_RUN;
         funcToRun = &Mushroom::run;
     }
@@ -108,6 +109,10 @@ void Mushroom::notifyCollisionLeft(Object *obj)
         ghost_dead = true;
         return;
     }
+    if (state == M_RISE && isStaticPlatform(obj))
+    {
+        return;
+    }
     if (isFallingBesidePlatformEdge(obj))
     {
         return;
@@ -127,6 +132,10 @@ void Mushroom::notifyCollisionRight(Object *obj)
         ghost_dead = true;
         return;
     }
+    if (state == M_RISE && isStaticPlatform(obj))
+    {
+        return;
+    }
     if (isFallingBesidePlatformEdge(obj))
     {
         return;
@@ -142,6 +151,10 @@ void Mushroom::notifyCollisionTop(Object *obj)
         ghost_dead = true;
         return;
     }
+    if (state == M_RISE && isStaticPlatform(obj))
+    {
+        return;
+    }
 }
 void Mushroom::notifyCollisionBottom(Object *obj)
 {
@@ -153,7 +166,7 @@ void Mushroom::notifyCollisionBottom(Object *obj)
         return;
     }
 
-    if (!isStaticPlatform(obj))
+    if (!isStaticPlatform(obj) || state == M_RISE)
     {
         return;
     }

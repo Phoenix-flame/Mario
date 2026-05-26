@@ -3,76 +3,7 @@
 
 namespace
 {
-    const int SIDE_COLLISION_TOLERANCE = 5;
-    const int TOP_COLLISION_TOLERANCE = 5;
-    const int BOTTOM_COLLISION_TOLERANCE = 3;
-    const int EDGE_INSET = 2;
     const int BLOCK_BUMP_ENEMY_Y_TOLERANCE = 6;
-
-    enum CollisionSide
-    {
-        COLLISION_NONE,
-        COLLISION_LEFT,
-        COLLISION_RIGHT,
-        COLLISION_TOP,
-        COLLISION_BOTTOM
-    };
-
-    bool pointInsideHorizontalSpan(int x, const Rectangle &rect)
-    {
-        return x >= rect.left_bottom.x && x <= rect.right_bottom.x;
-    }
-
-    bool pointInsideVerticalSpan(int y, const Rectangle &rect)
-    {
-        return y >= rect.y && y <= (rect.y + rect.h);
-    }
-
-    bool hasVerticalOverlapForSideCollision(const Rectangle &moving, const Rectangle &solid)
-    {
-        return pointInsideVerticalSpan(moving.right_center.y, solid) ||
-               pointInsideVerticalSpan(moving.y, solid) ||
-               pointInsideVerticalSpan(moving.y + moving.h - 1, solid);
-    }
-
-    bool supportsTopCollision(Object *obj)
-    {
-        return obj->getType() == PLAYER || obj->getType() == G_BULLET;
-    }
-
-    bool shouldApplyTopCornerCollision(Object *obj)
-    {
-        return obj->getType() == G_BULLET || ((Player *)obj)->getState() == JUMP;
-    }
-
-    bool isEnemy(Object *obj)
-    {
-        return obj->getType() == GOOMBA || obj->getType() == KOOPA;
-    }
-
-    bool isStaticCollisionTile(Object *obj)
-    {
-        Type t = obj->getType();
-        return t == BLOCK || t == BRICK || t == GROUND || t == PIPE ||
-               t == COIN_CONTAINER || t == FIRE_CONTAINER || t == HEALTH_CONTAINER;
-    }
-
-    bool isPlayerEnemyPair(Object *a, Object *b)
-    {
-        return (a->getType() == PLAYER && isEnemy(b)) ||
-               (b->getType() == PLAYER && isEnemy(a));
-    }
-
-    bool shouldIgnoreEnemyCollision(Object *moving_obj, Object *solid_obj)
-    {
-        if (!isPlayerEnemyPair(moving_obj, solid_obj))
-        {
-            return false;
-        }
-
-        Player *player = (moving_obj->getType() == PLAYER) ? (Player *)moving_obj : (Player *)solid_obj;
-        return player->isInvincible();
-    }
 
     bool hasHorizontalOverlap(const Rectangle &a, const Rectangle &b)
     {
@@ -87,15 +18,6 @@ namespace
     bool verticalOverlap(const Rectangle &a, const Rectangle &b)
     {
         return a.y < b.y + b.h && a.y + a.h > b.y;
-    }
-
-    bool expandedBoundsOverlap(const Rectangle &moving, const Rectangle &bounds)
-    {
-        const int MARGIN = 16;
-        Rectangle expanded(Point(bounds.x - MARGIN, bounds.y - MARGIN),
-                           Point(bounds.x + bounds.w + MARGIN, bounds.y + bounds.h + MARGIN));
-        return moving.x < expanded.x + expanded.w && moving.x + moving.w > expanded.x &&
-               moving.y < expanded.y + expanded.h && moving.y + moving.h > expanded.y;
     }
 
     bool rectanglesTouchOrOverlap(const Rectangle &a, const Rectangle &b)
@@ -119,6 +41,18 @@ namespace
         return Rectangle(Point(left, top), Point(right, bottom));
     }
 
+    bool isEnemy(Object *obj)
+    {
+        return obj->getType() == GOOMBA || obj->getType() == KOOPA;
+    }
+
+    bool isStaticCollisionTile(Object *obj)
+    {
+        Type t = obj->getType();
+        return t == BLOCK || t == BRICK || t == GROUND || t == PIPE ||
+               t == COIN_CONTAINER || t == FIRE_CONTAINER || t == HEALTH_CONTAINER;
+    }
+
     bool isStandingOnPlatform(const Rectangle &enemy, const Rectangle &platform)
     {
         return hasHorizontalOverlap(enemy, platform) &&
@@ -130,84 +64,6 @@ namespace
         Type t = obj->getType();
         return t == BRICK || t == COIN_CONTAINER || t == FIRE_CONTAINER || t == HEALTH_CONTAINER ||
                t == BLOCK || t == GROUND;
-    }
-
-    CollisionSide detectSideCollision(const Rectangle &moving, const CollisionPart &part)
-    {
-        const Rectangle &solid = part.rect;
-        if (!hasVerticalOverlapForSideCollision(moving, solid))
-        {
-            return COLLISION_NONE;
-        }
-
-        if (part.exposed_left && abs(moving.right_center.x - solid.left_center.x) < SIDE_COLLISION_TOLERANCE)
-        {
-            return COLLISION_RIGHT;
-        }
-        if (part.exposed_right && abs(moving.left_center.x - solid.right_center.x) < SIDE_COLLISION_TOLERANCE)
-        {
-            return COLLISION_LEFT;
-        }
-
-        return COLLISION_NONE;
-    }
-
-    bool isLandingOnTop(const Rectangle &moving, const Rectangle &solid)
-    {
-        return moving.bottom_center.y <= solid.top_center.y &&
-               abs(moving.bottom_center.y - solid.top_center.y) < BOTTOM_COLLISION_TOLERANCE;
-    }
-
-    bool bottomProbeOverlapsSolid(int probe_x, const Rectangle &solid)
-    {
-        return pointInsideHorizontalSpan(probe_x, solid);
-    }
-
-    bool detectBottomCollision(const Rectangle &moving, const Rectangle &solid)
-    {
-        int left_probe = moving.left_bottom.x + EDGE_INSET;
-        int right_probe = moving.right_bottom.x - EDGE_INSET;
-
-        return bottomProbeOverlapsSolid(moving.bottom_center.x, solid) ||
-               bottomProbeOverlapsSolid(left_probe, solid) ||
-               bottomProbeOverlapsSolid(right_probe, solid);
-    }
-
-    bool hitsSolidCeiling(const Rectangle &moving, const Rectangle &solid)
-    {
-        return moving.top_center.y >= solid.bottom_center.y &&
-               moving.top_center.y - solid.bottom_center.y < TOP_COLLISION_TOLERANCE;
-    }
-
-    bool detectTopCenterCollision(const Rectangle &moving, const Rectangle &solid)
-    {
-        return moving.top_center.x >= solid.left_top.x && moving.top_center.x <= solid.right_top.x;
-    }
-
-    bool detectTopLeftCornerCollision(const Rectangle &moving, const Rectangle &solid)
-    {
-        int left_probe = moving.left_top.x + EDGE_INSET;
-        return left_probe >= solid.left_top.x && left_probe <= solid.right_top.x;
-    }
-
-    bool detectTopRightCornerCollision(const Rectangle &moving, const Rectangle &solid)
-    {
-        int right_probe = moving.right_top.x - EDGE_INSET;
-        return right_probe >= solid.left_top.x && right_probe <= solid.right_top.x;
-    }
-
-    void notifySideCollision(Object *moving_obj, Object *solid_obj, CollisionSide side)
-    {
-        if (side == COLLISION_RIGHT)
-        {
-            moving_obj->notifyCollisionRight(solid_obj);
-            solid_obj->notifyCollisionLeft(moving_obj);
-        }
-        else if (side == COLLISION_LEFT)
-        {
-            moving_obj->notifyCollisionLeft(solid_obj);
-            solid_obj->notifyCollisionRight(moving_obj);
-        }
     }
 
     void calculateExposedFaces(CollisionBody &body)
@@ -254,6 +110,7 @@ World::World()
     this->camera = new Camera();
     this->map = new Map("assets/maps/1/1.txt");
     this->gameState = new GameState();
+    this->physics = new Physics();
     rebuildCollisionBodies();
 }
 
@@ -494,134 +351,21 @@ void World::hitEnemiesAbove(Object *platform)
 
 void World::collision(Object *obj)
 {
-    if (obj->dead)
-    {
-        return;
-    }
-
-    bool on_the_floor = false;
-    bool top_center_collision = false;
-    bool top_corner_collision = false;
-    Object *top_corner_object = nullptr;
-
-    obj->notifyFreeLeft();
-    obj->notifyFreeRight();
-
-    auto processCollisionTarget = [&](const CollisionPart &part) -> bool {
-        Object *target = part.object;
-        const Rectangle &solid_rect = part.rect;
-        if (target->dead || target == obj || shouldIgnoreEnemyCollision(obj, target))
-        {
-            return false;
-        }
-
-        Rectangle moving_rect(obj->getPos(), obj->getPos() + obj->getSize());
-
-        notifySideCollision(obj, target, detectSideCollision(moving_rect, part));
-
-        if (part.exposed_top && detectBottomCollision(moving_rect, solid_rect))
-        {
-            if (isLandingOnTop(moving_rect, solid_rect))
-            {
-                on_the_floor = true;
-                obj->notifyCollisionBottom(target);
-            }
-            else
-            {
-                obj->notifyDistToPlatform(abs(moving_rect.bottom_center.y - solid_rect.top_center.y));
-            }
-        }
-
-        if (!supportsTopCollision(obj))
-        {
-            return false;
-        }
-
-        bool top_center_on_part = detectTopCenterCollision(moving_rect, solid_rect);
-        bool top_corner_on_part = detectTopLeftCornerCollision(moving_rect, solid_rect) ||
-                                  detectTopRightCornerCollision(moving_rect, solid_rect);
-
-        if (part.exposed_bottom && top_center_on_part)
-        {
-            if (hitsSolidCeiling(moving_rect, solid_rect))
-            {
-                obj->notifyCollisionTop(target);
-                if (obj->getType() == PLAYER)
-                {
-                    hitEnemiesAbove(target);
-                }
-                top_center_collision = true;
-                top_corner_collision = true;
-                return true;
-            }
-
-            obj->notifyDistToCeil(abs(moving_rect.top_center.y - solid_rect.bottom_center.y));
-            return false;
-        }
-
-        if (top_center_collision || !part.exposed_bottom || !top_corner_on_part)
-        {
-            return false;
-        }
-
-        if (hitsSolidCeiling(moving_rect, solid_rect))
-        {
-            if (shouldApplyTopCornerCollision(obj))
-            {
-                top_corner_collision = true;
-                top_corner_object = target;
-            }
-        }
-        else
-        {
-            obj->notifyDistToCeil(abs(moving_rect.top_center.y - solid_rect.bottom_center.y));
-        }
-
-        return false;
-    };
-
-    Rectangle moving_rect(obj->getPos(), obj->getPos() + obj->getSize());
-    for (auto &body : collisionBodies)
-    {
-        if (!expandedBoundsOverlap(moving_rect, body.bounds))
-        {
-            continue;
-        }
-
-        for (auto &part : body.parts)
-        {
-            if (processCollisionTarget(part))
-            {
-                return;
-            }
-        }
-    }
-
+    std::vector<Object *> dynamicObjects;
     for (auto o : getObjects())
     {
-        if (isStaticCollisionTile(o))
+        if (!isStaticCollisionTile(o))
         {
-            continue;
-        }
-
-        CollisionPart dynamic_part(o, objectRect(o));
-        if (processCollisionTarget(dynamic_part))
-        {
-            return;
+            dynamicObjects.push_back(o);
         }
     }
 
-    if (!on_the_floor)
+    for (auto ghost : ghosts)
     {
-        obj->notifyFreeBottom();
+        dynamicObjects.push_back(ghost);
     }
 
-    if (supportsTopCollision(obj) && !top_center_collision && top_corner_collision && top_corner_object != nullptr)
-    {
-        obj->notifyCollisionTop(top_corner_object);
-        if (obj->getType() == PLAYER)
-        {
-            hitEnemiesAbove(top_corner_object);
-        }
-    }
+    physics->collision(obj, collisionBodies, dynamicObjects, [this](Object *platform) {
+        hitEnemiesAbove(platform);
+    });
 }

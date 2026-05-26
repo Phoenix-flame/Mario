@@ -2,7 +2,7 @@
 
 [![Readme Card](https://github-readme-stats.vercel.app/api/pin/?username=Phoenix-flame&repo=Mario&theme=vue-dark)](https://github.com/anuraghazra/github-readme-stats)
 
-A small Super Mario Bros. style platformer written from scratch in C++ with SDL2. The project currently implements a playable World 1-1 style level, Mario movement, enemies, power-ups, map loading, collision handling, sound, camera movement, and sprite-based rendering.
+A small Super Mario Bros. style platformer written from scratch in C++ with SDL2. The project currently implements a playable World 1-1 style level, Mario movement, enemies, power-ups, map loading, Box2D-backed collision handling, sound, camera movement, and sprite-based rendering.
 
 ![Screenshot](https://github.com/Phoenix-flame/Mario/blob/master/images/1.png?raw=true)
 
@@ -13,6 +13,8 @@ Install the SDL2 development packages:
 ```bash
 sudo apt install libsdl2-dev libsdl2-mixer-dev libsdl2-ttf-dev libsdl2-image-dev
 ```
+
+Collision detection uses Box2D. CMake first tries to find an installed Box2D package and falls back to downloading Box2D v2.4.1 with `FetchContent` when it is missing.
 
 ## Build
 
@@ -47,7 +49,7 @@ The game is intentionally implemented without a game engine. The main systems ar
 | `source/player.*` | Mario state machine, movement, jumping, level/power-up state, death, and sprite selection. |
 | `source/camera.*` | Camera and background parallax offsets. |
 | `source/audio.*` | Sound/music update logic based on player state. |
-| `source/physics.*` | Physics helper code. |
+| `source/physics.*` | Box2D-backed collision fixtures, contact listener, and object notification dispatch. |
 | `source/objects/` | Base `Object` class and concrete gameplay objects such as blocks, bricks, pipes, enemies, mushrooms, flowers, coins, and fireballs. |
 | `assets/` | Sprites, maps, sounds, fonts, and background/cloud assets. |
 | `images/` | README/debug screenshots. |
@@ -84,26 +86,9 @@ Important object categories:
 | `PLAYER` | Mario. |
 | `G_COIN`, `G_TEXT`, `G_MUSHROOM`, `G_FLOWER`, `G_BULLET` | Ghost/transient objects spawned during gameplay. |
 
-### Example Sprites
-
-| Type | Image |
-| --- | --- |
-| `BLOCK` | ![BLOCK](https://github.com/Phoenix-flame/Mario/blob/master/assets/sprites/objects/bricks_blocks/block.png) |
-| `BRICK` | ![BRICK](https://github.com/Phoenix-flame/Mario/blob/master/assets/sprites/objects/bricks_blocks/brick.png) |
-| `GROUND` | ![GROUND](https://github.com/Phoenix-flame/Mario/blob/master/assets/sprites/objects/bricks_blocks/clay.png) |
-| `FIRE_CONTAINER` | ![FIRE_CONTAINER](https://github.com/Phoenix-flame/Mario/blob/master/assets/sprites/objects/bricks_blocks/question-3.png) |
-| `HEALTH_CONTAINER` | ![HEALTH_CONTAINER](https://github.com/Phoenix-flame/Mario/blob/master/assets/sprites/objects/bricks_blocks/question-2.png) |
-| `COIN_CONTAINER` | ![COIN_CONTAINER](https://github.com/Phoenix-flame/Mario/blob/master/assets/sprites/objects/bricks_blocks/question-1.png) |
-| `PLAYER` | ![Mario](https://github.com/Phoenix-flame/Mario/blob/master/assets/sprites/mario/normal/walking-right-1.png) ![Big Mario](https://github.com/Phoenix-flame/Mario/blob/master/assets/sprites/mario/big/walking-right-1.png) ![Fire Mario](https://github.com/Phoenix-flame/Mario/blob/master/assets/sprites/mario/white/walking-right-1.png) |
-| `GOOMBA` | ![Goomba](https://github.com/Phoenix-flame/Mario/blob/master/assets/sprites/enemies/little_goomba/walking-1.png) ![Goomba](https://github.com/Phoenix-flame/Mario/blob/master/assets/sprites/enemies/little_goomba/walking-2.png) ![Goomba Dead](https://github.com/Phoenix-flame/Mario/blob/master/assets/sprites/enemies/little_goomba/dead.png) |
-| `KOOPA` | ![Koopa](https://github.com/Phoenix-flame/Mario/blob/master/assets/sprites/enemies/koopa_troopa/walking-left-1.png) ![Koopa](https://github.com/Phoenix-flame/Mario/blob/master/assets/sprites/enemies/koopa_troopa/walking-right-1.png) ![Koopa Shell](https://github.com/Phoenix-flame/Mario/blob/master/assets/sprites/enemies/koopa_troopa/dead.png) |
-| `G_COIN` | ![Coin](https://github.com/Phoenix-flame/Mario/blob/master/assets/sprites/objects/coin.png) |
-| `G_MUSHROOM` | ![Health Mushroom](https://github.com/Phoenix-flame/Mario/blob/master/assets/sprites/objects/mushroom/health.png) ![Red Mushroom](https://github.com/Phoenix-flame/Mario/blob/master/assets/sprites/objects/mushroom/red.png) |
-| `G_FLOWER` | ![Flower](https://github.com/Phoenix-flame/Mario/blob/master/assets/sprites/objects/flower.png) |
-
 ## Collision System
 
-Collision handling is dispatched from `World::collision(Object *obj)`. Objects receive collision notifications through virtual hooks such as:
+Collision handling is dispatched from `World::collision(Object *obj)` into `Physics::collision()`. `Physics` builds a lightweight Box2D world for the current query, creates sensor fixtures for the moving object, static collision tiles, enemies, and ghost objects, then uses a `b2ContactListener` to convert Box2D contacts back into the existing gameplay notification hooks:
 
 - `notifyCollisionLeft()`
 - `notifyCollisionRight()`
