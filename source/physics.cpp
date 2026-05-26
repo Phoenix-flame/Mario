@@ -94,12 +94,19 @@ namespace
         return reinterpret_cast<Object *>(body->GetUserData().pointer);
     }
 
-    void attachFixture(b2World &world, Object *object, const Rectangle &rect)
+    void attachFixture(b2World &world, Object *object, const Rectangle &rect, b2BodyType bodyType)
     {
         b2BodyDef body_def;
-        body_def.type = b2_staticBody;
+        body_def.type = bodyType;
         body_def.position = toWorldCenter(rect);
         body_def.userData.pointer = reinterpret_cast<uintptr_t>(object);
+
+        if (bodyType == b2_dynamicBody)
+        {
+            body_def.gravityScale = 0.0f;
+            body_def.fixedRotation = true;
+            body_def.awake = true;
+        }
 
         b2Body *body = world.CreateBody(&body_def);
 
@@ -110,6 +117,10 @@ namespace
         b2FixtureDef fixture_def;
         fixture_def.shape = &shape;
         fixture_def.isSensor = true;
+        if (bodyType == b2_dynamicBody)
+        {
+            fixture_def.density = 1.0f;
+        }
         body->CreateFixture(&fixture_def);
     }
 
@@ -283,7 +294,7 @@ void Physics::collision(Object *obj,
     Rectangle moving_rect = objectRect(obj);
     b2World box2dWorld(b2Vec2(0.0f, 0.0f));
 
-    attachFixture(box2dWorld, obj, inflateRect(moving_rect, CONTACT_SKIN));
+    attachFixture(box2dWorld, obj, inflateRect(moving_rect, CONTACT_SKIN), b2_dynamicBody);
 
     for (auto &body : collisionBodies)
     {
@@ -296,7 +307,7 @@ void Physics::collision(Object *obj,
         {
             if (!part.object->dead)
             {
-                attachFixture(box2dWorld, part.object, part.rect);
+                attachFixture(box2dWorld, part.object, part.rect, b2_staticBody);
                 notifyDistances(obj, moving_rect, part.rect);
             }
         }
@@ -310,7 +321,7 @@ void Physics::collision(Object *obj,
         }
 
         Rectangle target_rect = objectRect(target);
-        attachFixture(box2dWorld, target, target_rect);
+        attachFixture(box2dWorld, target, target_rect, b2_staticBody);
         notifyDistances(obj, moving_rect, target_rect);
     }
 
