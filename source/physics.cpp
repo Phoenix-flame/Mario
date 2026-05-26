@@ -11,6 +11,7 @@ namespace
 {
     const float PIXELS_PER_METER = 32.0f;
     const int PLATFORM_PROBE_MARGIN = 16;
+    const int CONTACT_SKIN = 2;
 
     enum ContactSide
     {
@@ -76,6 +77,12 @@ namespace
         return Rectangle(obj->getPos(), obj->getPos() + obj->getSize());
     }
 
+    Rectangle inflateRect(const Rectangle &rect, int skin)
+    {
+        return Rectangle(Point(rect.x - skin, rect.y - skin),
+                         Point(rect.x + rect.w + skin, rect.y + rect.h + skin));
+    }
+
     b2Vec2 toWorldCenter(const Rectangle &rect)
     {
         return b2Vec2((rect.x + rect.w * 0.5f) / PIXELS_PER_METER,
@@ -106,8 +113,35 @@ namespace
         body->CreateFixture(&fixture_def);
     }
 
+    bool closeEnough(int gap)
+    {
+        return gap >= -CONTACT_SKIN && gap <= CONTACT_SKIN;
+    }
+
     ContactSide sideFromRects(const Rectangle &moving, const Rectangle &target)
     {
+        const int gap_to_floor = target.y - (moving.y + moving.h);
+        const int gap_to_ceiling = moving.y - (target.y + target.h);
+        const int gap_to_right_wall = target.x - (moving.x + moving.w);
+        const int gap_to_left_wall = moving.x - (target.x + target.w);
+
+        if (horizontalOverlap(moving, target) && closeEnough(gap_to_floor))
+        {
+            return CONTACT_BOTTOM;
+        }
+        if (horizontalOverlap(moving, target) && closeEnough(gap_to_ceiling))
+        {
+            return CONTACT_TOP;
+        }
+        if (verticalOverlap(moving, target) && closeEnough(gap_to_right_wall))
+        {
+            return CONTACT_LEFT;
+        }
+        if (verticalOverlap(moving, target) && closeEnough(gap_to_left_wall))
+        {
+            return CONTACT_RIGHT;
+        }
+
         int moving_center_x = moving.x + moving.w / 2;
         int moving_center_y = moving.y + moving.h / 2;
         int target_center_x = target.x + target.w / 2;
@@ -130,7 +164,7 @@ namespace
             return dx < 0 ? CONTACT_LEFT : CONTACT_RIGHT;
         }
 
-        return dy < 0 ? CONTACT_TOP : CONTACT_BOTTOM;
+        return dy < 0 ? CONTACT_BOTTOM : CONTACT_TOP;
     }
 
     void notifyContact(Object *moving, Object *target, ContactSide side,
@@ -249,7 +283,7 @@ void Physics::collision(Object *obj,
     Rectangle moving_rect = objectRect(obj);
     b2World box2dWorld(b2Vec2(0.0f, 0.0f));
 
-    attachFixture(box2dWorld, obj, moving_rect);
+    attachFixture(box2dWorld, obj, inflateRect(moving_rect, CONTACT_SKIN));
 
     for (auto &body : collisionBodies)
     {
