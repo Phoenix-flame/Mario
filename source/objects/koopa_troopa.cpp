@@ -1,4 +1,45 @@
 #include "koopa_troopa.hpp"
+#include "text.hpp"
+
+namespace
+{
+    const int SHELL_KILL_SCORE = 150;
+
+    bool isShellKillTarget(Object *obj)
+    {
+        return obj->getType() == GOOMBA || obj->getType() == KOOPA;
+    }
+
+    void rewardShellKill(Object *source, Object *target)
+    {
+        Text *text = new Text(target->getPos().x, target->getPos().y - 10);
+        text->setPos(target->getPos().x, target->getPos().y - 10);
+        text->ghost_dead = false;
+        text->text = "+ " + std::to_string(SHELL_KILL_SCORE);
+        text->score = SHELL_KILL_SCORE;
+
+        source->ghost.push_back(text);
+        source->has_ghost = true;
+    }
+
+    void killWithShell(Object *source, Object *target)
+    {
+        if (target == source || target->dead || !isShellKillTarget(target))
+        {
+            return;
+        }
+
+        rewardShellKill(source, target);
+        if (target->getType() == KOOPA)
+        {
+            ((Koopa *)target)->fireballDeath();
+        }
+        else
+        {
+            target->death();
+        }
+    }
+}
 
 void Koopa::update()
 {
@@ -240,7 +281,11 @@ void Koopa::notifyCollisionLeft(Object *obj)
     }
     else if (state == KOOPA_FAST_AND_FURIOUS_STATE)
     {
-        if (obj->getType() == GOOMBA || obj->getType() == PLAYER)
+        if (isShellKillTarget(obj))
+        {
+            killWithShell(this, obj);
+        }
+        else if (obj->getType() == PLAYER)
         {
             obj->death();
         }
@@ -277,7 +322,11 @@ void Koopa::notifyCollisionRight(Object *obj)
     }
     else if (state == KOOPA_FAST_AND_FURIOUS_STATE)
     {
-        if (obj->getType() == GOOMBA || obj->getType() == PLAYER)
+        if (isShellKillTarget(obj))
+        {
+            killWithShell(this, obj);
+        }
+        else if (obj->getType() == PLAYER)
         {
             obj->death();
         }
