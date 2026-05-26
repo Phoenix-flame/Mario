@@ -23,17 +23,11 @@ void Core::loop(){
         start = now;
         frameTime = SDL_GetTicks();
 
-        // Key events
         if(!this->events()){break;}
-        // Key handlers and camera movment, Player state updater
         this->update();
-        // Update game state, Object state updater
         this->world->loop();
-        // Handling sounds
         this->audio->update(world->getPlayer());
-        // Draw all objects whitin camera field
         this->draw();
-
 
         if(SDL_GetTicks() - frameTime < MIN_FRAME_RATE) {
             SDL_Delay(MIN_FRAME_RATE - (SDL_GetTicks () - frameTime));
@@ -47,12 +41,10 @@ void Core::update(){
     State state = world->getPlayer()->getState();
     if (state == DEAD){
         if (!endGameTimer->isStarted()){endGameTimer->start();}
-        
         if (endGameTimer->getSecs() > 2){
             resetGame();
             return;
         }
-        
     }
     Dir dir = world->getPlayer()->getDir();
 
@@ -62,7 +54,6 @@ void Core::update(){
             world->camera->move(-5);
             world->camera->moveBackground(-1);
         }
-        
     }
     else if (KEY_LEFT_PRESSED){
         world->getPlayer()->update(-1);
@@ -70,13 +61,11 @@ void Core::update(){
             world->camera->move(5);
             world->camera->moveBackground(1);
         }
-        
     }
     else{
         world->getPlayer()->update(0);
     }
 
-    // Move camera when mario is sliding
     if(state == SLIDE && dir == RIGHT){
         if (player_x > 400){
             world->camera->move(-5);
@@ -109,11 +98,7 @@ void Core::update(){
             shootTimer->start();
         }
     }
-
 }
-
-
-
 
 void Core::draw(){
     win->clear();
@@ -123,7 +108,6 @@ void Core::draw(){
     if (debugEnabled){
         this->showDebug();
     }
-
     win->update_screen();
 }
 
@@ -164,14 +148,8 @@ void Core::drawBackground(){
     for (int i = 0; i < 5; i++)
     {
         int x = (bases[i] + parallax - cloud_offset) % period;
-        while (x < -100)
-        {
-            x += period;
-        }
-        while (x > 680)
-        {
-            x -= period;
-        }
+        while (x < -100){ x += period; }
+        while (x > 680){ x -= period; }
         draw_cloud(x, ys[i], tile_sizes[i]);
     }
 }
@@ -192,49 +170,108 @@ void Core::showDebug(){
     win->show_text("World: (" + std::to_string(player_pos.x) + ", " + std::to_string(player_pos.y) + ")", Point(8, 78), WHITE, font, 13);
     win->show_text("Camera: (" + std::to_string(camera.x) + ", " + std::to_string(camera.y) + ")", Point(8, 96), WHITE, font, 13);
 
-    win->fill_rect(Rectangle(Point(430, 0), Point(640, 82)), BLACK);
+    win->fill_rect(Rectangle(Point(430, 0), Point(640, 104)), BLACK);
     win->show_text("Objects: " + std::to_string(world->getObjects().size()), Point(438, 8), CYAN, font, 13);
-    win->show_text("Ghosts: " + std::to_string(world->getGhosts().size()), Point(438, 26), CYAN, font, 13);
-    win->show_text("Score: " + std::to_string(world->getGameState()->score), Point(438, 44), CYAN, font, 13);
-    win->show_text("Time: " + std::to_string(gameTimer->getSecs()) + "s", Point(438, 62), CYAN, font, 13);
+    win->show_text("Bodies: " + std::to_string(world->getCollisionBodies().size()), Point(438, 26), CYAN, font, 13);
+    win->show_text("Ghosts: " + std::to_string(world->getGhosts().size()), Point(438, 44), CYAN, font, 13);
+    win->show_text("Score: " + std::to_string(world->getGameState()->score), Point(438, 62), CYAN, font, 13);
+    win->show_text("Time: " + std::to_string(gameTimer->getSecs()) + "s", Point(438, 80), CYAN, font, 13);
 
-    // Player collision box and physics guide lines.
     Rectangle player_rect(screen_player_pos, screen_player_pos + player_size);
     win->draw_rect(player_rect, player->isInvincible() ? CYAN : YELLOW, 2U);
-    win->draw_line(Point(player_rect.left_center.x - 40, player_rect.left_center.y),
-                   Point(player_rect.right_center.x + 40, player_rect.right_center.y), RED);
-    win->draw_line(Point(player_rect.top_center.x, player_rect.top_center.y - 40),
-                   Point(player_rect.bottom_center.x, player_rect.bottom_center.y + 40), RED);
-    win->draw_line(Point(player_rect.x, player_rect.y - player->min_dist_to_platform.y),
-                   Point(player_rect.x + player_rect.w, player_rect.y - player->min_dist_to_platform.y), GREEN);
+    win->draw_line(Point(player_rect.left_center.x - 40, player_rect.left_center.y), Point(player_rect.right_center.x + 40, player_rect.right_center.y), RED);
+    win->draw_line(Point(player_rect.top_center.x, player_rect.top_center.y - 40), Point(player_rect.bottom_center.x, player_rect.bottom_center.y + 40), RED);
+    win->draw_line(Point(player_rect.x, player_rect.y - player->min_dist_to_platform.y), Point(player_rect.x + player_rect.w, player_rect.y - player->min_dist_to_platform.y), GREEN);
     win->show_text(player->isInvincible() ? "PLAYER INVINCIBLE" : "PLAYER", Point(player_rect.x, player_rect.y - 18), player->isInvincible() ? CYAN : YELLOW, font, 11);
 
-    // Camera viewport / screen boundary.
     win->draw_rect(Rectangle(Point(0, 0), Point(640, 480)), MAGENTA, 1U);
     win->draw_line(Point(0, 240), Point(640, 240), MAGENTA);
     win->draw_line(Point(320, 0), Point(320, 480), MAGENTA);
 
+    int visible_body_count = 0;
+    for (auto body : world->getCollisionBodies()){
+        Point p(body.bounds.x, body.bounds.y);
+        p += camera;
+        Point s(body.bounds.w, body.bounds.h);
+        if (p.x + s.x < 0 || p.x > 640 || p.y + s.y < 0 || p.y > 480){
+            continue;
+        }
+
+        Rectangle bounds(p, p + s);
+
+        auto horizontalOverlap = [](const Rectangle &a, const Rectangle &b) {
+            return a.x < b.x + b.w && a.x + a.w > b.x;
+        };
+        auto verticalOverlap = [](const Rectangle &a, const Rectangle &b) {
+            return a.y < b.y + b.h && a.y + a.h > b.y;
+        };
+
+        for (unsigned int i = 0; i < body.parts.size(); i++){
+            Rectangle part = body.parts[i].rect;
+            bool has_left_neighbor = false;
+            bool has_right_neighbor = false;
+            bool has_top_neighbor = false;
+            bool has_bottom_neighbor = false;
+
+            for (unsigned int j = 0; j < body.parts.size(); j++){
+                if (i == j){ continue; }
+
+                Rectangle other = body.parts[j].rect;
+                if (other.x + other.w == part.x && verticalOverlap(part, other)){
+                    has_left_neighbor = true;
+                }
+                if (part.x + part.w == other.x && verticalOverlap(part, other)){
+                    has_right_neighbor = true;
+                }
+                if (other.y + other.h == part.y && horizontalOverlap(part, other)){
+                    has_top_neighbor = true;
+                }
+                if (part.y + part.h == other.y && horizontalOverlap(part, other)){
+                    has_bottom_neighbor = true;
+                }
+            }
+
+            Point top_left(part.x + camera.x, part.y + camera.y);
+            Point top_right(part.x + part.w + camera.x, part.y + camera.y);
+            Point bottom_left(part.x + camera.x, part.y + part.h + camera.y);
+            Point bottom_right(part.x + part.w + camera.x, part.y + part.h + camera.y);
+
+            if (!has_top_neighbor){
+                win->draw_line(top_left, top_right, GREEN);
+            }
+            if (!has_bottom_neighbor){
+                win->draw_line(bottom_left, bottom_right, GREEN);
+            }
+            if (!has_left_neighbor){
+                win->draw_line(top_left, bottom_left, GREEN);
+            }
+            if (!has_right_neighbor){
+                win->draw_line(top_right, bottom_right, GREEN);
+            }
+        }
+
+        // Thin outer rectangle shows the broad-phase bounds. Green lines are the exact non-convex boundary.
+        win->draw_rect(bounds, BLUE, 1U);
+
+        std::string label = std::string("BODY ") + ToString(body.type) + " x" + std::to_string(body.parts.size());
+        win->show_text(label, Point(bounds.x, bounds.y - 10), GREEN, font, 9);
+        visible_body_count++;
+    }
+
     int visible_count = 0;
     for (auto o : world->getObjects()){
-        if (o == player){
+        if (o == player){ continue; }
+        if (o->getType() == BLOCK || o->getType() == BRICK || o->getType() == GROUND || o->getType() == PIPE ||
+            o->getType() == COIN_CONTAINER || o->getType() == FIRE_CONTAINER || o->getType() == HEALTH_CONTAINER){
             continue;
         }
 
         Point p = o->getPos() + camera;
         Point s = o->getSize();
-        if (p.x + s.x < 0 || p.x > 640 || p.y + s.y < 0 || p.y > 480){
-            continue;
-        }
+        if (p.x + s.x < 0 || p.x > 640 || p.y + s.y < 0 || p.y > 480){ continue; }
 
         Rectangle rect(p, p + s);
-        RGB color = o->dead ? RED : BLUE;
-        if (o->getType() == GOOMBA || o->getType() == KOOPA){
-            color = MAGENTA;
-        }
-        else if (o->getType() == BLOCK || o->getType() == BRICK || o->getType() == GROUND || o->getType() == PIPE){
-            color = GREEN;
-        }
-
+        RGB color = (o->getType() == GOOMBA || o->getType() == KOOPA) ? MAGENTA : (o->dead ? RED : BLUE);
         win->draw_rect(rect, color, 1U);
         win->draw_point(rect.top_center, RED);
         win->draw_point(rect.bottom_center, CYAN);
@@ -243,9 +280,7 @@ void Core::showDebug(){
 
         if (visible_count < 35){
             std::string label = std::string(ToString(o->getType()));
-            if (o->dead){
-                label += " DEAD";
-            }
+            if (o->dead){ label += " DEAD"; }
             win->show_text(label, Point(rect.x, rect.y - 10), color, font, 9);
         }
         visible_count++;
@@ -254,29 +289,22 @@ void Core::showDebug(){
     for (auto g : world->getGhosts()){
         Point p = g->getPos() + camera;
         Point s = g->getSize();
-        if (p.x + s.x < 0 || p.x > 640 || p.y + s.y < 0 || p.y > 480){
-            continue;
-        }
+        if (p.x + s.x < 0 || p.x > 640 || p.y + s.y < 0 || p.y > 480){ continue; }
 
         Rectangle rect(p, p + s);
         win->draw_rect(rect, CYAN, 1U);
         win->show_text(std::string(ToString(g->getType())), Point(rect.x, rect.y - 10), CYAN, font, 9);
     }
 
-    win->show_text("visible objects: " + std::to_string(visible_count), Point(438, 96), YELLOW, font, 12);
+    win->show_text("visible bodies: " + std::to_string(visible_body_count), Point(438, 118), YELLOW, font, 12);
+    win->show_text("visible dynamic: " + std::to_string(visible_count), Point(438, 134), YELLOW, font, 12);
 }
 
 
 void Core::drawHood(){
-    win->show_text("Score: " + std::to_string(world->getGameState()->score),
-        Point(10, 10), WHITE, "assets/Roboto-Regular.ttf", 20);
-
-    win->show_text(std::to_string(gameTimer->getSecs()) + " s",
-        Point(580, 10), WHITE, "assets/Roboto-Regular.ttf", 20);
+    win->show_text("Score: " + std::to_string(world->getGameState()->score), Point(10, 10), WHITE, "assets/Roboto-Regular.ttf", 20);
+    win->show_text(std::to_string(gameTimer->getSecs()) + " s", Point(580, 10), WHITE, "assets/Roboto-Regular.ttf", 20);
 }
-
-
-
 
 void Core::drawObjects(){
     Point offset = world->camera->getPos();
@@ -286,36 +314,21 @@ void Core::drawObjects(){
             win->show_text(((Text*)b)->text, b->getPos() + offset, WHITE, "assets/Roboto-Regular.ttf", 12);
             continue;
         }
-        win->draw_img(b->getImage(),
-                 Rectangle(b->getPos() + offset, b->getPos() + b->getSize() + offset), NULL_RECT,
-                 0, ((Coin*)b)->flipped);
+        win->draw_img(b->getImage(), Rectangle(b->getPos() + offset, b->getPos() + b->getSize() + offset), NULL_RECT, 0, ((Coin*)b)->flipped);
     }
 
     for (auto b:world->getObjects()){
         if (b->getType() == PLAYER && !((Player*)b)->shouldDraw()){
             continue;
         }
-        win->draw_img(b->getImage(),
-                 Rectangle(b->getPos() + offset, b->getPos() + b->getSize() + offset), NULL_RECT,
-                 0, false);
+        win->draw_img(b->getImage(), Rectangle(b->getPos() + offset, b->getPos() + b->getSize() + offset), NULL_RECT, 0, false);
     }
-
-
 
     Player * player = world->getPlayer();
     if (player->shouldDraw()){
-        win->draw_img(player->getImage(),
-                     Rectangle(player->getPos() + offset, player->getPos() + player->getSize() + offset), NULL_RECT,
-                     0, false);
+        win->draw_img(player->getImage(), Rectangle(player->getPos() + offset, player->getPos() + player->getSize() + offset), NULL_RECT, 0, false);
     }
-
-
-    
-
 }
-
-
-
 
 bool Core::events(){
     Event event = win->poll_for_event();
@@ -346,7 +359,6 @@ bool Core::events(){
             }
             break;
         case Event::KEY_RELEASE:
-
             if (event.get_pressed_key() == 'R' || event.get_pressed_key() == ' '){
                 KEY_UP_PRESSED = false;
             }
@@ -359,12 +371,10 @@ bool Core::events(){
             else if (event.get_pressed_key() == 'z' || event.get_pressed_key() == 'Z'){
                 KEY_SHIFT_PRESSED = false;
             }
-
         default:;
     }
     return true;
 }
-
 
 void Core::resetGame(){
     world = new World();

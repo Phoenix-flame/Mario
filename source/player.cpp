@@ -55,20 +55,16 @@ void Player::update(int _dir)
             {
                 speed = 0;
             }
-            else if (!collidedR && !collidedL)
+            else
             {
-                dir = (stop) ? STOP : trans_dir;
+                dir = trans_dir;
                 if (dir == LEFT)
                 {
-                    speed = -5;
+                    speed = collidedL ? 0 : -5;
                 }
                 else if (dir == RIGHT)
                 {
-                    speed = +5;
-                }
-                else
-                {
-                    speed = 0;
+                    speed = collidedR ? 0 : 5;
                 }
             }
 
@@ -80,20 +76,16 @@ void Player::update(int _dir)
             {
                 speed = 0;
             }
-            else if (!collidedL && !collidedR)
+            else
             {
-                dir = (stop) ? STOP : trans_dir;
+                dir = trans_dir;
                 if (dir == LEFT)
                 {
-                    speed = -5;
+                    speed = collidedL ? 0 : -5;
                 }
                 else if (dir == RIGHT)
                 {
-                    speed = 5;
-                }
-                else
-                {
-                    speed = 0;
+                    speed = collidedR ? 0 : 5;
                 }
             }
 

@@ -16,6 +16,31 @@ struct GameState{
     int score = 0;
 };
 
+struct CollisionPart{
+    Object *object;
+    Rectangle rect;
+    bool exposed_top;
+    bool exposed_bottom;
+    bool exposed_left;
+    bool exposed_right;
+
+    CollisionPart(Object *_object, Rectangle _rect) :
+        object(_object),
+        rect(_rect),
+        exposed_top(true),
+        exposed_bottom(true),
+        exposed_left(true),
+        exposed_right(true) {}
+};
+
+struct CollisionBody{
+    Type type;
+    Rectangle bounds;
+    std::vector<CollisionPart> parts;
+
+    CollisionBody(Type _type, Rectangle _bounds) : type(_type), bounds(_bounds) {}
+};
+
 class World{
 public:
     World();
@@ -24,6 +49,7 @@ public:
 
 
     std::vector<Object*> getObjects();
+    std::vector<CollisionBody> getCollisionBodies();
     Camera* camera;
     Map* map;
 
@@ -39,6 +65,9 @@ private:
 
     void ghostCollector();
     std::vector<Object*> ghosts;
+
+    std::vector<CollisionBody> collisionBodies;
+    void rebuildCollisionBodies();
 
     void collision(Object* obj);
     void hitEnemiesAbove(Object *platform);
