@@ -1,6 +1,44 @@
 #include "core.hpp"
+#include <unistd.h>
+#include <sys/stat.h>
+
+namespace
+{
+    bool directoryExists(const char *path)
+    {
+        struct stat info;
+        return stat(path, &info) == 0 && S_ISDIR(info.st_mode);
+    }
+
+    bool fileExists(const char *path)
+    {
+        struct stat info;
+        return stat(path, &info) == 0 && S_ISREG(info.st_mode);
+    }
+
+    void configureResourceWorkingDirectory()
+    {
+        if (directoryExists("assets") && fileExists("assets/maps/1/1.txt"))
+        {
+            return;
+        }
+
+        if (directoryExists("../assets") && fileExists("../assets/maps/1/1.txt"))
+        {
+            chdir("..");
+            return;
+        }
+
+        if (directoryExists("../../assets") && fileExists("../../assets/maps/1/1.txt"))
+        {
+            chdir("../..");
+            return;
+        }
+    }
+}
 
 Core::Core(){
+    configureResourceWorkingDirectory();
     this->win = new Window(640, 480, "Mario");
     this->world = new World();
     audio = new Audio(this->win);

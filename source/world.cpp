@@ -4,6 +4,7 @@
 namespace
 {
     const int BLOCK_BUMP_ENEMY_Y_TOLERANCE = 6;
+    const int ENEMY_KILL_SCORE = 150;
 
     bool hasHorizontalOverlap(const Rectangle &a, const Rectangle &b)
     {
@@ -64,6 +65,16 @@ namespace
         Type t = obj->getType();
         return t == BRICK || t == COIN_CONTAINER || t == FIRE_CONTAINER || t == HEALTH_CONTAINER ||
                t == BLOCK || t == GROUND;
+    }
+
+    Text *makeScoreText(Object *obj, int score)
+    {
+        Text *text = new Text(obj->getPos().x, obj->getPos().y - 10);
+        text->setPos(obj->getPos().x, obj->getPos().y - 10);
+        text->ghost_dead = false;
+        text->text = "+ " + std::to_string(score);
+        text->score = score;
+        return text;
     }
 
     void calculateExposedFaces(CollisionBody &body)
@@ -344,6 +355,8 @@ void World::hitEnemiesAbove(Object *platform)
         Rectangle enemy_rect(obj->getPos(), obj->getPos() + obj->getSize());
         if (isStandingOnPlatform(enemy_rect, platform_rect))
         {
+            ghosts.push_back(makeScoreText(obj, ENEMY_KILL_SCORE));
+            gameState->score += ENEMY_KILL_SCORE;
             obj->death();
         }
     }
