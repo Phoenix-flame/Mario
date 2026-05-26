@@ -37,6 +37,11 @@ namespace
         return obj->getType() == GOOMBA || obj->getType() == KOOPA;
     }
 
+    bool isPowerUp(Object *obj)
+    {
+        return obj->getType() == G_MUSHROOM || obj->getType() == G_FLOWER;
+    }
+
     bool isPlayerEnemyPair(Object *a, Object *b)
     {
         return (a->getType() == PLAYER && isEnemy(b)) ||
@@ -45,6 +50,14 @@ namespace
 
     bool shouldIgnoreEnemyCollision(Object *moving_obj, Object *solid_obj)
     {
+        if (isPowerUp(moving_obj) && isEnemy(solid_obj))
+        {
+            return true;
+        }
+        if (isPowerUp(solid_obj) && isEnemy(moving_obj))
+        {
+            return true;
+        }
         if (!isPlayerEnemyPair(moving_obj, solid_obj))
         {
             return false;
@@ -379,7 +392,7 @@ void Physics::collision(Object *obj,
 
     for (auto target : dynamicObjects)
     {
-        if (target == obj || target->dead)
+        if (target == obj || target->dead || shouldIgnoreEnemyCollision(obj, target))
         {
             continue;
         }

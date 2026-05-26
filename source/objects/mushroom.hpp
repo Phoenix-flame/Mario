@@ -37,6 +37,7 @@ public:
     }
 
     void update();
+    void bumpUp();
 
     // Collision Notification
     void notifyCollisionLeft(Object *) override;
