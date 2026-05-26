@@ -22,6 +22,16 @@ namespace
         CONTACT_BOTTOM
     };
 
+    struct FixtureUserData
+    {
+        Object *object;
+        Rectangle rect;
+        bool exposed_top;
+        bool exposed_bottom;
+        bool exposed_left;
+        bool exposed_right;
+    };
+
     bool isEnemy(Object *obj)
     {
         return obj->getType() == GOOMBA || obj->getType() == KOOPA;
@@ -89,17 +99,37 @@ namespace
                       (rect.y + rect.h * 0.5f) / PIXELS_PER_METER);
     }
 
-    Object *bodyObject(b2Body *body)
+    FixtureUserData *fixtureData(b2Fixture *fixture)
     {
-        return reinterpret_cast<Object *>(body->GetUserData().pointer);
+        return reinterpret_cast<FixtureUserData *>(fixture->GetUserData().pointer);
     }
 
-    void attachFixture(b2World &world, Object *object, const Rectangle &rect, b2BodyType bodyType)
+    FixtureUserData *addFixtureUserData(std::vector<FixtureUserData> &fixtureUserData,
+                                        Object *object,
+                                        const Rectangle &rect,
+                                        bool exposed_top,
+                                        bool exposed_bottom,
+                                        bool exposed_left,
+                                        bool exposed_right)
+    {
+        FixtureUserData data = {object, rect, exposed_top, exposed_bottom, exposed_left, exposed_right};
+        fixtureUserData.push_back(data);
+        return &fixtureUserData.back();
+    }
+
+    void attachFixture(b2World &world,
+                       std::vector<FixtureUserData> &fixtureUserData,
+                       Object *object,
+                       const Rectangle &rect,
+                       b2BodyType bodyType,
+                       bool exposed_top,
+                       bool exposed_bottom,
+                       bool exposed_left,
+                       bool exposed_right)
     {
         b2BodyDef body_def;
         body_def.type = bodyType;
         body_def.position = toWorldCenter(rect);
-        body_def.userData.pointer = reinterpret_cast<uintptr_t>(object);
 
         if (bodyType == b2_dynamicBody)
         {
@@ -117,6 +147,9 @@ namespace
         b2FixtureDef fixture_def;
         fixture_def.shape = &shape;
         fixture_def.isSensor = true;
+        fixture_def.userData.pointer = reinterpret_cast<uintptr_t>(
+            addFixtureUserData(fixtureUserData, object, rect, exposed_top, exposed_bottom, exposed_left, exposed_right));
+
         if (bodyType == b2_dynamicBody)
         {
             fixture_def.density = 1.0f;
@@ -178,6 +211,23 @@ namespace
         return dy < 0 ? CONTACT_BOTTOM : CONTACT_TOP;
     }
 
+    bool targetFaceIsExposed(const FixtureUserData *target, ContactSide side)
+    {
+        switch (side)
+        {
+        case CONTACT_LEFT:
+            return target->exposed_left;
+        case CONTACT_RIGHT:
+            return target->exposed_right;
+        case CONTACT_TOP:
+            return target->exposed_bottom;
+        case CONTACT_BOTTOM:
+            return target->exposed_top;
+        default:
+            return false;
+        }
+    }
+
     void notifyContact(Object *moving, Object *target, ContactSide side,
                        const std::function<void(Object *)> &hitEnemiesAbove)
     {
@@ -234,31 +284,41 @@ namespace
 
         void BeginContact(b2Contact *contact) override
         {
-            Object *a = bodyObject(contact->GetFixtureA()->GetBody());
-            Object *b = bodyObject(contact->GetFixtureB()->GetBody());
+            FixtureUserData *a = fixtureData(contact->GetFixtureA());
+            FixtureUserData *b = fixtureData(contact->GetFixtureB());
 
-            Object *target = nullptr;
-            if (a == moving)
+            FixtureUserData *targetData = nullptr;
+
+            if (a != nullptr && a->object == moving)
             {
-                target = b;
+                targetData = b;
             }
-            else if (b == moving)
+            else if (b != nullptr && b->object == moving)
             {
-                target = a;
+                targetData = a;
             }
             else
             {
                 return;
             }
 
+            if (targetData == nullptr)
+            {
+                return;
+            }
+
+            Object *target = targetData->object;
             if (target == nullptr || target == moving || target->dead || shouldIgnoreEnemyCollision(moving, target))
             {
                 return;
             }
 
-            Rectangle moving_rect = objectRect(moving);
-            Rectangle target_rect = objectRect(target);
-            ContactSide side = sideFromRects(moving_rect, target_rect);
+            ContactSide side = sideFromRects(objectRect(moving), targetData->rect);
+            if (!targetFaceIsExposed(targetData, side))
+            {
+                return;
+            }
+
             if (side == CONTACT_BOTTOM)
             {
                 onFloor = true;
@@ -293,8 +353,11 @@ void Physics::collision(Object *obj,
 
     Rectangle moving_rect = objectRect(obj);
     b2World box2dWorld(b2Vec2(0.0f, 0.0f));
+    std::vector<FixtureUserData> fixtureUserData;
+    fixtureUserData.reserve(1024);
 
-    attachFixture(box2dWorld, obj, inflateRect(moving_rect, CONTACT_SKIN), b2_dynamicBody);
+    attachFixture(box2dWorld, fixtureUserData, obj, inflateRect(moving_rect, CONTACT_SKIN), b2_dynamicBody,
+                  true, true, true, true);
 
     for (auto &body : collisionBodies)
     {
@@ -307,7 +370,8 @@ void Physics::collision(Object *obj,
         {
             if (!part.object->dead)
             {
-                attachFixture(box2dWorld, part.object, part.rect, b2_staticBody);
+                attachFixture(box2dWorld, fixtureUserData, part.object, part.rect, b2_staticBody,
+                              part.exposed_top, part.exposed_bottom, part.exposed_left, part.exposed_right);
                 notifyDistances(obj, moving_rect, part.rect);
             }
         }
@@ -321,7 +385,8 @@ void Physics::collision(Object *obj,
         }
 
         Rectangle target_rect = objectRect(target);
-        attachFixture(box2dWorld, target, target_rect, b2_staticBody);
+        attachFixture(box2dWorld, fixtureUserData, target, target_rect, b2_staticBody,
+                      true, true, true, true);
         notifyDistances(obj, moving_rect, target_rect);
     }
 
