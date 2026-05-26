@@ -1,5 +1,28 @@
 #include "bullet.hpp"
 #include "koopa_troopa.hpp"
+#include "text.hpp"
+
+namespace
+{
+    const int BULLET_KILL_SCORE = 150;
+
+    bool isBulletKillTarget(Object *obj)
+    {
+        return obj->getType() == GOOMBA || obj->getType() == KOOPA;
+    }
+
+    void rewardBulletKill(Object *obj)
+    {
+        Text *text = new Text(obj->getPos().x, obj->getPos().y - 10);
+        text->setPos(obj->getPos().x, obj->getPos().y - 10);
+        text->ghost_dead = false;
+        text->text = "+ 150";
+        text->score = BULLET_KILL_SCORE;
+
+        obj->ghost.push_back(text);
+        obj->has_ghost = true;
+    }
+}
 
 Bullet::Bullet(int x, int y, Dir _dir) : Object(Point(0, 0), Point(16, 16), BULLET_IMAGE, G_BULLET)
 {
@@ -38,6 +61,11 @@ void Bullet::hit(Object *obj)
     if (obj->getType() == PLAYER || obj->getType() == G_BULLET)
     {
         return;
+    }
+
+    if (isBulletKillTarget(obj) && !obj->dead)
+    {
+        rewardBulletKill(obj);
     }
 
     if (obj->getType() == GOOMBA)
