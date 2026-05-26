@@ -1,7 +1,7 @@
 #include "physics.hpp"
 #include "world.hpp"
 #include "player.hpp"
-#include <Box2D/Box2D.h>
+#include <box2d/box2d.h>
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -11,7 +11,6 @@ namespace
 {
     const float PIXELS_PER_METER = 32.0f;
     const int PLATFORM_PROBE_MARGIN = 16;
-    const int CEILING_PROBE_MARGIN = 16;
 
     enum ContactSide
     {
@@ -49,7 +48,7 @@ namespace
         return obj->getType() == PLAYER || obj->getType() == G_BULLET;
     }
 
-    bool shouldApplyTopCornerCollision(Object *obj)
+    bool shouldApplyTopCollision(Object *obj)
     {
         return obj->getType() == G_BULLET || ((Player *)obj)->getState() == JUMP;
     }
@@ -83,12 +82,17 @@ namespace
                       (rect.y + rect.h * 0.5f) / PIXELS_PER_METER);
     }
 
+    Object *bodyObject(b2Body *body)
+    {
+        return reinterpret_cast<Object *>(body->GetUserData().pointer);
+    }
+
     void attachFixture(b2World &world, Object *object, const Rectangle &rect)
     {
         b2BodyDef body_def;
         body_def.type = b2_staticBody;
         body_def.position = toWorldCenter(rect);
-        body_def.userData = object;
+        body_def.userData.pointer = reinterpret_cast<uintptr_t>(object);
 
         b2Body *body = world.CreateBody(&body_def);
 
@@ -143,7 +147,7 @@ namespace
             target->notifyCollisionRight(moving);
             break;
         case CONTACT_TOP:
-            if (supportsTopCollision(moving) && shouldApplyTopCornerCollision(moving))
+            if (supportsTopCollision(moving) && shouldApplyTopCollision(moving))
             {
                 moving->notifyCollisionTop(target);
                 if (moving->getType() == PLAYER)
@@ -185,8 +189,8 @@ namespace
 
         void BeginContact(b2Contact *contact) override
         {
-            Object *a = (Object *)contact->GetFixtureA()->GetBody()->GetUserData();
-            Object *b = (Object *)contact->GetFixtureB()->GetBody()->GetUserData();
+            Object *a = bodyObject(contact->GetFixtureA()->GetBody());
+            Object *b = bodyObject(contact->GetFixtureB()->GetBody());
 
             Object *target = nullptr;
             if (a == moving)
