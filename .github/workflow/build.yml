@@ -1,0 +1,40 @@
+```yaml
+name: Test GitHub Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Generate tag
+        id: tag
+        run: |
+          echo "tag=test-$(date +'%Y%m%d-%H%M%S')" >> "$GITHUB_OUTPUT"
+
+      - name: Create test file
+        run: |
+          echo "Hello from GitHub Actions!" > hello.txt
+          echo "Run ID: ${{ github.run_id }}" >> hello.txt
+          echo "Commit: ${{ github.sha }}" >> hello.txt
+
+      - name: Create release and upload asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: Test Release ${{ steps.tag.outputs.tag }}
+          body: |
+            This is a test release.
+
+            If you can download `hello.txt`,
+            then GitHub Releases are working and do not depend on Actions artifact storage.
+          draft: true
+          files: hello.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
