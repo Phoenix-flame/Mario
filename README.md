@@ -49,6 +49,8 @@ The game is intentionally implemented without a game engine. The main systems ar
 | `source/player.*` | Mario state machine, movement, jumping, level/power-up state, death, and sprite selection. |
 | `source/camera.*` | Camera and background parallax offsets. |
 | `source/audio.*` | Sound/music update logic based on player state. |
+| `source/rl_environment.*` | Headless, deterministic fixed-step interface for RL observations, actions, rewards, and episode resets. |
+| `rl/` | Python Gymnasium-compatible wrapper, NumPy Double DQN agent, trainer, and evaluator. |
 | `source/physics.*` | Box2D-backed collision fixtures, contact listener, and object notification dispatch. |
 | `source/objects/` | Base `Object` class and concrete gameplay objects such as blocks, bricks, pipes, enemies, mushrooms, flowers, coins, and fireballs. |
 | `assets/` | Sprites, maps, sounds, fonts, and background/cloud assets. |
@@ -133,6 +135,36 @@ The overlay shows:
 - Physics helper markers such as object centers, top/bottom/left/right collision points, and the player's nearest-platform guide line.
 
 ![Debug screenshot](https://github.com/Phoenix-flame/Mario/blob/master/images/3.png?raw=true)
+
+## Reinforcement-learning training
+
+The `mario_rl` shared library runs the same map, player, enemy, collision, power-up, and scoring code as the interactive game, but uses a deterministic simulated clock and skips rendering/audio. The Python wrapper follows the Gymnasium `reset`/`step` API; Gymnasium itself is optional.
+
+Build the native game and RL environment, then install the small Python dependency set:
+
+```bash
+cmake -S . -B build -DBUILD_TESTING=ON
+cmake --build build -j
+python3 -m pip install -r requirements-rl.txt
+```
+
+Train a Double DQN agent on one level and evaluate its best checkpoint:
+
+```bash
+python3 -m rl.train --level 1 --episodes 1000 --checkpoint checkpoints/level1.npz
+python3 -m rl.evaluate checkpoints/level1_best.npz --level 1 --episodes 10
+```
+
+Training can be resumed with `--resume checkpoints/level1.npz`. Use `--max-steps`, `--frame-skip`, `--batch-size`, and `--hidden-size` to tune the run.
+
+The discrete action space contains idle, left, right, jump, left+jump, right+jump, shoot, left+shoot, and right+shoot. Each observation combines normalized player state with a local four-channel tile grid for terrain, reward blocks, enemies, and power-ups. Rewards are based on newly reached horizontal progress and actual game-score increases, with completion bonuses and death/timeout penalties; this teaches the policy to finish while still preferring coins, enemies, blocks, and power-ups that increase score.
+
+Run both native and Python checks with:
+
+```bash
+ctest --test-dir build --output-on-failure
+python3 -m unittest discover -s tests -p 'test_*.py'
+```
 
 ## Notes
 

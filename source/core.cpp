@@ -51,6 +51,16 @@ Core::Core(){
     FPS = 0;
 }
 
+Core::~Core(){
+    delete levelCompleteTimer;
+    delete shootTimer;
+    delete endGameTimer;
+    delete gameTimer;
+    delete audio;
+    delete world;
+    delete win;
+}
+
 
 void Core::loop(){
     int start = system_clock::now().time_since_epoch().count();
@@ -431,6 +441,7 @@ bool Core::events(){
 }
 
 void Core::resetGame(int level){
+    delete world;
     world = new World(level);
     currentLevel = level;
     FPS = 0;

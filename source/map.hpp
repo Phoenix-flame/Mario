@@ -23,6 +23,7 @@ class Map
 {
 public:
     Map(std::string filepath);
+    ~Map();
     void drawObjects();
     Point offset;
 

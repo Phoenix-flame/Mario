@@ -3,21 +3,43 @@
 
 #include "rsdl.hpp"
 #include <chrono>
+#include <cstdint>
 using namespace std::chrono;
 
 class Timer
 {
 public:
-    Timer() { time = 0; };
+    Timer() { reset(); };
+
+    // RL training runs the engine without sleeping. In that mode all gameplay
+    // timers use this deterministic clock instead of wall time.
+    static void useSimulatedTime(std::uint64_t startMilliseconds = 0)
+    {
+        simulatedTimeEnabled() = true;
+        simulatedMilliseconds() = startMilliseconds;
+    }
+
+    static void advanceSimulatedTime(std::uint64_t milliseconds)
+    {
+        if (simulatedTimeEnabled())
+        {
+            simulatedMilliseconds() += milliseconds;
+        }
+    }
+
+    static void useRealtime()
+    {
+        simulatedTimeEnabled() = false;
+    }
+
     void reset()
     {
-        time = 0;
+        time = nowMilliseconds();
         started = false;
-        clock = high_resolution_clock::now();
     }
     int getTime()
     {
-        return SDL_GetTicks() - time;
+        return static_cast<int>(nowMilliseconds() - time);
     }
 
     int getSecs()
@@ -26,8 +48,7 @@ public:
         {
             return 0;
         }
-        auto end = high_resolution_clock::now();
-        return (duration_cast<seconds>(end - clock).count());
+        return static_cast<int>((nowMilliseconds() - time) / 1000);
     }
 
     int getMilliseconds()
@@ -36,16 +57,13 @@ public:
         {
             return 0;
         }
-        // std::cout << "here" << std::endl;
-        auto end = high_resolution_clock::now();
-        return (duration_cast<milliseconds>(end - clock).count());
+        return static_cast<int>(nowMilliseconds() - time);
     }
 
     void start()
     {
-        time = SDL_GetTicks();
+        time = nowMilliseconds();
         started = true;
-        clock = high_resolution_clock::now();
     }
     bool isStarted()
     {
@@ -53,8 +71,28 @@ public:
     }
 
 private:
-    int time;
-    system_clock::time_point clock;
+    static bool &simulatedTimeEnabled()
+    {
+        static bool enabled = false;
+        return enabled;
+    }
+
+    static std::uint64_t &simulatedMilliseconds()
+    {
+        static std::uint64_t current = 0;
+        return current;
+    }
+
+    static std::uint64_t nowMilliseconds()
+    {
+        if (simulatedTimeEnabled())
+        {
+            return simulatedMilliseconds();
+        }
+        return static_cast<std::uint64_t>(SDL_GetTicks());
+    }
+
+    std::uint64_t time;
     bool started = false;
 };
 

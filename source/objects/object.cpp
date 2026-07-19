@@ -20,6 +20,16 @@ Object::Object(Point pos, Point size, std::string image, Type _type)
     this->type = _type;
 }
 
+Object::~Object()
+{
+    // Ghosts that have already been transferred to World are removed from
+    // this vector. Any pointers left here are still owned by the object.
+    for (auto obj : ghost)
+    {
+        delete obj;
+    }
+}
+
 std::string Object::getImage()
 {
     return image;

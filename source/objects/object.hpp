@@ -73,6 +73,7 @@ class Object
 {
 public:
     Object(Point pos, Point size, std::string image, Type _type);
+    virtual ~Object();
     std::string getImage();
     Point getPos();
     Point getSize();

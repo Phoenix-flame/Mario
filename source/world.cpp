@@ -116,11 +116,16 @@ namespace
     }
 }
 
-World::World(int _level)
+World::World(int _level, const std::string &assetRoot)
 {
     this->level = _level;
     this->camera = new Camera();
-    std::string mapPath = "assets/maps/1/" + std::to_string(_level) + ".txt";
+    std::string prefix = assetRoot;
+    if (!prefix.empty() && prefix[prefix.size() - 1] != '/')
+    {
+        prefix += "/";
+    }
+    std::string mapPath = prefix + "assets/maps/1/" + std::to_string(_level) + ".txt";
     this->map = new Map(mapPath);
     this->gameState = new GameState();
     this->gameState->currentLevel = _level;
@@ -140,9 +145,20 @@ World::World(int _level)
     rebuildCollisionBodies();
 }
 
+World::~World()
+{
+    for (auto ghost : ghosts)
+    {
+        delete ghost;
+    }
+    delete physics;
+    delete gameState;
+    delete map;
+    delete camera;
+}
+
 void World::loop()
 {
-    rebuildCollisionBodies();
     ghostCollector();
     collision(map->player);
     for (unsigned int i = 0; i < map->objects.size(); i++)
@@ -157,7 +173,9 @@ void World::loop()
             ((Brick *)map->objects[i])->update();
             if (((Brick *)map->objects[i])->broken)
             {
+                delete map->objects[i];
                 map->objects.erase(map->objects.begin() + i);
+                i--;
                 rebuildCollisionBodies();
             }
         }
@@ -183,7 +201,9 @@ void World::loop()
 
             if (map->objects[i]->getPos().y > 500)
             {
+                delete map->objects[i];
                 map->objects.erase(map->objects.begin() + i);
+                i--;
                 rebuildCollisionBodies();
                 continue;
             }
@@ -199,7 +219,9 @@ void World::loop()
             collision(map->objects[i]);
             if (map->objects[i]->getPos().y > 500)
             {
+                delete map->objects[i];
                 map->objects.erase(map->objects.begin() + i);
+                i--;
                 rebuildCollisionBodies();
                 continue;
             }
@@ -212,7 +234,9 @@ void World::loop()
     {
         if (ghosts[i]->ghost_dead)
         {
+            delete ghosts[i];
             ghosts.erase(ghosts.begin() + i);
+            i--;
             continue;
         }
         if (ghosts[i]->getType() == G_COIN)

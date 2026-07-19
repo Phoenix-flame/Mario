@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <queue>
+#include <string>
 #include "map.hpp"
 
 #include "camera.hpp"
@@ -44,7 +45,8 @@ struct CollisionBody{
 
 class World{
 public:
-    World(int level);
+    World(int level, const std::string &assetRoot = "");
+    ~World();
     void loop();
 
 
@@ -61,6 +63,8 @@ public:
     void addGhost(Object *obj);
     int getWinX() { return winX; }
     int getLevel() { return level; }
+    int getMapPixelWidth() { return map->getWidth() * 24; }
+    int getMapPixelHeight() { return map->getHeight() * 24; }
 private:
     GameState* gameState;
     void gravity();

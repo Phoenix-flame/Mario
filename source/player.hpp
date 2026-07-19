@@ -114,6 +114,7 @@ public:
     {
         level = NORMAL;
         state = STAND;
+        dir = RIGHT;
         image = NORM_STAND_RIGHT;
         size = Point(22, 30);
         funcToRun = &Player::stand;
@@ -160,6 +161,14 @@ public:
     void death_animation();
 
     double getSpeed() { return speed; }
+    int getVerticalSpeed()
+    {
+        if (state == JUMP)
+            return jump_speed_vertical;
+        if (state == FALL || state == DEAD)
+            return fall_speed_vertical;
+        return 0;
+    }
 
     // Collision Notification
     void notifyCollisionLeft(Object *) override;
@@ -206,12 +215,13 @@ private:
     bool collidedL = false;
     bool collidedR = false;
 
-    bool move_during_jump;
-    int jump_speed_vertical;
-    int jump_speed_horizontal;
+    bool move_during_jump = false;
+    int jump_speed_vertical = 0;
+    int jump_speed_horizontal = 0;
+    int jump_cycles = 0;
 
-    int fall_speed_vertical;
-    int fall_speed_horizontal;
+    int fall_speed_vertical = 0;
+    int fall_speed_horizontal = 0;
     int fall_cycles = 0;
     int terminal_speed = 10;
 

@@ -158,3 +158,11 @@ Map::Map(std::string filepath)
     this->objects.push_back(player);
     map_file.close();
 }
+
+Map::~Map()
+{
+    for (auto obj : objects)
+    {
+        delete obj;
+    }
+}

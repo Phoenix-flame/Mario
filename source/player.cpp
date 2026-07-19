@@ -535,14 +535,13 @@ void Player::startJump()
     }
     state = JUMP;
     jump_speed_vertical = -10;
+    jump_cycles = 0;
     jumpTimer.reset();
     jumpTimer.start();
 }
 
 void Player::jump()
 {
-    static int jump_cycles = 0;
-
     if (jumpTimer.getTime() < 600)
     {
         _moveY(jump_speed_vertical);
@@ -572,6 +571,7 @@ void Player::startFall()
     { // when mario is jumping, gravity has no effect on it
         state = FALL;
         fall_speed_vertical = 3;
+        fall_cycles = 0;
     }
 }
 
@@ -713,10 +713,6 @@ void Player::notifyCollisionLeft(Object *obj)
                 speed = 0;
         }
 
-        if (obj->getType() == FLAG)
-        {
-            std::cout << "reached" << std::endl;
-        }
     }
 }
 void Player::notifyCollisionRight(Object *obj)
@@ -752,7 +748,6 @@ void Player::notifyCollisionRight(Object *obj)
         }
         if (this->getPos().x >= winX && this->getState() != WON)
         {
-            std::cout << "reached" << std::endl;
             this->state = WON;
             win_a = true;
         }
@@ -767,7 +762,6 @@ void Player::notifyCollisionTop(Object *obj)
     }
     if (state == JUMP)
     {
-        std::cout << ToString(t) << std::endl;
         if (t == BRICK)
         {
             if (level == NORMAL)

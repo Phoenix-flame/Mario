@@ -12,6 +12,7 @@ class Core
 {
 public:
     Core();
+    ~Core();
     void draw();
     bool events();
 

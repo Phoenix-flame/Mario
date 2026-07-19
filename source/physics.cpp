@@ -383,9 +383,16 @@ void Physics::collision(Object *obj,
         {
             if (!part.object->dead)
             {
-                attachFixture(box2dWorld, fixtureUserData, part.object, part.rect, b2_staticBody,
+                // CollisionBody stores topology, while the object supplies its
+                // current rectangle (question blocks can briefly animate).
+                Rectangle current_part_rect = objectRect(part.object);
+                if (!expandedBoundsOverlap(moving_rect, current_part_rect))
+                {
+                    continue;
+                }
+                attachFixture(box2dWorld, fixtureUserData, part.object, current_part_rect, b2_staticBody,
                               part.exposed_top, part.exposed_bottom, part.exposed_left, part.exposed_right);
-                notifyDistances(obj, moving_rect, part.rect);
+                notifyDistances(obj, moving_rect, current_part_rect);
             }
         }
     }
@@ -398,6 +405,10 @@ void Physics::collision(Object *obj,
         }
 
         Rectangle target_rect = objectRect(target);
+        if (!expandedBoundsOverlap(moving_rect, target_rect))
+        {
+            continue;
+        }
         attachFixture(box2dWorld, fixtureUserData, target, target_rect, b2_staticBody,
                       true, true, true, true);
         notifyDistances(obj, moving_rect, target_rect);
