@@ -40,12 +40,13 @@ namespace
 Core::Core(){
     configureResourceWorkingDirectory();
     this->win = new Window(640, 480, "Mario");
-    this->world = new World();
+    this->world = new World(currentLevel);
     audio = new Audio(this->win);
     // this->win->play_music("./assets/sounds/Super Mario Bros. theme music.ogg");
     gameTimer = new Timer();
     endGameTimer = new Timer();
     shootTimer = new Timer();
+    levelCompleteTimer = new Timer();
     gameTimer->start();
     FPS = 0;
 }
@@ -80,7 +81,21 @@ void Core::update(){
     if (state == DEAD){
         if (!endGameTimer->isStarted()){endGameTimer->start();}
         if (endGameTimer->getSecs() > 2){
-            resetGame();
+            resetGame(currentLevel);
+            return;
+        }
+    }
+    if (state == WON){
+        if (!levelCompleteTimer->isStarted()){levelCompleteTimer->start();}
+        if (levelCompleteTimer->getSecs() > 3){
+            if (currentLevel < TOTAL_LEVELS){
+                currentLevel++;
+                resetGame(currentLevel);
+            }
+            else{
+                currentLevel = 1;
+                resetGame(currentLevel);
+            }
             return;
         }
     }
@@ -340,7 +355,8 @@ void Core::showDebug(){
 
 
 void Core::drawHood(){
-    win->show_text("Score: " + std::to_string(world->getGameState()->score), Point(10, 10), WHITE, "assets/Roboto-Regular.ttf", 20);
+    win->show_text("Level " + std::to_string(currentLevel), Point(10, 10), WHITE, "assets/Roboto-Regular.ttf", 20);
+    win->show_text("Score: " + std::to_string(world->getGameState()->score), Point(200, 10), WHITE, "assets/Roboto-Regular.ttf", 20);
     win->show_text(std::to_string(gameTimer->getSecs()) + " s", Point(580, 10), WHITE, "assets/Roboto-Regular.ttf", 20);
 }
 
@@ -414,12 +430,14 @@ bool Core::events(){
     return true;
 }
 
-void Core::resetGame(){
-    world = new World();
+void Core::resetGame(int level){
+    world = new World(level);
+    currentLevel = level;
     FPS = 0;
     gameTimer->reset();
     gameTimer->start();
     endGameTimer->reset();
     shootTimer->reset();
+    levelCompleteTimer->reset();
     audio->reset();
 }

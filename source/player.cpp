@@ -750,7 +750,7 @@ void Player::notifyCollisionRight(Object *obj)
             if (speed > 0)
                 speed = 0;
         }
-        if (this->getPos().x >= 4730 && this->getState() != WON)
+        if (this->getPos().x >= winX && this->getState() != WON)
         {
             std::cout << "reached" << std::endl;
             this->state = WON;

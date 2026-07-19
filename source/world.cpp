@@ -116,12 +116,27 @@ namespace
     }
 }
 
-World::World()
+World::World(int _level)
 {
+    this->level = _level;
     this->camera = new Camera();
-    this->map = new Map("assets/maps/1/1.txt");
+    std::string mapPath = "assets/maps/1/" + std::to_string(_level) + ".txt";
+    this->map = new Map(mapPath);
     this->gameState = new GameState();
+    this->gameState->currentLevel = _level;
     this->physics = new Physics();
+
+    int mapPixelWidth = map->getWidth() * 24;
+    int maxScroll = -(mapPixelWidth - 640);
+    camera->setMaxScroll(maxScroll);
+
+    this->winX = map->getFlagX();
+    if (this->winX <= 0)
+    {
+        this->winX = mapPixelWidth - 120;
+    }
+    map->player->setWinX(this->winX - 48);
+
     rebuildCollisionBodies();
 }
 

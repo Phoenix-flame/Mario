@@ -149,6 +149,7 @@ public:
     Level getLevel() { return level; }
     bool isInvincible();
     bool shouldDraw();
+    void setWinX(int x) { winX = x; }
 
     void shoot();
 
@@ -221,6 +222,8 @@ private:
     Timer LW_Timer;
     Timer deathAnimation;
     Timer immunityTimer;
+
+    int winX = 4730;
 };
 
 #endif // !_PLAYER_HPP_

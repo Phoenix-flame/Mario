@@ -6,6 +6,11 @@ Camera::Camera()
     this->posBackground = Point(0, 0);
 }
 
+void Camera::setMaxScroll(int max)
+{
+    this->maxScroll = max;
+}
+
 void Camera::move(int offset)
 {
     if (this->pos.x + offset > 0)
@@ -13,7 +18,7 @@ void Camera::move(int offset)
         canMove = false;
         return;
     }
-    if (this->pos.x + offset < -4770)
+    if (this->pos.x + offset < maxScroll)
     {
         canMove = false;
         return;

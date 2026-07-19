@@ -42,5 +42,12 @@ public:
 
     std::vector<Object *> staticObjects;
 
+    int getWidth() { return width; }
+    int getHeight() { return height; }
+    int getFlagX() { return flagX; }
+
 private:
+    int width = 0;
+    int height = 0;
+    int flagX = 0;
 };

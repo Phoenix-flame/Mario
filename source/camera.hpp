@@ -7,6 +7,7 @@ public:
 
     void move(int offset);
     void moveBackground(int offset);
+    void setMaxScroll(int max);
     Point getPos();
     Point getPosBackground()
     {
@@ -17,4 +18,5 @@ private:
     Point pos;
     Point posBackground;
     bool canMove = true;
+    int maxScroll = -4770;
 };

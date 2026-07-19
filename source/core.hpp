@@ -17,7 +17,7 @@ public:
 
     void loop();
     void update();
-    void resetGame();
+    void resetGame(int level = 1);
 
     void showDebug();
     void drawObjects();
@@ -34,8 +34,13 @@ private:
     Timer *gameTimer;
     Timer *endGameTimer;
     Timer *shootTimer;
+    Timer *levelCompleteTimer;
 
     bool debugEnabled = false;
+
+    int currentLevel = 1;
+    static const int TOTAL_LEVELS = 3;
+    bool levelCompleted = false;
 
     // Keyboard events
     bool KEY_UP_PRESSED = false;

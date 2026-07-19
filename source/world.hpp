@@ -14,6 +14,7 @@ struct GameState{
     bool alive = true;
     bool marioLevel = 1;
     int score = 0;
+    int currentLevel = 1;
 };
 
 struct CollisionPart{
@@ -43,7 +44,7 @@ struct CollisionBody{
 
 class World{
 public:
-    World();
+    World(int level);
     void loop();
 
 
@@ -58,6 +59,8 @@ public:
     std::vector<Object*> getGhosts();
     GameState* getGameState();
     void addGhost(Object *obj);
+    int getWinX() { return winX; }
+    int getLevel() { return level; }
 private:
     GameState* gameState;
     void gravity();
@@ -75,4 +78,6 @@ private:
 
     Physics* physics;
 
+    int level = 1;
+    int winX = 0;
 };

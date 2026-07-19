@@ -13,8 +13,15 @@ Map::Map(std::string filepath)
     bool flag_flag = false;
     std::vector<int> pipes_head;
 
+    int player_grid_x = 5;
+    int player_grid_y = 17;
+
     while (std::getline(map_file, line))
     {
+        if ((int)line.size() > width)
+        {
+            width = line.size();
+        }
         for (unsigned int x = 0; x < line.size(); x++)
         {
             if (line[x] == '@')
@@ -74,8 +81,8 @@ Map::Map(std::string filepath)
             }
             else if (line[x] == 'M')
             {
-                // player = new Player(x, y);
-                player = new Player(5, 17);
+                player_grid_x = x;
+                player_grid_y = y;
             }
             else if (line[x] == 'f')
             {
@@ -89,6 +96,10 @@ Map::Map(std::string filepath)
                 {
                     Flag *tmp = new Flag(x, y, "b");
                     this->objects.push_back(tmp);
+                }
+                if (x * 24 > flagX)
+                {
+                    flagX = x * 24;
                 }
             }
             else if (line[x] == '|')
@@ -142,6 +153,8 @@ Map::Map(std::string filepath)
         }
         y += 1;
     }
+    height = y;
+    player = new Player(player_grid_x, player_grid_y);
     this->objects.push_back(player);
     map_file.close();
 }
