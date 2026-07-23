@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "objects/bullet.hpp"
+#include "rl_renderer.hpp"
 
 namespace
 {
@@ -46,7 +47,9 @@ namespace
 MarioRLEnvironment::MarioRLEnvironment(const std::string &_assetRoot,
                                        int _level,
                                        int _maxEpisodeSteps,
-                                       int _frameSkip) :
+                                       int _frameSkip,
+                                       bool render,
+                                       int renderFramesPerSecond) :
     assetRoot(_assetRoot),
     level(_level),
     maxEpisodeSteps(_maxEpisodeSteps),
@@ -57,7 +60,10 @@ MarioRLEnvironment::MarioRLEnvironment(const std::string &_assetRoot,
     lastScore(0),
     furthestX(0),
     finished(false),
-    world(nullptr)
+    userQuit(false),
+    lastAction(-1),
+    world(nullptr),
+    renderer(nullptr)
 {
     if (level < 1 || level > 3)
     {
@@ -71,10 +77,15 @@ MarioRLEnvironment::MarioRLEnvironment(const std::string &_assetRoot,
     {
         throw std::invalid_argument("frameSkip must be between 1 and 20");
     }
+    if (render)
+    {
+        renderer = new MarioRLRenderer(assetRoot, renderFramesPerSecond);
+    }
 }
 
 MarioRLEnvironment::~MarioRLEnvironment()
 {
+    delete renderer;
     delete world;
     Timer::useRealtime();
 }
@@ -95,6 +106,8 @@ void MarioRLEnvironment::reset(float *observation)
     lastScore = 0;
     furthestX = world->getPlayer()->getPos().x;
     finished = false;
+    userQuit = false;
+    lastAction = -1;
 
     // Prime collision state so the initial observation reports Mario standing
     // on the floor instead of briefly falling.
@@ -161,6 +174,7 @@ MarioRLStepResult MarioRLEnvironment::step(int action, float *observation)
     const bool jump = action == 3 || action == 4 || action == 5;
     const bool fire = action == 6 || action == 7 || action == 8;
     int direction = moveLeft ? -1 : (moveRight ? 1 : 0);
+    lastAction = action;
 
     int previousFurthestX = furthestX;
     int previousScore = lastScore;
@@ -188,7 +202,11 @@ MarioRLStepResult MarioRLEnvironment::step(int action, float *observation)
         furthestX = std::max(furthestX, player->getPos().x);
         won = player->getState() == WON;
         dead = player->getState() == DEAD;
-        if (won || dead)
+        if (renderer != nullptr && !renderer->renderFrame(world, lastAction, episodeSteps + 1))
+        {
+            userQuit = true;
+        }
+        if (won || dead || userQuit)
         {
             break;
         }
@@ -209,8 +227,9 @@ MarioRLStepResult MarioRLEnvironment::step(int action, float *observation)
         reward -= 25.0f;
     }
 
-    bool truncated = !won && !dead && episodeSteps >= maxEpisodeSteps;
-    if (truncated)
+    bool timedOut = !won && !dead && episodeSteps >= maxEpisodeSteps;
+    bool truncated = !won && !dead && (timedOut || userQuit);
+    if (timedOut)
     {
         reward -= 5.0f;
     }
@@ -227,7 +246,25 @@ MarioRLStepResult MarioRLEnvironment::step(int action, float *observation)
     result.terminated = won || dead;
     result.truncated = truncated;
     result.won = won;
+    result.userQuit = userQuit;
     return result;
+}
+
+bool MarioRLEnvironment::render()
+{
+    if (renderer == nullptr)
+    {
+        throw std::logic_error("environment was not created with human rendering enabled");
+    }
+    if (world == nullptr)
+    {
+        throw std::logic_error("reset must be called before render");
+    }
+    if (!userQuit)
+    {
+        userQuit = !renderer->renderFrame(world, lastAction, episodeSteps);
+    }
+    return !userQuit;
 }
 
 void MarioRLEnvironment::setGridValue(float *observation,
@@ -363,6 +400,29 @@ extern "C"
         }
     }
 
+    void *mario_rl_create_rendered(const char *assetRoot,
+                                   int level,
+                                   int maxEpisodeSteps,
+                                   int frameSkip,
+                                   int renderFramesPerSecond)
+    {
+        try
+        {
+            lastError.clear();
+            return new MarioRLEnvironment(assetRoot == nullptr ? "" : assetRoot,
+                                          level,
+                                          maxEpisodeSteps,
+                                          frameSkip,
+                                          true,
+                                          renderFramesPerSecond);
+        }
+        catch (const std::exception &error)
+        {
+            lastError = error.what();
+            return nullptr;
+        }
+    }
+
     void mario_rl_destroy(void *environment)
     {
         delete static_cast<MarioRLEnvironment *>(environment);
@@ -408,6 +468,24 @@ extern "C"
             lastError.clear();
             *result = static_cast<MarioRLEnvironment *>(environment)->step(action, observation);
             return 0;
+        }
+        catch (const std::exception &error)
+        {
+            lastError = error.what();
+            return -1;
+        }
+    }
+
+    int mario_rl_render(void *environment)
+    {
+        try
+        {
+            if (environment == nullptr)
+            {
+                throw std::invalid_argument("environment cannot be null");
+            }
+            lastError.clear();
+            return static_cast<MarioRLEnvironment *>(environment)->render() ? 0 : 1;
         }
         catch (const std::exception &error)
         {

@@ -1,4 +1,4 @@
-"""Evaluate a trained Mario DQN checkpoint without exploration."""
+"""Evaluate a trained PyTorch Mario DQN checkpoint without exploration."""
 
 from __future__ import annotations
 
@@ -16,16 +16,18 @@ def main() -> None:
     parser.add_argument("--episodes", type=int, default=10)
     parser.add_argument("--max-steps", type=int, default=3000)
     parser.add_argument("--frame-skip", type=int, default=4)
-    parser.add_argument("--hidden-size", type=int, default=128)
+    parser.add_argument("--device", choices=("auto", "cpu", "cuda", "mps"), default="auto")
     args = parser.parse_args()
 
     with MarioEnv(args.level, args.max_steps, args.frame_skip) as environment:
-        agent = DQNAgent(
-            environment.observation_size,
-            environment.action_count,
-            hidden_size=args.hidden_size,
-        )
-        agent.load(args.checkpoint)
+        agent = DQNAgent.from_checkpoint(args.checkpoint, device=args.device)
+        checkpoint_shape = (agent.observation_size, agent.action_count)
+        environment_shape = (environment.observation_size, environment.action_count)
+        if checkpoint_shape != environment_shape:
+            raise ValueError(
+                f"checkpoint environment shape {checkpoint_shape} does not match "
+                f"the native environment {environment_shape}"
+            )
         wins = 0
         scores: list[int] = []
 

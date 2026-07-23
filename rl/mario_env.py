@@ -57,6 +57,7 @@ class _NativeStepResult(ctypes.Structure):
         ("terminated", ctypes.c_int),
         ("truncated", ctypes.c_int),
         ("won", ctypes.c_int),
+        ("user_quit", ctypes.c_int),
     ]
 
 
@@ -92,6 +93,15 @@ def _configure_library(library: ctypes.CDLL) -> None:
     float_pointer = ctypes.POINTER(ctypes.c_float)
     library.mario_rl_create.argtypes = [ctypes.c_char_p, ctypes.c_int, ctypes.c_int, ctypes.c_int]
     library.mario_rl_create.restype = ctypes.c_void_p
+    if hasattr(library, "mario_rl_create_rendered"):
+        library.mario_rl_create_rendered.argtypes = [
+            ctypes.c_char_p,
+            ctypes.c_int,
+            ctypes.c_int,
+            ctypes.c_int,
+            ctypes.c_int,
+        ]
+        library.mario_rl_create_rendered.restype = ctypes.c_void_p
     library.mario_rl_destroy.argtypes = [ctypes.c_void_p]
     library.mario_rl_observation_size.restype = ctypes.c_int
     library.mario_rl_action_count.restype = ctypes.c_int
@@ -104,6 +114,9 @@ def _configure_library(library: ctypes.CDLL) -> None:
         ctypes.POINTER(_NativeStepResult),
     ]
     library.mario_rl_step.restype = ctypes.c_int
+    if hasattr(library, "mario_rl_render"):
+        library.mario_rl_render.argtypes = [ctypes.c_void_p]
+        library.mario_rl_render.restype = ctypes.c_int
     library.mario_rl_last_error.restype = ctypes.c_char_p
 
 
@@ -112,10 +125,11 @@ class MarioEnv(BaseEnv):
 
     Observations contain normalized player features followed by four local
     tile-grid channels: terrain, reward blocks, enemies, and power-ups.
-    Rendering and audio are intentionally skipped during training.
+    Rendering is skipped by default for training. ``render_mode="human"``
+    displays the same native world while an agent chooses actions.
     """
 
-    metadata = {"render_modes": []}
+    metadata = {"render_modes": ["human"], "render_fps": 30}
 
     def __init__(
         self,
@@ -124,20 +138,40 @@ class MarioEnv(BaseEnv):
         frame_skip: int = 4,
         project_root: str | os.PathLike[str] | None = None,
         library_path: str | os.PathLike[str] | None = None,
+        render_mode: str | None = None,
+        render_fps: int = 30,
     ) -> None:
+        if render_mode not in (None, "human"):
+            raise ValueError("render_mode must be None or 'human'")
+        if render_fps <= 0 or render_fps > 240:
+            raise ValueError("render_fps must be between 1 and 240")
         root = Path(project_root).expanduser().resolve() if project_root else _default_project_root()
         native_path = _find_library(root, library_path)
         self._library = ctypes.CDLL(str(native_path))
         _configure_library(self._library)
+        self.render_mode = render_mode
 
         self.observation_size = int(self._library.mario_rl_observation_size())
         self.action_count = int(self._library.mario_rl_action_count())
         if self.action_count != len(ACTION_NAMES):
             raise RuntimeError("Python action names do not match the native action space")
 
-        self._handle = self._library.mario_rl_create(
-            os.fsencode(root), int(level), int(max_episode_steps), int(frame_skip)
-        )
+        if render_mode == "human":
+            if not hasattr(self._library, "mario_rl_create_rendered"):
+                raise RuntimeError(
+                    "the native RL library does not support rendering; rebuild it with CMake"
+                )
+            self._handle = self._library.mario_rl_create_rendered(
+                os.fsencode(root),
+                int(level),
+                int(max_episode_steps),
+                int(frame_skip),
+                int(render_fps),
+            )
+        else:
+            self._handle = self._library.mario_rl_create(
+                os.fsencode(root), int(level), int(max_episode_steps), int(frame_skip)
+            )
         if not self._handle:
             self._raise_native_error("could not create Mario environment")
 
@@ -174,7 +208,12 @@ class MarioEnv(BaseEnv):
             raise RuntimeError("cannot reset a closed environment")
         if self._library.mario_rl_reset(self._handle, self._observation_pointer()) != 0:
             self._raise_native_error("reset failed")
-        return self._observation.copy(), {"score": 0, "progress": 0.0, "won": False}
+        return self._observation.copy(), {
+            "score": 0,
+            "progress": 0.0,
+            "won": False,
+            "user_quit": False,
+        }
 
     def step(self, action: int) -> tuple[np.ndarray, float, bool, bool, dict[str, Any]]:
         if not self._handle:
@@ -194,6 +233,7 @@ class MarioEnv(BaseEnv):
             "episode_steps": int(result.episode_steps),
             "player_x": int(result.player_x),
             "won": bool(result.won),
+            "user_quit": bool(result.user_quit),
             "action_name": ACTION_NAMES[int(action)] if 0 <= int(action) < len(ACTION_NAMES) else "invalid",
         }
         return (
@@ -203,6 +243,20 @@ class MarioEnv(BaseEnv):
             bool(result.truncated),
             info,
         )
+
+    def render(self) -> bool:
+        """Draw one GUI frame and return false after the user closes it."""
+
+        if self.render_mode != "human":
+            raise RuntimeError("render() requires render_mode='human'")
+        if not self._handle:
+            raise RuntimeError("cannot render a closed environment")
+        if not hasattr(self._library, "mario_rl_render"):
+            raise RuntimeError("the native RL library does not support rendering")
+        status = int(self._library.mario_rl_render(self._handle))
+        if status < 0:
+            self._raise_native_error("render failed")
+        return status == 0
 
     def close(self) -> None:
         if getattr(self, "_handle", None):

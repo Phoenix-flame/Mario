@@ -87,7 +87,9 @@ void Window::init()
 {
   if (SDL_Init(0) < 0)
     throw runtime_error("SDL Init Fail");
-  int flags = (SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_AUDIO);
+  int flags = SDL_INIT_VIDEO | SDL_INIT_EVENTS;
+  if (audio_enabled)
+    flags |= SDL_INIT_AUDIO;
   if (SDL_WasInit(flags) != 0)
     throw runtime_error(string("SDL_WasInit Failed.") + SDL_GetError());
   if (SDL_InitSubSystem(flags) < 0)
@@ -96,14 +98,14 @@ void Window::init()
     throw runtime_error("IMG_Init Fail");
   if (TTF_Init() == -1)
     throw runtime_error("TTF_Init Fail");
-  if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0)
+  if (audio_enabled && Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0)
     throw runtime_error(
         string("SDL_mixer could not initialize. SDL_mixer Error:") +
         Mix_GetError());
 }
 
-Window::Window(int _width, int _height, std::string title)
-    : width(_width), height(_height)
+Window::Window(int _width, int _height, std::string title, bool enable_audio)
+    : width(_width), height(_height), audio_enabled(enable_audio)
 {
   init();
   SDL_CreateWindowAndRenderer(width, height, 0, &win, &renderer);
@@ -138,7 +140,8 @@ Window::~Window()
     Mix_FreeChunk(chunk_it->second);
   }
 
-  Mix_Quit();
+  if (audio_enabled)
+    Mix_Quit();
   SDL_Quit();
 }
 

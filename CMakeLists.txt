@@ -75,7 +75,11 @@ add_library(mario_engine OBJECT ${engine_sources})
 set_target_properties(mario_engine PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 add_executable(${CMAKE_PROJECT_NAME} ${app_sources} $<TARGET_OBJECTS:mario_engine>)
-add_library(mario_rl SHARED source/rl_environment.cpp $<TARGET_OBJECTS:mario_engine>)
+add_library(mario_rl SHARED
+    source/rl_environment.cpp
+    source/rl_renderer.cpp
+    $<TARGET_OBJECTS:mario_engine>
+)
 target_include_directories(mario_rl PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/source)
 
 target_link_libraries(${CMAKE_PROJECT_NAME}

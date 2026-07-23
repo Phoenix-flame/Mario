@@ -50,7 +50,7 @@ The game is intentionally implemented without a game engine. The main systems ar
 | `source/camera.*` | Camera and background parallax offsets. |
 | `source/audio.*` | Sound/music update logic based on player state. |
 | `source/rl_environment.*` | Headless, deterministic fixed-step interface for RL observations, actions, rewards, and episode resets. |
-| `rl/` | Python Gymnasium-compatible wrapper, NumPy Double DQN agent, trainer, and evaluator. |
+| `rl/` | Python Gymnasium-compatible wrapper, PyTorch Rainbow-lite DQN agent, trainer, evaluator, and learning-curve logger. |
 | `source/physics.*` | Box2D-backed collision fixtures, contact listener, and object notification dispatch. |
 | `source/objects/` | Base `Object` class and concrete gameplay objects such as blocks, bricks, pipes, enemies, mushrooms, flowers, coins, and fireballs. |
 | `assets/` | Sprites, maps, sounds, fonts, and background/cloud assets. |
@@ -148,14 +148,32 @@ cmake --build build -j
 python3 -m pip install -r requirements-rl.txt
 ```
 
-Train a Double DQN agent on one level and evaluate its best checkpoint:
+Train the PyTorch agent on one level and evaluate its best checkpoint:
 
 ```bash
-python3 -m rl.train --level 1 --episodes 1000 --checkpoint checkpoints/level1.npz
-python3 -m rl.evaluate checkpoints/level1_best.npz --level 1 --episodes 10
+python3 -m rl.train --level 1 --episodes 1000 --checkpoint checkpoints/level1.pt
+python3 -m rl.evaluate checkpoints/level1_best.pt --level 1 --episodes 10
 ```
 
-Training can be resumed with `--resume checkpoints/level1.npz`. Use `--max-steps`, `--frame-skip`, `--batch-size`, and `--hidden-size` to tune the run.
+Watch the greedy policy from the best checkpoint play in the native SDL window:
+
+```bash
+python3 -m rl.play checkpoints/level1_best.pt --level 1
+```
+
+The playback HUD shows the selected RL action, score, and environment step. Press `Q` or `Esc`, or close the window, to stop. `--episodes`, `--fps`, `--frame-skip`, `--max-steps`, and `--device` control playback; keep `--frame-skip` equal to the value used for training (the default is `4`).
+
+The agent combines dueling Double DQN, prioritized replay, three-step returns, a softly updated target network, Huber loss, and gradient clipping. The tile portion of each observation is processed by a convolutional encoder instead of being treated as an unstructured vector. These changes reduce Q-value overestimation and the late-training instability of the earlier hand-written NumPy optimizer.
+
+Every run creates a directory such as `runs/mario_level1_20260723-120000` containing:
+
+- `metrics.csv` with episode reward, loss, score, progress, win rate, Q/target values, TD error, gradient norm, epsilon, and replay statistics.
+- `evaluations.csv` with periodic greedy-policy results, which separate real policy quality from epsilon-greedy training noise.
+- `learning_curves.png`, refreshed every ten episodes.
+- `tensorboard/`, viewable with `tensorboard --logdir runs`.
+- `config.json`, containing the exact run arguments.
+
+The best checkpoint is selected using periodic greedy evaluation rather than a noisy exploration episode. Training can be resumed, including optimizer and target-network state, with `--resume checkpoints/level1.pt`. Old `.npz` checkpoints use a different network and cannot be resumed. Use `--device`, `--max-steps`, `--frame-skip`, `--batch-size`, `--learning-rate`, and `--log-dir` to tune or organize a run; `python3 -m rl.train --help` lists all algorithm controls.
 
 The discrete action space contains idle, left, right, jump, left+jump, right+jump, shoot, left+shoot, and right+shoot. Each observation combines normalized player state with a local four-channel tile grid for terrain, reward blocks, enemies, and power-ups. Rewards are based on newly reached horizontal progress and actual game-score increases, with completion bonuses and death/timeout penalties; this teaches the policy to finish while still preferring coins, enemies, blocks, and power-ups that increase score.
 

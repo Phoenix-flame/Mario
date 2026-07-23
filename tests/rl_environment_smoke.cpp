@@ -30,6 +30,7 @@ int main()
     {
         assert(mario_rl_step(environment, 2, observation.data(), &result) == 0);
         assert(std::isfinite(result.reward));
+        assert(result.userQuit == 0);
         initialX = result.playerX;
         if (result.terminated || result.truncated)
         {

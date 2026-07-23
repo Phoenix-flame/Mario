@@ -103,7 +103,8 @@ protected:
 class Window
 {
 public:
-  Window(int width = 640, int height = 480, std::string title = "RSDL");
+  Window(int width = 640, int height = 480, std::string title = "RSDL",
+         bool enable_audio = true);
   ~Window();
   Window &operator=(const Window &);
   void draw_img(std::string filename, Rectangle dst = NULL_RECT,
@@ -139,6 +140,7 @@ protected:
   SDL_Window *win;
   SDL_Renderer *renderer;
   Mix_Music *music;
+  bool audio_enabled;
   std::string music_filename;
   std::map<std::string, SDL_Texture *> texture_cache;
   std::map<std::string, TTF_Font *> fonts_cache;
