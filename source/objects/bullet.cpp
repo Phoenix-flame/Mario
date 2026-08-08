@@ -5,23 +5,6 @@
 namespace
 {
     const int BULLET_KILL_SCORE = 150;
-
-    bool isBulletKillTarget(Object *obj)
-    {
-        return obj->getType() == GOOMBA || obj->getType() == KOOPA;
-    }
-
-    void rewardBulletKill(Object *obj)
-    {
-        Text *text = new Text(obj->getPos().x, obj->getPos().y - 10);
-        text->setPos(obj->getPos().x, obj->getPos().y - 10);
-        text->ghost_dead = false;
-        text->text = "+ 150";
-        text->score = BULLET_KILL_SCORE;
-
-        obj->ghost.push_back(text);
-        obj->has_ghost = true;
-    }
 }
 
 Bullet::Bullet(int x, int y, Dir _dir) : Object(Point(0, 0), Point(16, 16), BULLET_IMAGE, G_BULLET)
@@ -63,17 +46,18 @@ void Bullet::hit(Object *obj)
         return;
     }
 
-    if (isBulletKillTarget(obj) && !obj->dead)
-    {
-        rewardBulletKill(obj);
-    }
-
     if (obj->getType() == GOOMBA)
     {
+        if (!obj->dead)
+        {
+            queueScoreText(obj, obj, BULLET_KILL_SCORE);
+        }
         obj->death();
     }
     else if (obj->getType() == KOOPA)
     {
+        // Koopa::fireballDeath() queues its own score label; the koopa may
+        // already have reacted to this bullet from its own collision pass.
         ((Koopa *)obj)->fireballDeath();
     }
 

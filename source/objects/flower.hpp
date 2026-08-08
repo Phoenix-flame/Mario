@@ -45,6 +45,8 @@ public:
     void notifyDistToCeil(int d) override;
 
 private:
+    bool consumeBy(Object *obj);
+
     void (Flower::*funcToRun)();
 
     Timer riseTimer;

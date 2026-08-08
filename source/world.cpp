@@ -67,16 +67,6 @@ namespace
                t == BLOCK || t == GROUND;
     }
 
-    Text *makeScoreText(Object *obj, int score)
-    {
-        Text *text = new Text(obj->getPos().x, obj->getPos().y - 10);
-        text->setPos(obj->getPos().x, obj->getPos().y - 10);
-        text->ghost_dead = false;
-        text->text = "+ " + std::to_string(score);
-        text->score = score;
-        return text;
-    }
-
     void calculateExposedFaces(CollisionBody &body)
     {
         for (unsigned int i = 0; i < body.parts.size(); i++)

@@ -394,6 +394,16 @@ void Core::drawObjects(){
     }
 }
 
+bool Core::saveScreenshot(const std::string &path){
+    std::string directory = path.substr(0, path.find_last_of('/'));
+    if (directory != path){
+        mkdir(directory.c_str(), 0755);
+    }
+    bool saved = win->save_screenshot(path);
+    std::cout << (saved ? "saved screenshot " : "could not save screenshot ") << path << std::endl;
+    return saved;
+}
+
 bool Core::events(){
     Event event = win->poll_for_event();
     switch (event.get_type()) {
@@ -407,6 +417,9 @@ bool Core::events(){
             }
             else if (event.get_pressed_key() == 'd' || event.get_pressed_key() == 'D'){
                 debugEnabled = !debugEnabled;
+            }
+            else if (event.get_pressed_key() == 'c' || event.get_pressed_key() == 'C'){
+                saveScreenshot("screenshots/mario-" + std::to_string(SDL_GetTicks()) + ".png");
             }
             else if (event.get_pressed_key() == 'R' || event.get_pressed_key() == ' '){
                 world->getPlayer()->can_jump = true;

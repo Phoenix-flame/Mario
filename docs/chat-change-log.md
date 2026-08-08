@@ -153,6 +153,34 @@ Covered areas:
 - Debugging notes.
 - Static and dynamic object behavior.
 
+## Scoring fixes and reinforcement-learning power-ups
+
+Two scoring gaps that hurt both the game and the RL reward signal were closed.
+
+Implemented behavior:
+
+- Killing a Koopa with a fireball now shows the "+ 150" label and adds the points, matching Goombas. The Koopa used to react to the bullet from its own collision pass and mark itself dead before `Bullet::hit` could award anything, so the score was silently skipped. The award now lives in `Koopa::fireballDeath()`, which is the single path every fireball and shell kill goes through.
+- Eating a mushroom or flower awards 1000 points with a floating label, as in the original game. Previously a power-up was worth nothing, so a score-driven RL agent had no reason to take one.
+- Power-ups can no longer be consumed twice in a frame; physics can report the same contact from both the player's and the power-up's collision pass.
+- The score label helper is shared in `objects/text.hpp` instead of being copied into `world.cpp`, `bullet.cpp`, and `koopa_troopa.cpp`.
+
+RL environment changes:
+
+- Reward for a power-up appearing from a block, a larger reward for gaining a power level, and a matching penalty for losing one to a hit. Power ranking is computed explicitly because the `Level` enum is declared `NORMAL, POWER, BIG`.
+- The score term of the reward is capped per step so a 1000-point pickup cannot dwarf progress and the win bonus.
+
+## RL training ergonomics and a pixel-based agent
+
+- Training shows tqdm progress bars (episode bar with rolling metrics, nested per-episode step bar), with `--progress plain|none` for log files and quiet runs.
+- Training verifies the compute device before the first episode: PyTorch build, CUDA availability, GPU name and memory, and where a probe forward pass really ran. `--require-cuda` aborts instead of silently training on the CPU.
+- The native environment can rasterize the visible view into an 84x84 grayscale frame (`mario_rl_frame`), with one gray level per object class and Mario the brightest. No SDL surface or display is involved.
+- `MarioEnv(observation_mode="pixels")` returns `(frame_stack, 84, 84)` `uint8` stacks, and `PixelDQNAgent` trains on them with a Nature-DQN convolutional dueling network, reusing prioritized replay, n-step returns, and Double DQN targets. `rl.evaluate` and `rl.play` detect pixel checkpoints and switch the environment automatically.
+
+## Screenshots
+
+- `Window::save_screenshot()` writes the current frame to a PNG, exposed in the game as `Core::saveScreenshot()` and bound to the `C` key (files land in `screenshots/`). `MarioRLRenderer` has the same helper.
+- The README screenshots (gameplay, debug overlay, RL playback, and both observation spaces) are generated from this path, headlessly with `SDL_VIDEODRIVER=dummy`, so they can be refreshed after visual changes.
+
 ## Notes for future testing
 
 Recommended manual test cases:
@@ -172,6 +200,8 @@ Recommended manual test cases:
 13. Mushroom falls cleanly from platform edges.
 14. Enemies standing on a bumped block are killed.
 15. Mario flashes and ignores enemy damage during temporary invincibility.
+16. A fireball kill on a Koopa shows "+ 150" and raises the score, in walking and shell states.
+17. Eating a mushroom or flower shows "+ 1000" once and raises Mario's power level once.
 
 ## Implementation warning
 

@@ -15,6 +15,15 @@ namespace
     const int GRID_LEFT_TILES = 3;
     const int GRID_TOP_TILES = 6;
 
+    // A power-up is worth 1000 game points, so the raw score term is capped to
+    // keep a single pickup from dwarfing progress and the win bonus.
+    const float SCORE_REWARD_PER_POINT = 0.05f;
+    const float MAX_SCORE_REWARD_PER_STEP = 10.0f;
+    // Explicit shaping for the power-up chain: bump the block, then eat what
+    // comes out. Score alone credits the pickup too sparsely to learn from.
+    const float POWERUP_SPAWN_REWARD = 1.0f;
+    const float POWER_LEVEL_REWARD = 5.0f;
+
     thread_local std::string lastError;
 
     float clampFloat(float value, float low, float high)
@@ -42,6 +51,53 @@ namespace
     {
         return type == G_MUSHROOM || type == G_FLOWER;
     }
+
+    // The Level enum is declared NORMAL, POWER, BIG, so its raw values are not
+    // ordered by power. Rank them small -> big -> fire instead.
+    int powerRank(Level level)
+    {
+        if (level == BIG)
+        {
+            return 1;
+        }
+        return level == POWER ? 2 : 0;
+    }
+
+    // Grayscale ink per object class. Values are spread far apart so a
+    // convolutional encoder can separate them after the /255 rescale, and
+    // brighter means "more relevant to the policy".
+    unsigned char frameInk(Type type)
+    {
+        switch (type)
+        {
+        case GROUND:
+        case BLOCK:
+        case PIPE:
+            return 70;
+        case BRICK:
+            return 100;
+        case FLAG:
+            return 120;
+        case COIN_CONTAINER:
+        case FIRE_CONTAINER:
+        case HEALTH_CONTAINER:
+            return 145;
+        case G_COIN:
+            return 170;
+        case G_BULLET:
+            return 190;
+        case GOOMBA:
+        case KOOPA:
+            return 215;
+        case G_MUSHROOM:
+        case G_FLOWER:
+            return 240;
+        case PLAYER:
+            return 255;
+        default:
+            return 0;
+        }
+    }
 }
 
 MarioRLEnvironment::MarioRLEnvironment(const std::string &_assetRoot,
@@ -58,6 +114,8 @@ MarioRLEnvironment::MarioRLEnvironment(const std::string &_assetRoot,
     simulatedFrames(0),
     lastShotFrame(-1000000),
     lastScore(0),
+    lastPlayerLevel(0),
+    lastPowerUpCount(0),
     furthestX(0),
     finished(false),
     userQuit(false),
@@ -104,6 +162,8 @@ void MarioRLEnvironment::reset(float *observation)
     simulatedFrames = 0;
     lastShotFrame = -1000000;
     lastScore = 0;
+    lastPlayerLevel = powerRank(world->getPlayer()->getLevel());
+    lastPowerUpCount = countActivePowerUps();
     furthestX = world->getPlayer()->getPos().x;
     finished = false;
     userQuit = false;
@@ -129,6 +189,19 @@ void MarioRLEnvironment::updateCamera()
         world->camera->move(5);
         world->camera->moveBackground(1);
     }
+}
+
+int MarioRLEnvironment::countActivePowerUps() const
+{
+    int count = 0;
+    for (auto ghost : world->getGhosts())
+    {
+        if (!ghost->ghost_dead && isPowerUp(ghost->getType()))
+        {
+            count++;
+        }
+    }
+    return count;
 }
 
 void MarioRLEnvironment::shoot()
@@ -178,6 +251,8 @@ MarioRLStepResult MarioRLEnvironment::step(int action, float *observation)
 
     int previousFurthestX = furthestX;
     int previousScore = lastScore;
+    int previousPlayerLevel = lastPlayerLevel;
+    int previousPowerUpCount = lastPowerUpCount;
     bool won = false;
     bool dead = false;
 
@@ -214,10 +289,25 @@ MarioRLStepResult MarioRLEnvironment::step(int action, float *observation)
 
     episodeSteps++;
     lastScore = world->getGameState()->score;
+    lastPlayerLevel = powerRank(world->getPlayer()->getLevel());
+    lastPowerUpCount = countActivePowerUps();
 
     float reward = -0.01f;
     reward += static_cast<float>(furthestX - previousFurthestX) * 0.02f;
-    reward += static_cast<float>(lastScore - previousScore) * 0.05f;
+    reward += std::min(static_cast<float>(lastScore - previousScore) * SCORE_REWARD_PER_POINT,
+                       MAX_SCORE_REWARD_PER_STEP);
+
+    reward += POWERUP_SPAWN_REWARD * std::max(0, lastPowerUpCount - previousPowerUpCount);
+    if (lastPlayerLevel > previousPlayerLevel)
+    {
+        reward += POWER_LEVEL_REWARD * (lastPlayerLevel - previousPlayerLevel);
+    }
+    else if (lastPlayerLevel < previousPlayerLevel && !dead)
+    {
+        // Losing a level means Mario took a hit that would have killed him small.
+        reward -= POWER_LEVEL_REWARD * (previousPlayerLevel - lastPlayerLevel);
+    }
+
     if (won)
     {
         reward += 100.0f;
@@ -265,6 +355,92 @@ bool MarioRLEnvironment::render()
         userQuit = !renderer->renderFrame(world, lastAction, episodeSteps);
     }
     return !userQuit;
+}
+
+void MarioRLEnvironment::drawObjectToFrame(unsigned char *frame, Object *object) const
+{
+    unsigned char ink = frameInk(object->getType());
+    if (ink == 0)
+    {
+        return;
+    }
+
+    // Local copies keep the class constants out of std::min/std::max, which
+    // would otherwise odr-use them and need out-of-line definitions.
+    const int viewWidth = VIEW_WIDTH;
+    const int viewHeight = VIEW_HEIGHT;
+    const int frameWidth = FRAME_WIDTH;
+    const int frameHeight = FRAME_HEIGHT;
+
+    Point offset = world->camera->getPos();
+    Point position = object->getPos() + offset;
+    Point size = object->getSize();
+    int left = position.x;
+    int top = position.y;
+    int right = left + size.x;
+    int bottom = top + size.y;
+    if (right <= 0 || left >= viewWidth || bottom <= 0 || top >= viewHeight)
+    {
+        return;
+    }
+
+    left = std::max(0, left);
+    top = std::max(0, top);
+    right = std::min(viewWidth, right);
+    bottom = std::min(viewHeight, bottom);
+
+    // Round the box outwards so small sprites survive the downscale, and keep
+    // at least one pixel per visible object.
+    int firstColumn = left * frameWidth / viewWidth;
+    int lastColumn = (right * frameWidth + viewWidth - 1) / viewWidth;
+    int firstRow = top * frameHeight / viewHeight;
+    int lastRow = (bottom * frameHeight + viewHeight - 1) / viewHeight;
+    lastColumn = std::min(frameWidth, std::max(lastColumn, firstColumn + 1));
+    lastRow = std::min(frameHeight, std::max(lastRow, firstRow + 1));
+
+    for (int row = firstRow; row < lastRow; row++)
+    {
+        unsigned char *scanline = frame + row * frameWidth;
+        for (int column = firstColumn; column < lastColumn; column++)
+        {
+            // Foreground wins over background without depending on draw order.
+            scanline[column] = std::max(scanline[column], ink);
+        }
+    }
+}
+
+void MarioRLEnvironment::fillFrame(unsigned char *frame) const
+{
+    if (frame == nullptr)
+    {
+        throw std::invalid_argument("frame buffer cannot be null");
+    }
+    if (world == nullptr)
+    {
+        throw std::logic_error("reset must be called before reading a frame");
+    }
+
+    std::fill(frame, frame + FRAME_SIZE, static_cast<unsigned char>(0));
+
+    Player *player = world->getPlayer();
+    for (auto object : world->getObjects())
+    {
+        if (object != player)
+        {
+            drawObjectToFrame(frame, object);
+        }
+    }
+    for (auto ghost : world->getGhosts())
+    {
+        if (!ghost->ghost_dead)
+        {
+            drawObjectToFrame(frame, ghost);
+        }
+    }
+    if (player->shouldDraw())
+    {
+        drawObjectToFrame(frame, player);
+    }
 }
 
 void MarioRLEnvironment::setGridValue(float *observation,
@@ -436,6 +612,35 @@ extern "C"
     int mario_rl_action_count()
     {
         return MarioRLEnvironment::ACTION_COUNT;
+    }
+
+    int mario_rl_frame_width()
+    {
+        return MarioRLEnvironment::FRAME_WIDTH;
+    }
+
+    int mario_rl_frame_height()
+    {
+        return MarioRLEnvironment::FRAME_HEIGHT;
+    }
+
+    int mario_rl_frame(void *environment, unsigned char *frame)
+    {
+        try
+        {
+            if (environment == nullptr)
+            {
+                throw std::invalid_argument("environment cannot be null");
+            }
+            lastError.clear();
+            static_cast<MarioRLEnvironment *>(environment)->fillFrame(frame);
+            return 0;
+        }
+        catch (const std::exception &error)
+        {
+            lastError = error.what();
+            return -1;
+        }
     }
 
     int mario_rl_reset(void *environment, float *observation)

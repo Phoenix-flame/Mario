@@ -21,6 +21,9 @@ public:
     void resetGame(int level = 1);
 
     void showDebug();
+    // Screenshot helpers, also used to regenerate the README images.
+    bool saveScreenshot(const std::string &path);
+    void setDebug(bool enabled) { debugEnabled = enabled; }
     void drawObjects();
     void drawBackground();
     void drawHood();

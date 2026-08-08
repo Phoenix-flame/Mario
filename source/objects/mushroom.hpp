@@ -73,6 +73,7 @@ private:
     int x_gravity_en;
     bool gravity_en = false;
 
+    bool consumeBy(Object *obj);
     bool isStaticPlatform(Object *obj);
     bool isFallingBesidePlatformEdge(Object *obj);
 

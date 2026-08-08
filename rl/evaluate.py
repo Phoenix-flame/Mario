@@ -5,8 +5,10 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from .dqn_agent import DQNAgent
+import numpy as np
+
 from .mario_env import ACTION_NAMES, MarioEnv
+from .pixel_dqn_agent import PixelDQNAgent, load_agent
 
 
 def main() -> None:
@@ -19,10 +21,21 @@ def main() -> None:
     parser.add_argument("--device", choices=("auto", "cpu", "cuda", "mps"), default="auto")
     args = parser.parse_args()
 
-    with MarioEnv(args.level, args.max_steps, args.frame_skip) as environment:
-        agent = DQNAgent.from_checkpoint(args.checkpoint, device=args.device)
+    agent = load_agent(args.checkpoint, device=args.device)
+    uses_pixels = isinstance(agent, PixelDQNAgent)
+
+    with MarioEnv(
+        args.level,
+        args.max_steps,
+        args.frame_skip,
+        observation_mode="pixels" if uses_pixels else "vector",
+        frame_stack=agent.observation_shape[0] if uses_pixels else 4,
+    ) as environment:
         checkpoint_shape = (agent.observation_size, agent.action_count)
-        environment_shape = (environment.observation_size, environment.action_count)
+        environment_shape = (
+            int(np.prod(environment.observation_shape)),
+            environment.action_count,
+        )
         if checkpoint_shape != environment_shape:
             raise ValueError(
                 f"checkpoint environment shape {checkpoint_shape} does not match "

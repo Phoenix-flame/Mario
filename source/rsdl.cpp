@@ -262,6 +262,23 @@ void Window::draw_img_with_color_key(string filename, RGB transparent_color,
 
 void Window::update_screen() { SDL_RenderPresent(renderer); }
 
+bool Window::save_screenshot(std::string filename)
+{
+  SDL_Surface *surface = SDL_CreateRGBSurfaceWithFormat(0, width, height, 32,
+                                                        SDL_PIXELFORMAT_ARGB8888);
+  if (surface == NULL)
+    return false;
+
+  bool saved = false;
+  if (SDL_RenderReadPixels(renderer, NULL, surface->format->format,
+                           surface->pixels, surface->pitch) == 0)
+  {
+    saved = IMG_SavePNG(surface, filename.c_str()) == 0;
+  }
+  SDL_FreeSurface(surface);
+  return saved;
+}
+
 void Window::fill_rect(Rectangle rect, RGB color)
 {
   set_color(color);

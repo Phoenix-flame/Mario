@@ -14,6 +14,7 @@ public:
     ~MarioRLRenderer();
 
     bool renderFrame(World *world, int action, int episodeSteps);
+    bool saveScreenshot(const std::string &path) { return window->save_screenshot(path); }
 
 private:
     std::string assetPath(const std::string &path) const;

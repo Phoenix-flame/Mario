@@ -85,6 +85,22 @@ void Mushroom::endFall()
     fall_cycles = 0;
 }
 
+// Physics can report the same contact twice in a frame (once while the player
+// moves, once while the mushroom moves), so the pickup is applied only once.
+bool Mushroom::consumeBy(Object *obj)
+{
+    if (obj->getType() != PLAYER)
+    {
+        return false;
+    }
+    if (!ghost_dead)
+    {
+        ((Player *)obj)->powerup();
+        ghost_dead = true;
+    }
+    return true;
+}
+
 bool Mushroom::isStaticPlatform(Object *obj)
 {
     Type t = obj->getType();
@@ -116,10 +132,8 @@ void Mushroom::notifyCollisionLeft(Object *obj)
     {
         return;
     }
-    if (t == PLAYER)
+    if (consumeBy(obj))
     {
-        ((Player *)obj)->powerup();
-        ghost_dead = true;
         return;
     }
     if (state == M_RISE && isStaticPlatform(obj))
@@ -139,10 +153,8 @@ void Mushroom::notifyCollisionRight(Object *obj)
     {
         return;
     }
-    if (t == PLAYER)
+    if (consumeBy(obj))
     {
-        ((Player *)obj)->powerup();
-        ghost_dead = true;
         return;
     }
     if (state == M_RISE && isStaticPlatform(obj))
@@ -157,11 +169,8 @@ void Mushroom::notifyCollisionRight(Object *obj)
 }
 void Mushroom::notifyCollisionTop(Object *obj)
 {
-    Type t = obj->getType();
-    if (t == PLAYER)
+    if (consumeBy(obj))
     {
-        ((Player *)obj)->powerup();
-        ghost_dead = true;
         return;
     }
     if (state == M_RISE && isStaticPlatform(obj))
@@ -171,11 +180,8 @@ void Mushroom::notifyCollisionTop(Object *obj)
 }
 void Mushroom::notifyCollisionBottom(Object *obj)
 {
-    Type t = obj->getType();
-    if (t == PLAYER)
+    if (consumeBy(obj))
     {
-        ((Player *)obj)->powerup();
-        ghost_dead = true;
         return;
     }
 

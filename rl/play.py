@@ -6,8 +6,8 @@ import argparse
 import time
 from pathlib import Path
 
-from .dqn_agent import DQNAgent
 from .mario_env import MarioEnv
+from .pixel_dqn_agent import PixelDQNAgent, load_agent
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -49,14 +49,21 @@ def main() -> None:
     if args.end_delay < 0.0:
         raise ValueError("--end-delay cannot be negative")
 
-    agent = DQNAgent.from_checkpoint(args.checkpoint, device=args.device)
-    print(f"loaded {args.checkpoint} at step {agent.total_steps}; inference device={agent.device}")
+    agent = load_agent(args.checkpoint, device=args.device)
+    uses_pixels = isinstance(agent, PixelDQNAgent)
+    observation_kind = "stacked frames" if uses_pixels else "feature vector"
+    print(
+        f"loaded {args.checkpoint} at step {agent.total_steps}; "
+        f"observation={observation_kind}; inference device={agent.device}"
+    )
     print("close the window or press Q/Esc to stop")
 
     with MarioEnv(
         level=args.level,
         max_episode_steps=args.max_steps,
         frame_skip=args.frame_skip,
+        observation_mode="pixels" if uses_pixels else "vector",
+        frame_stack=agent.observation_shape[0] if uses_pixels else 4,
         render_mode="human",
         render_fps=args.fps,
     ) as environment:

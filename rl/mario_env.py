@@ -42,9 +42,9 @@ class _Discrete:
 
 
 class _Box:
-    def __init__(self, shape: tuple[int, ...]) -> None:
+    def __init__(self, shape: tuple[int, ...], dtype: Any = np.float32) -> None:
         self.shape = shape
-        self.dtype = np.dtype(np.float32)
+        self.dtype = np.dtype(dtype)
 
 
 class _NativeStepResult(ctypes.Structure):
@@ -91,6 +91,7 @@ def _find_library(project_root: Path, library_path: str | os.PathLike[str] | Non
 
 def _configure_library(library: ctypes.CDLL) -> None:
     float_pointer = ctypes.POINTER(ctypes.c_float)
+    byte_pointer = ctypes.POINTER(ctypes.c_ubyte)
     library.mario_rl_create.argtypes = [ctypes.c_char_p, ctypes.c_int, ctypes.c_int, ctypes.c_int]
     library.mario_rl_create.restype = ctypes.c_void_p
     if hasattr(library, "mario_rl_create_rendered"):
@@ -117,14 +118,23 @@ def _configure_library(library: ctypes.CDLL) -> None:
     if hasattr(library, "mario_rl_render"):
         library.mario_rl_render.argtypes = [ctypes.c_void_p]
         library.mario_rl_render.restype = ctypes.c_int
+    if hasattr(library, "mario_rl_frame"):
+        library.mario_rl_frame_width.restype = ctypes.c_int
+        library.mario_rl_frame_height.restype = ctypes.c_int
+        library.mario_rl_frame.argtypes = [ctypes.c_void_p, byte_pointer]
+        library.mario_rl_frame.restype = ctypes.c_int
     library.mario_rl_last_error.restype = ctypes.c_char_p
 
 
 class MarioEnv(BaseEnv):
     """Fixed-step access to the real C++ level simulation.
 
-    Observations contain normalized player features followed by four local
-    tile-grid channels: terrain, reward blocks, enemies, and power-ups.
+    With ``observation_mode="vector"`` (the default) observations contain
+    normalized player features followed by four local tile-grid channels:
+    terrain, reward blocks, enemies, and power-ups. With
+    ``observation_mode="pixels"`` each observation is instead a stack of
+    ``frame_stack`` grayscale 84x84 images of the visible view, shaped
+    ``(frame_stack, 84, 84)`` and typed ``uint8``, for convolutional agents.
     Rendering is skipped by default for training. ``render_mode="human"``
     displays the same native world while an agent chooses actions.
     """
@@ -140,11 +150,17 @@ class MarioEnv(BaseEnv):
         library_path: str | os.PathLike[str] | None = None,
         render_mode: str | None = None,
         render_fps: int = 30,
+        observation_mode: str = "vector",
+        frame_stack: int = 4,
     ) -> None:
         if render_mode not in (None, "human"):
             raise ValueError("render_mode must be None or 'human'")
         if render_fps <= 0 or render_fps > 240:
             raise ValueError("render_fps must be between 1 and 240")
+        if observation_mode not in ("vector", "pixels"):
+            raise ValueError("observation_mode must be 'vector' or 'pixels'")
+        if frame_stack <= 0 or frame_stack > 16:
+            raise ValueError("frame_stack must be between 1 and 16")
         root = Path(project_root).expanduser().resolve() if project_root else _default_project_root()
         native_path = _find_library(root, library_path)
         self._library = ctypes.CDLL(str(native_path))
@@ -176,17 +192,58 @@ class MarioEnv(BaseEnv):
             self._raise_native_error("could not create Mario environment")
 
         self._observation = np.empty(self.observation_size, dtype=np.float32)
+        self.observation_mode = observation_mode
+        self.frame_stack = int(frame_stack)
+        self._frames: np.ndarray | None = None
+        if observation_mode == "pixels":
+            if not hasattr(self._library, "mario_rl_frame"):
+                raise RuntimeError(
+                    "the native RL library has no frame API; rebuild it with CMake"
+                )
+            self.frame_height = int(self._library.mario_rl_frame_height())
+            self.frame_width = int(self._library.mario_rl_frame_width())
+            self.observation_shape = (self.frame_stack, self.frame_height, self.frame_width)
+            self._frames = np.zeros(self.observation_shape, dtype=np.uint8)
+        else:
+            self.frame_height = 0
+            self.frame_width = 0
+            self.observation_shape = (self.observation_size,)
+
         if spaces is not None:
             self.action_space = spaces.Discrete(self.action_count)
-            self.observation_space = spaces.Box(
-                low=-1.0, high=2.0, shape=(self.observation_size,), dtype=np.float32
-            )
+            if observation_mode == "pixels":
+                self.observation_space = spaces.Box(
+                    low=0, high=255, shape=self.observation_shape, dtype=np.uint8
+                )
+            else:
+                self.observation_space = spaces.Box(
+                    low=-1.0, high=2.0, shape=self.observation_shape, dtype=np.float32
+                )
         else:
             self.action_space = _Discrete(self.action_count)
-            self.observation_space = _Box((self.observation_size,))
+            self.observation_space = _Box(
+                self.observation_shape,
+                np.uint8 if observation_mode == "pixels" else np.float32,
+            )
 
     def _observation_pointer(self) -> ctypes.POINTER(ctypes.c_float):
         return self._observation.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
+
+    def _read_frame(self, destination: np.ndarray) -> None:
+        pointer = destination.ctypes.data_as(ctypes.POINTER(ctypes.c_ubyte))
+        if self._library.mario_rl_frame(self._handle, pointer) != 0:
+            self._raise_native_error("reading the frame failed")
+
+    def _push_frame(self) -> None:
+        """Shift the stack by one and write the newest frame into the last slot."""
+
+        self._frames[:-1] = self._frames[1:]
+        self._read_frame(self._frames[-1])
+
+    def _current_observation(self) -> np.ndarray:
+        if self.observation_mode == "pixels":
+            return self._frames.copy()
+        return self._observation.copy()
 
     def _raise_native_error(self, prefix: str) -> None:
         raw_error = self._library.mario_rl_last_error()
@@ -208,7 +265,12 @@ class MarioEnv(BaseEnv):
             raise RuntimeError("cannot reset a closed environment")
         if self._library.mario_rl_reset(self._handle, self._observation_pointer()) != 0:
             self._raise_native_error("reset failed")
-        return self._observation.copy(), {
+        if self.observation_mode == "pixels":
+            # Start the episode with the same frame repeated so the stack never
+            # carries pixels from the previous episode.
+            self._read_frame(self._frames[-1])
+            self._frames[:] = self._frames[-1]
+        return self._current_observation(), {
             "score": 0,
             "progress": 0.0,
             "won": False,
@@ -227,6 +289,8 @@ class MarioEnv(BaseEnv):
         )
         if status != 0:
             self._raise_native_error("step failed")
+        if self.observation_mode == "pixels":
+            self._push_frame()
         info = {
             "score": int(result.score),
             "progress": float(result.progress),
@@ -237,7 +301,7 @@ class MarioEnv(BaseEnv):
             "action_name": ACTION_NAMES[int(action)] if 0 <= int(action) < len(ACTION_NAMES) else "invalid",
         }
         return (
-            self._observation.copy(),
+            self._current_observation(),
             float(result.reward),
             bool(result.terminated),
             bool(result.truncated),

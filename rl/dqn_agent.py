@@ -26,10 +26,11 @@ class PrioritizedReplayBuffer:
     def __init__(
         self,
         capacity: int,
-        observation_size: int,
+        observation_size: int | tuple[int, ...],
         *,
         alpha: float = 0.6,
         seed: int = 0,
+        dtype: Any = np.float32,
     ) -> None:
         if capacity <= 0:
             raise ValueError("replay capacity must be positive")
@@ -38,8 +39,12 @@ class PrioritizedReplayBuffer:
 
         self.capacity = int(capacity)
         self.alpha = float(alpha)
-        self.observations = np.empty((capacity, observation_size), dtype=np.float32)
-        self.next_observations = np.empty((capacity, observation_size), dtype=np.float32)
+        # Image observations are kept as uint8 to fit a useful replay in RAM.
+        shape = (observation_size,) if isinstance(observation_size, int) else tuple(observation_size)
+        self.observation_shape = shape
+        self.dtype = np.dtype(dtype)
+        self.observations = np.empty((capacity, *shape), dtype=self.dtype)
+        self.next_observations = np.empty((capacity, *shape), dtype=self.dtype)
         self.actions = np.empty(capacity, dtype=np.int64)
         self.rewards = np.empty(capacity, dtype=np.float32)
         self.discounts = np.empty(capacity, dtype=np.float32)
@@ -285,8 +290,8 @@ class DQNAgent:
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(seed)
 
-        self.online = DuelingQNetwork(observation_size, action_count, hidden_size).to(self.device)
-        self.target = DuelingQNetwork(observation_size, action_count, hidden_size).to(self.device)
+        self.online = self._build_network().to(self.device)
+        self.target = self._build_network().to(self.device)
         self.target.load_state_dict(self.online.state_dict())
         self.target.requires_grad_(False)
         self.target.eval()
@@ -296,15 +301,23 @@ class DQNAgent:
             eps=1e-5,
             weight_decay=1e-5,
         )
-        self.replay = PrioritizedReplayBuffer(
-            replay_capacity,
-            observation_size,
-            alpha=priority_alpha,
-            seed=seed + 1,
-        )
+        self.replay = self._build_replay()
         self._n_step_buffer: deque[tuple[np.ndarray, int, float, np.ndarray, bool]] = deque()
         self.total_steps = 0
         self.gradient_steps = 0
+
+    def _build_network(self) -> nn.Module:
+        """Subclasses override this to swap in a different encoder."""
+
+        return DuelingQNetwork(self.observation_size, self.action_count, self.hidden_size)
+
+    def _build_replay(self) -> PrioritizedReplayBuffer:
+        return PrioritizedReplayBuffer(
+            self.replay_capacity,
+            self.observation_size,
+            alpha=self.priority_alpha,
+            seed=self.seed + 1,
+        )
 
     @staticmethod
     def _resolve_device(device: str | torch.device) -> torch.device:
@@ -544,6 +557,12 @@ class DQNAgent:
             torch.set_rng_state(payload["torch_rng_state"].cpu())
 
     @classmethod
+    def _config_to_kwargs(cls, config: dict[str, Any]) -> dict[str, Any]:
+        """Map a stored config onto this class' constructor keywords."""
+
+        return config
+
+    @classmethod
     def from_checkpoint(
         cls,
         path: str | Path,
@@ -552,7 +571,7 @@ class DQNAgent:
     ) -> "DQNAgent":
         resolved_device = cls._resolve_device(device)
         payload = cls._read_checkpoint(path, resolved_device)
-        config = dict(payload["config"])
+        config = cls._config_to_kwargs(dict(payload["config"]))
         # Evaluation does not need a large replay allocation.
         config["replay_capacity"] = 1
         config["device"] = resolved_device

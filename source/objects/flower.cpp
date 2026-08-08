@@ -1,43 +1,47 @@
 #include "flower.hpp"
 
-// Collision Notification
-void Flower::notifyCollisionLeft(Object *obj)
+// Physics can report the same contact twice in a frame (once while the player
+// moves, once while the flower is checked), so the pickup is applied only once.
+bool Flower::consumeBy(Object *obj)
 {
-    Type t = obj->getType();
-    if (t == PLAYER)
+    if (obj->getType() != PLAYER)
+    {
+        return false;
+    }
+    if (!ghost_dead)
     {
         ((Player *)obj)->powerup();
         ghost_dead = true;
+    }
+    return true;
+}
+
+// Collision Notification
+void Flower::notifyCollisionLeft(Object *obj)
+{
+    if (consumeBy(obj))
+    {
         return;
     }
 }
 void Flower::notifyCollisionRight(Object *obj)
 {
-    Type t = obj->getType();
-    if (t == PLAYER)
+    if (consumeBy(obj))
     {
-        ((Player *)obj)->powerup();
-        ghost_dead = true;
         return;
     }
 }
 void Flower::notifyCollisionTop(Object *obj)
 {
-    Type t = obj->getType();
-    if (t == PLAYER)
+    if (consumeBy(obj))
     {
-        ((Player *)obj)->powerup();
-        ghost_dead = true;
         return;
     }
 }
 void Flower::notifyCollisionBottom(Object *obj)
 {
-    Type t = obj->getType();
-    if (t == PLAYER)
+    if (consumeBy(obj))
     {
-        ((Player *)obj)->powerup();
-        ghost_dead = true;
         return;
     }
 }

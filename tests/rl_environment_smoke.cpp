@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <iostream>
@@ -62,6 +63,25 @@ int main()
     assert(firstResult.playerX == result.playerX);
     assert(firstResult.score == result.score);
     assert(std::abs(firstResult.reward - result.reward) < 0.000001f);
+
+    // Image observations: the visible view rasterized for convolutional agents.
+    const int frameWidth = mario_rl_frame_width();
+    const int frameHeight = mario_rl_frame_height();
+    assert(frameWidth == MarioRLEnvironment::FRAME_WIDTH);
+    assert(frameHeight == MarioRLEnvironment::FRAME_HEIGHT);
+
+    std::vector<unsigned char> frame(frameWidth * frameHeight);
+    assert(mario_rl_frame(environment, frame.data()) == 0);
+    int litPixels = 0;
+    int brightest = 0;
+    for (unsigned int i = 0; i < frame.size(); i++)
+    {
+        litPixels += frame[i] > 0 ? 1 : 0;
+        brightest = std::max(brightest, static_cast<int>(frame[i]));
+    }
+    // Mario plus the floor are always on screen, and Mario is the brightest ink.
+    assert(litPixels > 0);
+    assert(brightest == 255);
 
     mario_rl_destroy(environment);
     return 0;

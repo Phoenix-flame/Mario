@@ -4,15 +4,28 @@ from __future__ import annotations
 
 import argparse
 from collections import deque
+from contextlib import nullcontext
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import torch
 
+try:  # tqdm drives the live progress bars; plain printing is used without it.
+    from tqdm.auto import tqdm
+except ImportError:  # pragma: no cover - exercised only on minimal installs
+    tqdm = None
+
 from .dqn_agent import DQNAgent
 from .mario_env import MarioEnv
+from .pixel_dqn_agent import PixelDQNAgent
 from .training_logger import TrainingLogger
+
+
+# Frame stacks are far larger than feature vectors, so the pixel agent gets a
+# smaller default replay unless the user asks for a specific size.
+PIXEL_REPLAY_CAPACITY = 20_000
 
 
 UPDATE_METRICS = (
@@ -29,6 +42,18 @@ UPDATE_METRICS = (
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--level", type=int, choices=(1, 2, 3), default=1)
+    parser.add_argument(
+        "--observation",
+        choices=("vector", "pixels"),
+        default="vector",
+        help="Hand-designed feature vector, or stacked game frames for the CNN agent",
+    )
+    parser.add_argument(
+        "--frame-stack",
+        type=int,
+        default=4,
+        help="Frames per pixel observation; ignored for --observation vector",
+    )
     parser.add_argument("--episodes", type=int, default=1000)
     parser.add_argument("--max-steps", type=int, default=3000, help="Agent decisions per episode")
     parser.add_argument("--frame-skip", type=int, default=4, help="Engine frames per decision")
@@ -66,7 +91,83 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--plot-every", type=int, default=10)
     parser.add_argument("--log-update-every", type=int, default=100)
+    parser.add_argument(
+        "--progress",
+        choices=("bar", "plain", "none"),
+        default="bar",
+        help="tqdm progress bars, one metrics line per episode, or quiet",
+    )
+    parser.add_argument(
+        "--require-cuda",
+        action="store_true",
+        help="Abort before training if the agent did not land on a CUDA device",
+    )
     return parser
+
+
+def verify_device(agent: DQNAgent, require_cuda: bool) -> dict[str, Any]:
+    """Report the device the network really sits on before training starts.
+
+    A silent fallback to CPU is the usual reason a run is unexpectedly slow, so
+    this runs one forward pass and checks where the result was produced instead
+    of trusting ``torch.cuda.is_available()`` alone.
+    """
+
+    report: dict[str, Any] = {
+        "torch_version": torch.__version__,
+        "cuda_build": torch.version.cuda,
+        "cuda_available": bool(torch.cuda.is_available()),
+        "device_count": int(torch.cuda.device_count()) if torch.cuda.is_available() else 0,
+        "device": str(agent.device),
+    }
+
+    probe = torch.zeros((1, agent.observation_size), dtype=torch.float32, device=agent.device)
+    with torch.no_grad():
+        output = agent.online(probe)
+    report["forward_device"] = str(output.device)
+
+    print(f"torch {torch.__version__} (CUDA build {torch.version.cuda or 'none'})")
+    print(f"cuda available: {report['cuda_available']}, visible devices: {report['device_count']}")
+
+    if agent.device.type == "cuda":
+        index = agent.device.index if agent.device.index is not None else torch.cuda.current_device()
+        properties = torch.cuda.get_device_properties(index)
+        report["gpu_name"] = properties.name
+        report["gpu_memory_gib"] = properties.total_memory / (1024**3)
+        print(
+            f"gpu: {properties.name}, {report['gpu_memory_gib']:.2f} GiB, "
+            f"compute capability {properties.major}.{properties.minor}"
+        )
+        print(
+            f"forward pass ran on {output.device}; "
+            f"{torch.cuda.memory_allocated(index) / (1024**2):.1f} MiB allocated"
+        )
+        if output.device.type != "cuda":
+            raise SystemExit("the network reports a CUDA device but its output came back on CPU")
+    else:
+        message = f"training will run on {agent.device}"
+        if torch.cuda.is_available():
+            message += " even though CUDA is available; pass --device cuda to force the GPU"
+        else:
+            message += "; no CUDA device is visible to this PyTorch build"
+        print(message + " - expect substantially slower training")
+        if require_cuda:
+            raise SystemExit("--require-cuda was set but the agent is not on a CUDA device")
+
+    return report
+
+
+def _emit(message: str, bar: "tqdm | None" = None) -> None:
+    """Write above a live tqdm bar so the bar stays pinned to the bottom line."""
+
+    if bar is not None:
+        bar.write(message)
+    else:
+        print(message)
+
+
+def _make_bar(enabled: bool, **kwargs: Any) -> "tqdm | None":
+    return tqdm(dynamic_ncols=True, **kwargs) if enabled else None
 
 
 def evaluate_policy(
@@ -74,13 +175,24 @@ def evaluate_policy(
     agent: DQNAgent,
     episodes: int,
     seed: int,
+    show_progress: bool = False,
 ) -> dict[str, float]:
     rewards: list[float] = []
     scores: list[int] = []
     progresses: list[float] = []
     wins: list[int] = []
 
-    for evaluation_episode in range(episodes):
+    evaluation_range = range(episodes)
+    if show_progress:
+        evaluation_range = tqdm(
+            evaluation_range,
+            desc="evaluating",
+            unit="ep",
+            leave=False,
+            dynamic_ncols=True,
+        )
+
+    for evaluation_episode in evaluation_range:
         observation, _ = environment.reset(seed=seed + evaluation_episode)
         episode_reward = 0.0
         while True:
@@ -136,6 +248,11 @@ def main() -> None:
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
+    show_bars = args.progress == "bar"
+    if show_bars and tqdm is None:
+        print("tqdm is not installed; falling back to --progress plain")
+        show_bars = False
+
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     log_dir = args.log_dir or Path("runs") / f"mario_level{args.level}_{timestamp}"
     recent_wins: deque[float] = deque(maxlen=50)
@@ -148,12 +265,27 @@ def main() -> None:
         level=args.level,
         max_episode_steps=args.max_steps,
         frame_skip=args.frame_skip,
+        observation_mode=args.observation,
+        frame_stack=args.frame_stack,
     ) as environment:
-        agent = DQNAgent(
-            environment.observation_size,
+        uses_pixels = args.observation == "pixels"
+        agent_class = PixelDQNAgent if uses_pixels else DQNAgent
+        observation_argument = (
+            environment.observation_shape if uses_pixels else environment.observation_size
+        )
+        replay_capacity = args.replay_capacity
+        if uses_pixels and replay_capacity == build_parser().get_default("replay_capacity"):
+            replay_capacity = PIXEL_REPLAY_CAPACITY
+            print(
+                f"pixel observations: using a {replay_capacity} transition replay "
+                "by default; override with --replay-capacity"
+            )
+
+        agent = agent_class(
+            observation_argument,
             environment.action_count,
             hidden_size=args.hidden_size,
-            replay_capacity=args.replay_capacity,
+            replay_capacity=replay_capacity,
             gamma=args.gamma,
             learning_rate=args.learning_rate,
             epsilon_start=args.epsilon_start,
@@ -171,23 +303,47 @@ def main() -> None:
             agent.load(args.resume)
             print(f"resumed {args.resume} at environment step {agent.total_steps}")
 
+        encoder = "Nature CNN over stacked frames" if uses_pixels else "tile-grid encoder"
         config = vars(args).copy()
         config.update(
             {
-                "algorithm": "PyTorch dueling Double DQN + PER + n-step returns",
+                "algorithm": f"PyTorch dueling Double DQN + PER + n-step returns ({encoder})",
                 "resolved_device": str(agent.device),
                 "observation_size": environment.observation_size,
+                "observation_shape": list(environment.observation_shape),
+                "replay_capacity": replay_capacity,
                 "action_count": environment.action_count,
             }
         )
 
+        device_report = verify_device(agent, args.require_cuda)
+        config["device_report"] = device_report
+        if uses_pixels:
+            print(
+                f"observation: {environment.observation_shape} uint8 frames, "
+                f"replay footprint {agent.replay_bytes() / (1024 ** 3):.2f} GiB"
+            )
         print(f"training on {agent.device}; metrics will be written to {log_dir}")
-        with TrainingLogger(log_dir, config) as logger:
+        episode_bar = _make_bar(
+            show_bars,
+            total=args.episodes,
+            desc=f"level {args.level}",
+            unit="ep",
+        )
+        bar_context = episode_bar if episode_bar is not None else nullcontext()
+        with TrainingLogger(log_dir, config) as logger, bar_context:
             for episode in range(1, args.episodes + 1):
                 observation, _ = environment.reset(seed=args.seed + episode)
                 episode_reward = 0.0
                 updates: list[dict[str, float]] = []
                 info = {"score": 0, "progress": 0.0, "won": False, "episode_steps": 0}
+                step_bar = _make_bar(
+                    show_bars,
+                    total=args.max_steps,
+                    desc=f"episode {episode}",
+                    unit="step",
+                    leave=False,
+                )
 
                 while True:
                     action = agent.act(observation, explore=True)
@@ -203,6 +359,8 @@ def main() -> None:
                     )
                     observation = next_observation
                     episode_reward += reward
+                    if step_bar is not None:
+                        step_bar.update(1)
 
                     if (
                         agent.total_steps >= args.learning_starts
@@ -215,6 +373,9 @@ def main() -> None:
                                 logger.log_update(agent.gradient_steps, update)
                     if episode_end:
                         break
+
+                if step_bar is not None:
+                    step_bar.close()
 
                 won = float(bool(info["won"]))
                 recent_wins.append(won)
@@ -243,14 +404,29 @@ def main() -> None:
                 }
                 logger.log_episode(episode_metrics)
 
-                print(
-                    f"episode={episode:04d} steps={info['episode_steps']:4d} "
-                    f"reward={episode_reward:8.2f} score={info['score']:5d} "
-                    f"progress={info['progress'] * 100:6.2f}% won={int(won)} "
-                    f"epsilon={agent.epsilon:.3f} loss={update_means['loss']:.4f} "
-                    f"reward_50={_mean(recent_rewards):.2f} "
-                    f"win_rate_50={_mean(recent_wins):.2f}"
-                )
+                if episode_bar is not None:
+                    episode_bar.set_postfix(
+                        {
+                            "reward": f"{episode_reward:.1f}",
+                            "reward_50": f"{_mean(recent_rewards):.1f}",
+                            "score": int(info["score"]),
+                            "progress": f"{info['progress'] * 100:.1f}%",
+                            "win_50": f"{_mean(recent_wins):.2f}",
+                            "eps": f"{agent.epsilon:.3f}",
+                            "loss": f"{update_means['loss']:.4f}",
+                        },
+                        refresh=False,
+                    )
+                    episode_bar.update(1)
+                elif args.progress == "plain":
+                    print(
+                        f"episode={episode:04d} steps={info['episode_steps']:4d} "
+                        f"reward={episode_reward:8.2f} score={info['score']:5d} "
+                        f"progress={info['progress'] * 100:6.2f}% won={int(won)} "
+                        f"epsilon={agent.epsilon:.3f} loss={update_means['loss']:.4f} "
+                        f"reward_50={_mean(recent_rewards):.2f} "
+                        f"win_rate_50={_mean(recent_wins):.2f}"
+                    )
 
                 if args.eval_every and episode % args.eval_every == 0:
                     evaluation = evaluate_policy(
@@ -258,6 +434,7 @@ def main() -> None:
                         agent,
                         args.eval_episodes,
                         args.seed + 1_000_000 + episode * args.eval_episodes,
+                        show_progress=show_bars,
                     )
                     logger.log_evaluation(
                         {
@@ -266,11 +443,12 @@ def main() -> None:
                             **evaluation,
                         }
                     )
-                    print(
+                    _emit(
                         f"evaluation episode={episode:04d} reward={evaluation['reward']:.2f} "
                         f"score={evaluation['score']:.1f} "
                         f"progress={evaluation['progress'] * 100:.2f}% "
-                        f"win_rate={evaluation['win_rate']:.2f}"
+                        f"win_rate={evaluation['win_rate']:.2f}",
+                        episode_bar,
                     )
                     evaluation_rank = (
                         evaluation["win_rate"],
@@ -291,9 +469,9 @@ def main() -> None:
 
             saved = agent.save(args.checkpoint)
             curves = logger.plot()
-            print(f"saved final checkpoint to {saved}")
+            _emit(f"saved final checkpoint to {saved}", episode_bar)
             if curves is not None:
-                print(f"saved learning curves to {curves}")
+                _emit(f"saved learning curves to {curves}", episode_bar)
 
 
 if __name__ == "__main__":

@@ -6,6 +6,10 @@ A small Super Mario Bros. style platformer written from scratch in C++ with SDL2
 
 ![Screenshot](https://github.com/Phoenix-flame/Mario/blob/master/images/1.png?raw=true)
 
+Level 1 running in the current build, with the camera scrolled, pipes, question blocks, and Goombas:
+
+![Gameplay](images/gameplay.png)
+
 ## Requirements
 
 Install the SDL2 development packages:
@@ -35,6 +39,7 @@ make
 | `R` or `Space` | Jump |
 | `Z` | Shoot fireball when Mario has the fire power-up |
 | `D` | Toggle debug visual overlay |
+| `C` | Save a PNG screenshot to `screenshots/` |
 | `Q` | Quit |
 
 ## Codebase Overview
@@ -136,6 +141,12 @@ The overlay shows:
 
 ![Debug screenshot](https://github.com/Phoenix-flame/Mario/blob/master/images/3.png?raw=true)
 
+The overlay as it looks today - grouped static collision bodies, per-object labels, the player box with its guide lines, and the live counters:
+
+![Debug overlay](images/debug-overlay.png)
+
+Press `C` to write the current frame to `screenshots/`; the same capture path produces the images in this README.
+
 ## Reinforcement-learning training
 
 The `mario_rl` shared library runs the same map, player, enemy, collision, power-up, and scoring code as the interactive game, but uses a deterministic simulated clock and skips rendering/audio. The Python wrapper follows the Gymnasium `reset`/`step` API; Gymnasium itself is optional.
@@ -161,6 +172,8 @@ Watch the greedy policy from the best checkpoint play in the native SDL window:
 python3 -m rl.play checkpoints/level1_best.pt --level 1
 ```
 
+![RL playback](images/rl-playback.png)
+
 The playback HUD shows the selected RL action, score, and environment step. Press `Q` or `Esc`, or close the window, to stop. `--episodes`, `--fps`, `--frame-skip`, `--max-steps`, and `--device` control playback; keep `--frame-skip` equal to the value used for training (the default is `4`).
 
 The agent combines dueling Double DQN, prioritized replay, three-step returns, a softly updated target network, Huber loss, and gradient clipping. The tile portion of each observation is processed by a convolutional encoder instead of being treated as an unstructured vector. These changes reduce Q-value overestimation and the late-training instability of the earlier hand-written NumPy optimizer.
@@ -175,7 +188,27 @@ Every run creates a directory such as `runs/mario_level1_20260723-120000` contai
 
 The best checkpoint is selected using periodic greedy evaluation rather than a noisy exploration episode. Training can be resumed, including optimizer and target-network state, with `--resume checkpoints/level1.pt`. Old `.npz` checkpoints use a different network and cannot be resumed. Use `--device`, `--max-steps`, `--frame-skip`, `--batch-size`, `--learning-rate`, and `--log-dir` to tune or organize a run; `python3 -m rl.train --help` lists all algorithm controls.
 
-The discrete action space contains idle, left, right, jump, left+jump, right+jump, shoot, left+shoot, and right+shoot. Each observation combines normalized player state with a local four-channel tile grid for terrain, reward blocks, enemies, and power-ups. Rewards are based on newly reached horizontal progress and actual game-score increases, with completion bonuses and death/timeout penalties; this teaches the policy to finish while still preferring coins, enemies, blocks, and power-ups that increase score.
+The discrete action space contains idle, left, right, jump, left+jump, right+jump, shoot, left+shoot, and right+shoot. Each observation combines normalized player state with a local four-channel tile grid for terrain, reward blocks, enemies, and power-ups.
+
+![Vector observation](images/observation-vector.png)
+
+The grid is centred on Mario and reaches six tiles up but only two tiles down, so right after a spawn - while he is still falling towards the floor - the channels are briefly empty. Rewards are based on newly reached horizontal progress and actual game-score increases, with completion bonuses and death/timeout penalties; this teaches the policy to finish while still preferring coins, enemies, blocks, and power-ups that increase score. Picking up a power-up adds an explicit bonus, and losing a power level to a hit costs the same amount, so growing big is worth pursuing rather than avoiding.
+
+Training prints a live tqdm progress bar with rolling reward, score, progress, win rate, epsilon, and loss. Use `--progress plain` for one log line per episode (better when redirecting to a file) or `--progress none` to stay quiet. Before the first episode the trainer reports the PyTorch build, the visible CUDA devices, the selected GPU, and where a probe forward pass actually ran, so a silent fallback to CPU is visible immediately; add `--require-cuda` to abort instead of training slowly on the CPU.
+
+### Learning from pixels
+
+The same environment can hand the agent images instead of engineered features:
+
+```bash
+python3 -m rl.train --observation pixels --level 1 --episodes 2000 --checkpoint checkpoints/level1_cnn.pt
+```
+
+Each observation is then a `(frame_stack, 84, 84)` `uint8` stack of grayscale frames of the visible 640x480 view, rasterized natively in C++ with one gray level per object class (terrain, bricks, question blocks, coins, fireballs, enemies, power-ups, and Mario as the brightest). This needs no display or SDL surface, stays deterministic, and costs a fraction of a real screen grab. `--frame-stack` sets the stack depth (four by default) so the network can infer velocity.
+
+![Pixel observation](images/observation-pixels.png)
+
+`--observation pixels` selects `PixelDQNAgent`, which keeps the whole Rainbow-lite recipe and swaps the tile-grid encoder for a Nature-DQN convolutional trunk with dueling heads. Frames are kept as bytes in the replay buffer and rescaled on the GPU, so the default replay drops to 20,000 transitions (about 1.1 GiB); pass `--replay-capacity` to change it. Pixel checkpoints record their frame shape, so `rl.evaluate` and `rl.play` detect them and switch the environment to pixel mode automatically. Expect pixel training to need considerably more episodes than the feature-vector agent.
 
 Run both native and Python checks with:
 

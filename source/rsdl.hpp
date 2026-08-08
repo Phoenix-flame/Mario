@@ -123,6 +123,8 @@ public:
   void fill_rect(Rectangle rect, RGB color = WHITE);
   void fill_circle(Point center, int radius, RGB color = WHITE);
   void update_screen();
+  // Write what is currently drawn to a PNG file; returns false on failure.
+  bool save_screenshot(std::string filename);
   void clear();
   bool has_pending_event();
   Event poll_for_event();

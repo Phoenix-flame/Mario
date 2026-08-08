@@ -1,5 +1,10 @@
 #include "player.hpp"
 
+namespace
+{
+    const int POWERUP_SCORE = 1000;
+}
+
 void Player::update(int _dir)
 {
     Dir trans_dir = (_dir == 1) ? RIGHT : LEFT;
@@ -814,14 +819,7 @@ void Player::notifyCollisionBottom(Object *obj)
     if (obj->getType() == GOOMBA)
     {
         kill(obj);
-        Text *text = new Text(pos.x, pos.y - 10);
-        text->setPos(pos.x, pos.y - 10);
-        text->ghost_dead = false;
-        text->text = "+ 150";
-        text->score = 150;
-        ghost.push_back(text);
-
-        has_ghost = true;
+        queueScoreText(this, this, 150);
     }
     else if (obj->getType() == KOOPA)
     {
@@ -881,6 +879,7 @@ void Player::notifyDistToCeil(int d)
 void Player::powerup()
 {
     powerup_a = true;
+    queueScoreText(this, this, POWERUP_SCORE);
     if (level == NORMAL)
     {
         level = BIG;

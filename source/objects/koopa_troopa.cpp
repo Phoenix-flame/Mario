@@ -10,18 +10,6 @@ namespace
         return obj->getType() == GOOMBA || obj->getType() == KOOPA;
     }
 
-    void rewardShellKill(Object *source, Object *target)
-    {
-        Text *text = new Text(target->getPos().x, target->getPos().y - 10);
-        text->setPos(target->getPos().x, target->getPos().y - 10);
-        text->ghost_dead = false;
-        text->text = "+ " + std::to_string(SHELL_KILL_SCORE);
-        text->score = SHELL_KILL_SCORE;
-
-        source->ghost.push_back(text);
-        source->has_ghost = true;
-    }
-
     void killWithShell(Object *source, Object *target)
     {
         if (target == source || target->dead || !isShellKillTarget(target))
@@ -29,13 +17,15 @@ namespace
             return;
         }
 
-        rewardShellKill(source, target);
         if (target->getType() == KOOPA)
         {
+            // fireballDeath() queues the score label itself, so the points are
+            // awarded once no matter who triggered the kill.
             ((Koopa *)target)->fireballDeath();
         }
         else
         {
+            queueScoreText(source, target, SHELL_KILL_SCORE);
             target->death();
         }
     }
@@ -227,6 +217,11 @@ void Koopa::fireballDeath()
     {
         return;
     }
+
+    // The koopa can be killed either by its own collision notification or by
+    // Bullet::hit(), depending on which object physics treats as the moving one
+    // that frame. Awarding here keeps the "+ 150" label on every path.
+    queueScoreText(this, this, SHELL_KILL_SCORE);
 
     Object::dead = true;
     dead = true;
