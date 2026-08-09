@@ -1,5 +1,7 @@
 #include "rl_renderer.hpp"
 
+#include "cloud_layer.hpp"
+
 #include <algorithm>
 #include <stdexcept>
 
@@ -27,9 +29,7 @@ namespace
 MarioRLRenderer::MarioRLRenderer(const std::string &_assetRoot, int framesPerSecond) :
     assetRoot(_assetRoot),
     window(nullptr),
-    frameDelayMilliseconds(0),
-    cloudOffset(0),
-    lastCloudTick(0)
+    frameDelayMilliseconds(0)
 {
     if (framesPerSecond <= 0 || framesPerSecond > 240)
     {
@@ -41,7 +41,6 @@ MarioRLRenderer::MarioRLRenderer(const std::string &_assetRoot, int framesPerSec
     }
     frameDelayMilliseconds = std::max(1, 1000 / framesPerSecond);
     window = new Window(WINDOW_WIDTH, WINDOW_HEIGHT, "Mario - RL Policy", false);
-    lastCloudTick = SDL_GetTicks();
 }
 
 MarioRLRenderer::~MarioRLRenderer()
@@ -84,61 +83,11 @@ bool MarioRLRenderer::processEvents()
 void MarioRLRenderer::drawBackground(World *world)
 {
     const RGB skyBlue(92, 148, 252);
-    const RGB transparentPurple(255, 0, 255);
     window->fill_rect(
         Rectangle(Point(0, 0), Point(WINDOW_WIDTH, WINDOW_HEIGHT)),
         skyBlue
     );
-
-    Uint32 currentTick = SDL_GetTicks();
-    if (currentTick - lastCloudTick > 45)
-    {
-        cloudOffset = (cloudOffset + 1) % 760;
-        lastCloudTick = currentTick;
-    }
-
-    const int period = 760;
-    const int bases[] = {80, 230, 390, 560, 720};
-    const int ys[] = {70, 120, 55, 145, 95};
-    const int tileSizes[] = {20, 16, 22, 18, 16};
-    const std::string cloudRoot = "assets/sprites/objects/cloud/";
-    const char *tiles[] = {
-        "cloud_left_top.bmp",
-        "cloud_center_top.bmp",
-        "cloud_right_top.bmp",
-        "cloud_left_bot.bmp",
-        "cloud_center_bot.bmp",
-        "cloud_right_bot.bmp",
-    };
-
-    for (int cloud = 0; cloud < 5; cloud++)
-    {
-        int x = (bases[cloud] + world->camera->getPosBackground().x / 2 - cloudOffset) % period;
-        while (x < -100)
-        {
-            x += period;
-        }
-        while (x > 680)
-        {
-            x -= period;
-        }
-
-        int size = tileSizes[cloud];
-        for (int tile = 0; tile < 6; tile++)
-        {
-            int column = tile % 3;
-            int row = tile / 3;
-            Point topLeft(x + column * size, ys[cloud] + row * size);
-            window->draw_img_with_color_key(
-                assetPath(cloudRoot + tiles[tile]),
-                transparentPurple,
-                Rectangle(topLeft, topLeft + Point(size, size)),
-                NULL_RECT,
-                0,
-                false
-            );
-        }
-    }
+    drawCloudLayer(window, world->camera->getPosBackground().x, SDL_GetTicks(), assetRoot);
 }
 
 void MarioRLRenderer::drawObjects(World *world)

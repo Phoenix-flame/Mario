@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import argparse
+import math
 import time
 from pathlib import Path
 
+from .agents import load_agent
 from .mario_env import MarioEnv
-from .pixel_dqn_agent import PixelDQNAgent, load_agent
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -50,11 +51,12 @@ def main() -> None:
         raise ValueError("--end-delay cannot be negative")
 
     agent = load_agent(args.checkpoint, device=args.device)
-    uses_pixels = isinstance(agent, PixelDQNAgent)
+    uses_pixels = agent.observation_shape is not None
     observation_kind = "stacked frames" if uses_pixels else "feature vector"
     print(
         f"loaded {args.checkpoint} at step {agent.total_steps}; "
-        f"observation={observation_kind}; inference device={agent.device}"
+        f"agent={type(agent).__name__}; observation={observation_kind}; "
+        f"inference device={agent.device}"
     )
     print("close the window or press Q/Esc to stop")
 
@@ -67,8 +69,10 @@ def main() -> None:
         render_mode="human",
         render_fps=args.fps,
     ) as environment:
+        # observation_size is always the native feature-vector size, so compare
+        # against the observation the environment actually hands the agent.
         checkpoint_shape = (agent.observation_size, agent.action_count)
-        environment_shape = (environment.observation_size, environment.action_count)
+        environment_shape = (math.prod(environment.observation_shape), environment.action_count)
         if checkpoint_shape != environment_shape:
             raise ValueError(
                 f"checkpoint environment shape {checkpoint_shape} does not match "

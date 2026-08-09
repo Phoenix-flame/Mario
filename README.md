@@ -37,7 +37,7 @@ make
 | `O` | Move right |
 | `P` | Move left |
 | `R` or `Space` | Jump |
-| `Z` | Shoot fireball when Mario has the fire power-up |
+| `Z` | Shoot fireball when Mario has the fire power-up (two at a time) |
 | `D` | Toggle debug visual overlay |
 | `C` | Save a PNG screenshot to `screenshots/` |
 | `Q` | Quit |
@@ -55,10 +55,10 @@ The game is intentionally implemented without a game engine. The main systems ar
 | `source/camera.*` | Camera and background parallax offsets. |
 | `source/audio.*` | Sound/music update logic based on player state. |
 | `source/rl_environment.*` | Headless, deterministic fixed-step interface for RL observations, actions, rewards, and episode resets. |
-| `rl/` | Python Gymnasium-compatible wrapper, PyTorch Rainbow-lite DQN agent, trainer, evaluator, and learning-curve logger. |
+| `rl/` | Python Gymnasium-compatible wrapper, PyTorch Rainbow-lite DQN and discrete Soft Actor-Critic agents, trainer, evaluator, and learning-curve logger. |
 | `source/physics.*` | Box2D-backed collision fixtures, contact listener, and object notification dispatch. |
 | `source/objects/` | Base `Object` class and concrete gameplay objects such as blocks, bricks, pipes, enemies, mushrooms, flowers, coins, and fireballs. |
-| `assets/` | Sprites, maps, sounds, fonts, and background/cloud assets. |
+| `assets/` | Sprites, maps, sounds, fonts, and background/cloud assets. Pixel sprites drawn for this project keep an `.svg` source beside the `.png`. |
 | `images/` | README/debug screenshots. |
 
 ## Runtime Architecture
@@ -125,6 +125,10 @@ Rendering uses SDL2 through the local `rsdl` wrapper. The game draws:
 
 Sprites are stored under `assets/sprites/`. Cloud sprites are stored in `assets/sprites/objects/cloud/`.
 
+The sky is a parallax layer of clouds in three sizes. A cloud is assembled from a left cap, one to three center pieces, and a right cap, so the number of center pieces is what makes it small, medium, or large. The clouds sit on two parallax planes and each drifts at its own rate, so the sky does not read as one rigid strip sliding past. `source/cloud_layer.*` owns the layout and is shared by the game window and the RL playback window.
+
+The fireball has its own sprite, `assets/sprites/objects/fireball.png`, drawn on the same 16x16 grid and palette as the coin and mushroom; `fireball.svg` is the editable source and rasterizes to exactly that PNG. Mario can keep two fireballs in flight at once, as in the original game.
+
 ## Debugging
 
 Press `D` while the game is running to toggle the debug visual overlay.
@@ -176,7 +180,7 @@ python3 -m rl.play checkpoints/level1_best.pt --level 1
 
 The playback HUD shows the selected RL action, score, and environment step. Press `Q` or `Esc`, or close the window, to stop. `--episodes`, `--fps`, `--frame-skip`, `--max-steps`, and `--device` control playback; keep `--frame-skip` equal to the value used for training (the default is `4`).
 
-The agent combines dueling Double DQN, prioritized replay, three-step returns, a softly updated target network, Huber loss, and gradient clipping. The tile portion of each observation is processed by a convolutional encoder instead of being treated as an unstructured vector. These changes reduce Q-value overestimation and the late-training instability of the earlier hand-written NumPy optimizer.
+The default agent combines dueling Double DQN, prioritized replay, three-step returns, a softly updated target network, Huber loss, and gradient clipping. The tile portion of each observation is processed by a convolutional encoder instead of being treated as an unstructured vector. These changes reduce Q-value overestimation and the late-training instability of the earlier hand-written NumPy optimizer.
 
 Every run creates a directory such as `runs/mario_level1_20260723-120000` containing:
 
@@ -209,6 +213,21 @@ Each observation is then a `(frame_stack, 84, 84)` `uint8` stack of grayscale fr
 ![Pixel observation](images/observation-pixels.png)
 
 `--observation pixels` selects `PixelDQNAgent`, which keeps the whole Rainbow-lite recipe and swaps the tile-grid encoder for a Nature-DQN convolutional trunk with dueling heads. Frames are kept as bytes in the replay buffer and rescaled on the GPU, so the default replay drops to 20,000 transitions (about 1.1 GiB); pass `--replay-capacity` to change it. Pixel checkpoints record their frame shape, so `rl.evaluate` and `rl.play` detect them and switch the environment to pixel mode automatically. Expect pixel training to need considerably more episodes than the feature-vector agent.
+
+### Soft Actor-Critic
+
+`--algorithm sac` trains a discrete Soft Actor-Critic agent instead of DQN, on either observation:
+
+```bash
+python3 -m rl.train --algorithm sac --level 1 --episodes 1000 --checkpoint checkpoints/level1_sac.pt
+python3 -m rl.train --algorithm sac --observation pixels --level 1 --checkpoint checkpoints/level1_sac_cnn.pt
+```
+
+Mario's nine actions are discrete, so this is the categorical formulation of SAC rather than the Gaussian-policy version: an actor emits action probabilities, twin critics score every action at once, and both the soft target and the actor loss take exact expectations over the policy instead of sampling it. Taking the minimum of the two critics counters the value overestimation that a single critic drifts into.
+
+Exploration is not epsilon-greedy. The policy samples its own actions and is paid an entropy bonus for staying undecided, with the temperature `alpha` tuned automatically to hold the policy near a target entropy of `--target-entropy-ratio` times `log(9)` (0.6 by default). Raise the ratio when the agent commits too early and stops exploring; lower it when it never sharpens into a plan. `--initial-alpha`, `--alpha-learning-rate`, and `--fixed-alpha` control the temperature directly. Greedy evaluation and `rl.play` take the most likely action rather than sampling, so playback is deterministic.
+
+SAC reuses the prioritized replay, three-step returns, soft target updates, and both encoders, so the only real differences are the losses and how exploration happens. Its runs log three extra columns - `actor_loss`, `alpha`, and `policy_entropy` - and the learning-curve image plots temperature and entropy where a DQN run plots epsilon. Checkpoints record the algorithm, so `rl.evaluate` and `rl.play` rebuild the right agent with no extra flag.
 
 Run both native and Python checks with:
 

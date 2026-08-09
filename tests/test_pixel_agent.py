@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import sys
 import tempfile
 import unittest
@@ -12,7 +13,8 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from rl.mario_env import MarioEnv
-from rl.pixel_dqn_agent import NatureDuelingQNetwork, PixelDQNAgent, is_pixel_checkpoint, load_agent
+from rl.agents import load_agent
+from rl.pixel_dqn_agent import NatureDuelingQNetwork, PixelDQNAgent, is_pixel_checkpoint
 
 
 class PixelObservationTest(unittest.TestCase):
@@ -38,6 +40,22 @@ class PixelObservationTest(unittest.TestCase):
 
             # Running right moves the world, so the stack holds distinct frames.
             self.assertTrue((observation[0] != observation[-1]).any())
+
+    def test_agent_observation_size_matches_the_pixel_observation(self) -> None:
+        # observation_size stays the native feature-vector size even in pixel
+        # mode, so callers must size an agent from observation_shape. play.py
+        # compared the wrong one and rejected every pixel checkpoint.
+        with MarioEnv(level=1, max_episode_steps=40, frame_skip=4, observation_mode="pixels") as env:
+            agent = PixelDQNAgent(
+                env.observation_shape,
+                env.action_count,
+                hidden_size=32,
+                replay_capacity=8,
+                seed=0,
+                device="cpu",
+            )
+            self.assertEqual(agent.observation_size, math.prod(env.observation_shape))
+            self.assertNotEqual(agent.observation_size, env.observation_size)
 
     def test_frames_are_deterministic_for_the_same_actions(self) -> None:
         actions = [2, 5, 2, 2, 5, 2]

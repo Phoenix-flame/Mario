@@ -23,6 +23,8 @@ set(engine_sources
     source/physics.cpp
     source/camera.hpp
     source/camera.cpp
+    source/cloud_layer.hpp
+    source/cloud_layer.cpp
     source/objects/object.cpp
     source/objects/object.hpp
     source/objects/block.hpp
@@ -117,4 +119,11 @@ if(BUILD_TESTING)
     target_link_libraries(mario_rl_smoke mario_rl)
     target_compile_definitions(mario_rl_smoke PRIVATE MARIO_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
     add_test(NAME mario_rl_smoke COMMAND mario_rl_smoke)
+
+    # mario_engine is an object library, so link the shared library that already
+    # bundles it together with SDL and Box2D, as the RL smoke test does.
+    add_executable(world_rules_smoke tests/world_rules_smoke.cpp)
+    target_link_libraries(world_rules_smoke mario_rl)
+    target_compile_definitions(world_rules_smoke PRIVATE MARIO_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+    add_test(NAME world_rules_smoke COMMAND world_rules_smoke)
 endif()

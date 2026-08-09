@@ -176,10 +176,27 @@ RL environment changes:
 - The native environment can rasterize the visible view into an 84x84 grayscale frame (`mario_rl_frame`), with one gray level per object class and Mario the brightest. No SDL surface or display is involved.
 - `MarioEnv(observation_mode="pixels")` returns `(frame_stack, 84, 84)` `uint8` stacks, and `PixelDQNAgent` trains on them with a Nature-DQN convolutional dueling network, reusing prioritized replay, n-step returns, and Double DQN targets. `rl.evaluate` and `rl.play` detect pixel checkpoints and switch the environment automatically.
 
+## Soft Actor-Critic agent
+
+- `--algorithm sac` trains a discrete Soft Actor-Critic agent (`rl/sac_agent.py`) on either observation space; `--algorithm dqn` stays the default.
+- Discrete formulation: a categorical actor, twin critics scoring all nine actions, exact expectations over the policy in both the soft target and the actor loss, and the minimum of the two critics to curb overestimation.
+- Exploration comes from the policy's entropy rather than epsilon. The temperature is tuned automatically towards `--target-entropy-ratio * log(9)`, with `--initial-alpha`, `--alpha-learning-rate`, and `--fixed-alpha` as manual controls. Greedy evaluation and playback take the most likely action.
+- Prioritized replay, three-step returns, soft target updates, and both encoders (tile grid and Nature CNN) are shared with DQN through `_build_network`/`_build_replay` hooks, so nothing in the DQN path changed.
+- `rl/agents.py` now dispatches checkpoints to the agent class that produced them, so `rl.evaluate` and `rl.play` load DQN, pixel-DQN, and SAC checkpoints with no extra flag.
+- Runs log `actor_loss`, `alpha`, and `policy_entropy` as extra columns; the learning-curve image plots temperature and entropy where a DQN run plots epsilon.
+
 ## Screenshots
 
 - `Window::save_screenshot()` writes the current frame to a PNG, exposed in the game as `Core::saveScreenshot()` and bound to the `C` key (files land in `screenshots/`). `MarioRLRenderer` has the same helper.
 - The README screenshots (gameplay, debug overlay, RL playback, and both observation spaces) are generated from this path, headlessly with `SDL_VIDEODRIVER=dummy`, so they can be refreshed after visual changes.
+
+## Sky, fireball sprite, and fireball limit
+
+- The cloud layer moved into `source/cloud_layer.*`, shared by the game and the RL renderer instead of being duplicated in both.
+- Clouds now come in three sizes (one, two, or three center pieces between the caps), on two parallax planes, each drifting at its own rate.
+- The fireball no longer borrows `coin.png`. `assets/sprites/objects/fireball.svg` is the source - pixel rects on a 16x16 grid using the existing sprite palette - and `fireball.png` is what it rasterizes to.
+- Mario can only keep `World::MAX_ACTIVE_BULLETS` (two) fireballs in flight, enforced for both the keyboard path and the RL `shoot` action. Spent fireballs release their slot.
+- `tests/world_rules_smoke.cpp` is a second CTest target covering the fireball limit, the fireball kill score, and the single-pickup power-up rule.
 
 ## Notes for future testing
 
@@ -202,6 +219,9 @@ Recommended manual test cases:
 15. Mario flashes and ignores enemy damage during temporary invincibility.
 16. A fireball kill on a Koopa shows "+ 150" and raises the score, in walking and shell states.
 17. Eating a mushroom or flower shows "+ 1000" once and raises Mario's power level once.
+18. `--algorithm sac` trains on both observation spaces, and its checkpoints replay through `rl.play` without extra flags.
+19. Holding the fire button never puts more than two fireballs on screen, and the third shot works once one expires.
+20. Clouds of three different sizes drift at different speeds as the camera scrolls.
 
 ## Implementation warning
 

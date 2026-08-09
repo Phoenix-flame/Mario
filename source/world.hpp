@@ -61,6 +61,11 @@ public:
     std::vector<Object*> getGhosts();
     GameState* getGameState();
     void addGhost(Object *obj);
+
+    // Mario may only keep two fireballs in flight, as in the original game.
+    static const int MAX_ACTIVE_BULLETS = 2;
+    int countActiveBullets() const;
+    bool canShoot() const { return countActiveBullets() < MAX_ACTIVE_BULLETS; }
     int getWinX() { return winX; }
     int getLevel() { return level; }
     int getMapPixelWidth() { return map->getWidth() * 24; }

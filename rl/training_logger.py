@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import json
 from pathlib import Path
+from collections.abc import Sequence
 from typing import Any
 
 import numpy as np
@@ -48,7 +49,18 @@ EVALUATION_FIELDS = (
 class TrainingLogger:
     """Write machine-readable metrics and an always-current learning-curve image."""
 
-    def __init__(self, log_dir: str | Path, config: dict[str, Any]) -> None:
+    def __init__(
+        self,
+        log_dir: str | Path,
+        config: dict[str, Any],
+        *,
+        extra_episode_fields: Sequence[str] = (),
+    ) -> None:
+        # Algorithms report different update metrics - SAC adds the actor loss,
+        # temperature, and policy entropy - so the CSV grows columns for them.
+        self.episode_fields = EPISODE_FIELDS + tuple(
+            name for name in extra_episode_fields if name not in EPISODE_FIELDS
+        )
         self.log_dir = Path(log_dir)
         self.log_dir.mkdir(parents=True, exist_ok=True)
         generated_files = ("config.json", "metrics.csv", "evaluations.csv", "learning_curves.png")
@@ -65,7 +77,7 @@ class TrainingLogger:
         self._episode_file = (self.log_dir / "metrics.csv").open(
             "w", newline="", encoding="utf-8"
         )
-        self._episode_writer = csv.DictWriter(self._episode_file, fieldnames=EPISODE_FIELDS)
+        self._episode_writer = csv.DictWriter(self._episode_file, fieldnames=self.episode_fields)
         self._episode_writer.writeheader()
         self._episode_file.flush()
 
@@ -83,19 +95,11 @@ class TrainingLogger:
         self._evaluations: list[dict[str, float]] = []
 
     def log_update(self, gradient_step: int, metrics: dict[str, float]) -> None:
-        for name in (
-            "loss",
-            "q_mean",
-            "target_q_mean",
-            "td_error_mean",
-            "gradient_norm",
-            "priority_beta",
-            "learning_rate",
-        ):
-            self._writer.add_scalar(f"updates/{name}", metrics[name], gradient_step)
+        for name, value in metrics.items():
+            self._writer.add_scalar(f"updates/{name}", float(value), gradient_step)
 
     def log_episode(self, metrics: dict[str, float | int]) -> None:
-        row = {field: metrics[field] for field in EPISODE_FIELDS}
+        row = {field: metrics[field] for field in self.episode_fields}
         self._episode_writer.writerow(row)
         self._episode_file.flush()
         numeric_row = {name: float(value) for name, value in row.items()}
@@ -103,26 +107,9 @@ class TrainingLogger:
 
         episode = int(row["episode"])
         environment_steps = int(row["environment_steps"])
-        for name in (
-            "reward",
-            "reward_50",
-            "score",
-            "score_50",
-            "progress",
-            "progress_50",
-            "won",
-            "win_rate_50",
-            "epsilon",
-            "loss",
-            "q_mean",
-            "target_q_mean",
-            "td_error_mean",
-            "gradient_norm",
-            "priority_beta",
-            "learning_rate",
-            "replay_size",
-            "episode_steps",
-        ):
+        for name in self.episode_fields:
+            if name in ("episode", "environment_steps", "gradient_steps"):
+                continue
             value = float(row[name])
             if np.isfinite(value):
                 self._writer.add_scalar(f"episodes/{name}", value, episode)
@@ -249,20 +236,42 @@ class TrainingLogger:
             label="target Q",
         )
         value_axis.set(title="Value estimates and exploration", xlabel="Episode", ylabel="Q value")
-        epsilon_axis = value_axis.twinx()
-        epsilon_axis.plot(
-            episodes,
-            [row["epsilon"] for row in self._episodes],
-            color="#ff924c",
-            linestyle="--",
-            linewidth=1.5,
-            label="epsilon",
-        )
-        epsilon_axis.set_ylabel("Epsilon")
-        epsilon_axis.set_ylim(0.0, 1.05)
+
+        # DQN explores with epsilon; SAC explores through its temperature and
+        # the entropy that temperature buys, so plot whichever the run recorded.
+        exploration_axis = value_axis.twinx()
+        if "alpha" in self.episode_fields:
+            exploration_axis.plot(
+                episodes,
+                [row["alpha"] for row in self._episodes],
+                color="#ff924c",
+                linestyle="--",
+                linewidth=1.5,
+                label="alpha",
+            )
+            exploration_axis.plot(
+                episodes,
+                [row["policy_entropy"] for row in self._episodes],
+                color="#c77dff",
+                linestyle=":",
+                linewidth=1.5,
+                label="policy entropy",
+            )
+            exploration_axis.set_ylabel("Alpha / entropy (nats)")
+        else:
+            exploration_axis.plot(
+                episodes,
+                [row["epsilon"] for row in self._episodes],
+                color="#ff924c",
+                linestyle="--",
+                linewidth=1.5,
+                label="epsilon",
+            )
+            exploration_axis.set_ylabel("Epsilon")
+            exploration_axis.set_ylim(0.0, 1.05)
         lines, labels = value_axis.get_legend_handles_labels()
-        epsilon_lines, epsilon_labels = epsilon_axis.get_legend_handles_labels()
-        value_axis.legend(lines + epsilon_lines, labels + epsilon_labels, loc="best")
+        exploration_lines, exploration_labels = exploration_axis.get_legend_handles_labels()
+        value_axis.legend(lines + exploration_lines, labels + exploration_labels, loc="best")
         value_axis.grid(alpha=0.2)
 
         figure.suptitle("Mario RL learning curves", fontsize=15)

@@ -17,31 +17,30 @@ try:  # tqdm drives the live progress bars; plain printing is used without it.
 except ImportError:  # pragma: no cover - exercised only on minimal installs
     tqdm = None
 
+from .agents import ALGORITHMS, build_agent
 from .dqn_agent import DQNAgent
 from .mario_env import MarioEnv
-from .pixel_dqn_agent import PixelDQNAgent
-from .training_logger import TrainingLogger
+from .training_logger import EPISODE_FIELDS, TrainingLogger
 
 
 # Frame stacks are far larger than feature vectors, so the pixel agent gets a
 # smaller default replay unless the user asks for a specific size.
 PIXEL_REPLAY_CAPACITY = 20_000
 
-
-UPDATE_METRICS = (
-    "loss",
-    "q_mean",
-    "target_q_mean",
-    "td_error_mean",
-    "gradient_norm",
-    "priority_beta",
-    "learning_rate",
-)
+# SAC's actor, twin critics, and temperature prefer a livelier step size than
+# the DQN default.
+SAC_LEARNING_RATE = 3e-4
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--level", type=int, choices=(1, 2, 3), default=1)
+    parser.add_argument(
+        "--algorithm",
+        choices=ALGORITHMS,
+        default="dqn",
+        help="Dueling Double DQN, or discrete Soft Actor-Critic",
+    )
     parser.add_argument(
         "--observation",
         choices=("vector", "pixels"),
@@ -71,9 +70,31 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--priority-alpha", type=float, default=0.6)
     parser.add_argument("--priority-beta-start", type=float, default=0.4)
     parser.add_argument("--priority-beta-steps", type=int, default=250_000)
-    parser.add_argument("--epsilon-start", type=float, default=1.0)
-    parser.add_argument("--epsilon-end", type=float, default=0.05)
-    parser.add_argument("--epsilon-decay-steps", type=int, default=250_000)
+    parser.add_argument("--epsilon-start", type=float, default=1.0, help="DQN exploration only")
+    parser.add_argument("--epsilon-end", type=float, default=0.05, help="DQN exploration only")
+    parser.add_argument("--epsilon-decay-steps", type=int, default=250_000, help="DQN only")
+    parser.add_argument(
+        "--target-entropy-ratio",
+        type=float,
+        default=0.6,
+        help="SAC only: entropy target as a fraction of log(action count)",
+    )
+    parser.add_argument(
+        "--initial-alpha",
+        type=float,
+        default=0.2,
+        help="SAC only: starting entropy temperature",
+    )
+    parser.add_argument(
+        "--alpha-learning-rate",
+        type=float,
+        help="SAC only: temperature step size; defaults to --learning-rate",
+    )
+    parser.add_argument(
+        "--fixed-alpha",
+        action="store_true",
+        help="SAC only: keep the temperature at --initial-alpha instead of tuning it",
+    )
     parser.add_argument("--checkpoint", type=Path, default=Path("checkpoints/mario_dqn.pt"))
     parser.add_argument("--resume", type=Path)
     parser.add_argument("--save-every", type=int, default=25)
@@ -155,6 +176,17 @@ def verify_device(agent: DQNAgent, require_cuda: bool) -> dict[str, Any]:
             raise SystemExit("--require-cuda was set but the agent is not on a CUDA device")
 
     return report
+
+
+def exploration_postfix(agent: DQNAgent, update_means: dict[str, float]) -> dict[str, str]:
+    """Show whichever exploration knob the algorithm actually uses."""
+
+    if "alpha" in update_means:
+        return {
+            "alpha": f"{update_means['alpha']:.3f}",
+            "entropy": f"{update_means['policy_entropy']:.2f}",
+        }
+    return {"eps": f"{agent.epsilon:.3f}"}
 
 
 def _emit(message: str, bar: "tqdm | None" = None) -> None:
@@ -269,28 +301,45 @@ def main() -> None:
         frame_stack=args.frame_stack,
     ) as environment:
         uses_pixels = args.observation == "pixels"
-        agent_class = PixelDQNAgent if uses_pixels else DQNAgent
+        uses_sac = args.algorithm == "sac"
+        defaults = build_parser()
         observation_argument = (
             environment.observation_shape if uses_pixels else environment.observation_size
         )
         replay_capacity = args.replay_capacity
-        if uses_pixels and replay_capacity == build_parser().get_default("replay_capacity"):
+        if uses_pixels and replay_capacity == defaults.get_default("replay_capacity"):
             replay_capacity = PIXEL_REPLAY_CAPACITY
             print(
                 f"pixel observations: using a {replay_capacity} transition replay "
                 "by default; override with --replay-capacity"
             )
+        learning_rate = args.learning_rate
+        if uses_sac and learning_rate == defaults.get_default("learning_rate"):
+            learning_rate = SAC_LEARNING_RATE
+            print(f"soft actor-critic: using a {learning_rate} learning rate by default")
 
-        agent = agent_class(
+        algorithm_kwargs: dict[str, Any] = (
+            {
+                "target_entropy_ratio": args.target_entropy_ratio,
+                "initial_alpha": args.initial_alpha,
+                "alpha_learning_rate": args.alpha_learning_rate,
+                "autotune_alpha": not args.fixed_alpha,
+            }
+            if uses_sac
+            else {
+                "epsilon_start": args.epsilon_start,
+                "epsilon_end": args.epsilon_end,
+                "epsilon_decay_steps": args.epsilon_decay_steps,
+            }
+        )
+        agent = build_agent(
+            args.algorithm,
             observation_argument,
             environment.action_count,
             hidden_size=args.hidden_size,
             replay_capacity=replay_capacity,
             gamma=args.gamma,
-            learning_rate=args.learning_rate,
-            epsilon_start=args.epsilon_start,
-            epsilon_end=args.epsilon_end,
-            epsilon_decay_steps=args.epsilon_decay_steps,
+            learning_rate=learning_rate,
             tau=args.tau,
             n_step=args.n_step,
             priority_alpha=args.priority_alpha,
@@ -298,16 +347,27 @@ def main() -> None:
             priority_beta_steps=args.priority_beta_steps,
             seed=args.seed,
             device=args.device,
+            **algorithm_kwargs,
+        )
+        metric_names = agent.update_metric_names()
+        extra_metric_fields = tuple(
+            name for name in metric_names if name not in EPISODE_FIELDS
         )
         if args.resume:
             agent.load(args.resume)
             print(f"resumed {args.resume} at environment step {agent.total_steps}")
 
         encoder = "Nature CNN over stacked frames" if uses_pixels else "tile-grid encoder"
+        learner = (
+            "discrete Soft Actor-Critic with twin critics and tuned temperature"
+            if uses_sac
+            else "dueling Double DQN"
+        )
         config = vars(args).copy()
         config.update(
             {
-                "algorithm": f"PyTorch dueling Double DQN + PER + n-step returns ({encoder})",
+                "algorithm": f"PyTorch {learner} + PER + n-step returns ({encoder})",
+                "learning_rate": learning_rate,
                 "resolved_device": str(agent.device),
                 "observation_size": environment.observation_size,
                 "observation_shape": list(environment.observation_shape),
@@ -331,7 +391,10 @@ def main() -> None:
             unit="ep",
         )
         bar_context = episode_bar if episode_bar is not None else nullcontext()
-        with TrainingLogger(log_dir, config) as logger, bar_context:
+        with (
+            TrainingLogger(log_dir, config, extra_episode_fields=extra_metric_fields) as logger,
+            bar_context,
+        ):
             for episode in range(1, args.episodes + 1):
                 observation, _ = environment.reset(seed=args.seed + episode)
                 episode_reward = 0.0
@@ -383,7 +446,7 @@ def main() -> None:
                 recent_scores.append(float(info["score"]))
                 recent_progress.append(float(info["progress"]))
                 update_means = {
-                    name: _mean([update[name] for update in updates]) for name in UPDATE_METRICS
+                    name: _mean([update[name] for update in updates]) for name in metric_names
                 }
                 episode_metrics: dict[str, float | int] = {
                     "episode": episode,
@@ -412,18 +475,22 @@ def main() -> None:
                             "score": int(info["score"]),
                             "progress": f"{info['progress'] * 100:.1f}%",
                             "win_50": f"{_mean(recent_wins):.2f}",
-                            "eps": f"{agent.epsilon:.3f}",
+                            **exploration_postfix(agent, update_means),
                             "loss": f"{update_means['loss']:.4f}",
                         },
                         refresh=False,
                     )
                     episode_bar.update(1)
                 elif args.progress == "plain":
+                    exploration = " ".join(
+                        f"{name}={value}"
+                        for name, value in exploration_postfix(agent, update_means).items()
+                    )
                     print(
                         f"episode={episode:04d} steps={info['episode_steps']:4d} "
                         f"reward={episode_reward:8.2f} score={info['score']:5d} "
                         f"progress={info['progress'] * 100:6.2f}% won={int(won)} "
-                        f"epsilon={agent.epsilon:.3f} loss={update_means['loss']:.4f} "
+                        f"{exploration} loss={update_means['loss']:.4f} "
                         f"reward_50={_mean(recent_rewards):.2f} "
                         f"win_rate_50={_mean(recent_wins):.2f}"
                     )

@@ -1,4 +1,5 @@
 #include "core.hpp"
+#include "cloud_layer.hpp"
 #include <unistd.h>
 #include <sys/stat.h>
 
@@ -149,7 +150,7 @@ void Core::update(){
     }
     if (KEY_SHIFT_PRESSED){
         Player *player = world->getPlayer();
-        if (player->getLevel() == POWER && (!shootTimer->isStarted() || shootTimer->getTime() > 250)){
+        if (player->getLevel() == POWER && world->canShoot() && (!shootTimer->isStarted() || shootTimer->getTime() > 250)){
             Point pos = player->getPos();
             Point size = player->getSize();
             Dir fireDir = (player->getDir() == LEFT) ? LEFT : RIGHT;
@@ -176,45 +177,8 @@ void Core::draw(){
 
 void Core::drawBackground(){
     const RGB SKY_BLUE(92, 148, 252);
-    const RGB CLOUD_TRANSPARENT(255, 0, 255);
     win->fill_rect(Rectangle(Point(0, 0), Point(640, 480)), SKY_BLUE);
-
-    static int cloud_offset = 0;
-    static int last_cloud_tick = SDL_GetTicks();
-    int current_tick = SDL_GetTicks();
-    if (current_tick - last_cloud_tick > 45)
-    {
-        cloud_offset = (cloud_offset + 1) % 760;
-        last_cloud_tick = current_tick;
-    }
-
-    auto draw_cloud_tile = [this, CLOUD_TRANSPARENT](std::string filename, Rectangle dst) {
-        win->draw_img_with_color_key(filename, CLOUD_TRANSPARENT, dst, NULL_RECT, 0, false);
-    };
-
-    auto draw_cloud = [this, draw_cloud_tile](int x, int y, int tile_size) {
-        const std::string path = "assets/sprites/objects/cloud/";
-        draw_cloud_tile(path + "cloud_left_top.bmp", Rectangle(Point(x, y), Point(x + tile_size, y + tile_size)));
-        draw_cloud_tile(path + "cloud_center_top.bmp", Rectangle(Point(x + tile_size, y), Point(x + tile_size * 2, y + tile_size)));
-        draw_cloud_tile(path + "cloud_right_top.bmp", Rectangle(Point(x + tile_size * 2, y), Point(x + tile_size * 3, y + tile_size)));
-        draw_cloud_tile(path + "cloud_left_bot.bmp", Rectangle(Point(x, y + tile_size), Point(x + tile_size, y + tile_size * 2)));
-        draw_cloud_tile(path + "cloud_center_bot.bmp", Rectangle(Point(x + tile_size, y + tile_size), Point(x + tile_size * 2, y + tile_size * 2)));
-        draw_cloud_tile(path + "cloud_right_bot.bmp", Rectangle(Point(x + tile_size * 2, y + tile_size), Point(x + tile_size * 3, y + tile_size * 2)));
-    };
-
-    const int period = 760;
-    int parallax = world->camera->getPosBackground().x / 2;
-    int bases[5] = {80, 230, 390, 560, 720};
-    int ys[5] = {70, 120, 55, 145, 95};
-    int tile_sizes[5] = {20, 16, 22, 18, 16};
-
-    for (int i = 0; i < 5; i++)
-    {
-        int x = (bases[i] + parallax - cloud_offset) % period;
-        while (x < -100){ x += period; }
-        while (x > 680){ x -= period; }
-        draw_cloud(x, ys[i], tile_sizes[i]);
-    }
+    drawCloudLayer(win, world->camera->getPosBackground().x, SDL_GetTicks());
 }
 
 void Core::showDebug(){

@@ -19,6 +19,16 @@ GRID_COLUMNS = 13
 SPATIAL_OBSERVATION_SIZE = FEATURE_COUNT + GRID_CHANNELS * GRID_ROWS * GRID_COLUMNS
 CHECKPOINT_VERSION = 2
 
+UPDATE_METRIC_NAMES = (
+    "loss",
+    "q_mean",
+    "target_q_mean",
+    "td_error_mean",
+    "gradient_norm",
+    "priority_beta",
+    "learning_rate",
+)
+
 
 class PrioritizedReplayBuffer:
     """Proportional prioritized replay backed by a sum tree."""
@@ -221,6 +231,10 @@ class DuelingQNetwork(nn.Module):
 class DQNAgent:
     """Rainbow-lite DQN with PyTorch, PER, n-step returns, and soft targets."""
 
+    # Pixel-based subclasses replace this with (channels, height, width); it
+    # stays None for flat feature observations.
+    observation_shape: tuple[int, int, int] | None = None
+
     def __init__(
         self,
         observation_size: int,
@@ -305,6 +319,12 @@ class DQNAgent:
         self._n_step_buffer: deque[tuple[np.ndarray, int, float, np.ndarray, bool]] = deque()
         self.total_steps = 0
         self.gradient_steps = 0
+
+    @classmethod
+    def update_metric_names(cls) -> tuple[str, ...]:
+        """Keys ``train_step`` returns, so trainers and loggers can adapt."""
+
+        return UPDATE_METRIC_NAMES
 
     def _build_network(self) -> nn.Module:
         """Subclasses override this to swap in a different encoder."""

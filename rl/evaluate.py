@@ -7,8 +7,8 @@ from pathlib import Path
 
 import numpy as np
 
+from .agents import load_agent
 from .mario_env import ACTION_NAMES, MarioEnv
-from .pixel_dqn_agent import PixelDQNAgent, load_agent
 
 
 def main() -> None:
@@ -22,7 +22,7 @@ def main() -> None:
     args = parser.parse_args()
 
     agent = load_agent(args.checkpoint, device=args.device)
-    uses_pixels = isinstance(agent, PixelDQNAgent)
+    uses_pixels = agent.observation_shape is not None
 
     with MarioEnv(
         args.level,

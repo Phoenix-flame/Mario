@@ -145,15 +145,13 @@ class PixelDQNAgent(DQNAgent):
         return kwargs
 
 
-def is_pixel_checkpoint(path: str | Path, *, device: str | torch.device = "cpu") -> bool:
-    """Report whether a checkpoint was trained on frames rather than features."""
+def is_pixel_checkpoint(path: str | Path) -> bool:
+    """Report whether a checkpoint was trained on frames rather than features.
 
-    payload = DQNAgent._read_checkpoint(path, DQNAgent._resolve_device(device))
-    return "observation_shape" in payload["config"]
+    Deliberately version-agnostic: this only inspects the config header, so it
+    also answers for checkpoints written by other algorithms. Use
+    ``rl.agents.load_agent`` to rebuild an agent from a checkpoint.
+    """
 
-
-def load_agent(path: str | Path, *, device: str | torch.device = "auto") -> DQNAgent:
-    """Rebuild whichever agent type produced this checkpoint."""
-
-    agent_class = PixelDQNAgent if is_pixel_checkpoint(path) else DQNAgent
-    return agent_class.from_checkpoint(path, device=device)
+    payload = torch.load(Path(path), map_location="cpu", weights_only=True)
+    return "observation_shape" in payload.get("config", {})

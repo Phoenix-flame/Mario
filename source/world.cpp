@@ -280,6 +280,21 @@ void World::addGhost(Object *obj)
     ghosts.push_back(obj);
 }
 
+int World::countActiveBullets() const
+{
+    int count = 0;
+    for (auto ghost : ghosts)
+    {
+        // A spent fireball is only removed on the next loop, so skip the ones
+        // already marked dead or Mario would lose a shot for a frame.
+        if (ghost->getType() == G_BULLET && !ghost->ghost_dead)
+        {
+            count++;
+        }
+    }
+    return count;
+}
+
 std::vector<Object *> World::getObjects()
 {
     return map->objects;

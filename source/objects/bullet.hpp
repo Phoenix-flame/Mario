@@ -3,7 +3,7 @@
 
 #include "object.hpp"
 
-#define BULLET_IMAGE "assets/sprites/objects/coin.png"
+#define BULLET_IMAGE "assets/sprites/objects/fireball.png"
 
 class Bullet : public Object
 {

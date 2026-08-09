@@ -208,7 +208,9 @@ void MarioRLEnvironment::shoot()
 {
     int elapsedMilliseconds = (simulatedFrames - lastShotFrame) * SIMULATED_FRAME_MILLISECONDS;
     Player *player = world->getPlayer();
-    if (player->getLevel() != POWER || elapsedMilliseconds < SHOOT_COOLDOWN_MILLISECONDS)
+    if (player->getLevel() != POWER ||
+        elapsedMilliseconds < SHOOT_COOLDOWN_MILLISECONDS ||
+        !world->canShoot())
     {
         return;
     }

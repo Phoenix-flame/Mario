@@ -26,8 +26,6 @@ private:
     std::string assetRoot;
     Window *window;
     int frameDelayMilliseconds;
-    int cloudOffset;
-    Uint32 lastCloudTick;
 };
 
 #endif
