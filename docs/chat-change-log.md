@@ -198,6 +198,32 @@ RL environment changes:
 - Mario can only keep `World::MAX_ACTIVE_BULLETS` (two) fireballs in flight, enforced for both the keyboard path and the RL `shoot` action. Spent fireballs release their slot.
 - `tests/world_rules_smoke.cpp` is a second CTest target covering the fireball limit, the fireball kill score, and the single-pickup power-up rule.
 
+## Level 2 and 3 rebuild
+
+The maps were unplayable, so the engine's real limits were measured first by driving the physics directly: a running jump rises 99 px (4.1 tiles) and travels 195 px (8.1 tiles), the widest pit that can be cleared is 6 tiles, the tallest step that can be climbed is 4 tiles, and a question block is only punchable 3 to 6 rows above the floor beneath it.
+
+What was wrong:
+
+- Level 2 had an 8 tile pit and level 3 had seven 10 tile pits, none of which can be jumped.
+- Level 3 also had 5 to 8 tile steps that cannot be climbed.
+- 16 reward blocks on level 2 and 9 on level 3 sat on solid stacks, so they could not be hit from below.
+- Both flags were a single tile with no pole; level 1 uses a nine tile pole with a head on top.
+- Level 2 had four enemies spread over the whole map.
+
+What replaced them, built to the measured limits and to level 1's layout conventions (ground on rows 16-17, low reward row 12, high reward row 8):
+
+- Pits of 3 to 4 tiles on level 2 and 4 to 5 on level 3, always with clear ground before them.
+- Every reward block has open air beneath it and sits 4 rows above the surface it is punched from.
+- Ledges carry their own reward row above them, so high blocks are reachable from the ledge.
+- Pipes, staircases with a plateau, and 15 and 18 enemies respectively.
+- Proper flag poles matching level 1.
+
+`tests/level_playthrough_smoke.cpp` plays every level to the flag with a scripted bot and fails if one cannot be crossed. It reports separately how far the same bot gets while fighting, which is a difficulty signal rather than a pass or fail.
+
+## Starting level
+
+- `./Mario --level 2` starts on a chosen level; `--level`, `-l`, `--level=2`, and a bare `./Mario 2` all work. Finishing a level still advances to the next from wherever the run started.
+
 ## Notes for future testing
 
 Recommended manual test cases:
@@ -222,6 +248,7 @@ Recommended manual test cases:
 18. `--algorithm sac` trains on both observation spaces, and its checkpoints replay through `rl.play` without extra flags.
 19. Holding the fire button never puts more than two fireballs on screen, and the third shot works once one expires.
 20. Clouds of three different sizes drift at different speeds as the camera scrolls.
+21. Levels 2 and 3 can be finished, and their question blocks can be hit from below.
 
 ## Implementation warning
 

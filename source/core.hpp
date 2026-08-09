@@ -11,7 +11,9 @@ using namespace std::chrono;
 class Core
 {
 public:
-    Core();
+    // startLevel picks which map to load first; the game still advances
+    // through the remaining levels from there.
+    Core(int startLevel = 1);
     ~Core();
     void draw();
     bool events();

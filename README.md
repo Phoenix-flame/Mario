@@ -30,6 +30,14 @@ make
 ./Mario
 ```
 
+`./Mario` starts on level 1. To play another level directly, pass its number:
+
+```bash
+./Mario --level 2
+```
+
+`--level`, `-l`, `--level=2`, and a bare `./Mario 2` all work, for levels 1 to 3. Finishing a level still advances to the next one from wherever you started.
+
 ## Controls
 
 | Key | Action |
@@ -77,6 +85,17 @@ The game is intentionally implemented without a game engine. The main systems ar
 Levels are loaded from text files under `assets/maps/`. Each character in the map grid represents a tile or object. `Map` converts those symbols into strongly typed objects such as ground blocks, bricks, question blocks, pipes, enemies, flag pieces, and the player spawn.
 
 This approach is simple and easy to edit, but complex objects like pipes are represented as multiple tiles, so they also become multiple collision objects.
+
+Level geometry is bounded by what the engine actually allows, measured by driving the physics directly rather than by eye:
+
+| Limit | Measured |
+| --- | --- |
+| Running jump | rises 99 px (4.1 tiles), travels 195 px (8.1 tiles) |
+| Widest pit cleared | 6 tiles |
+| Tallest step climbed | 4 tiles |
+| Question block punchable | 3 to 6 rows above the floor beneath it |
+
+Levels 2 and 3 were rebuilt against those numbers. They previously contained 8 and 10 tile pits that no jump can cross, reward blocks with solid tiles directly underneath, and a flag that was a single tile instead of a pole. `tests/level_playthrough_smoke.cpp` now plays every level to its flag with a scripted bot, so a map edit cannot quietly make a level uncompletable again.
 
 ## Object System
 

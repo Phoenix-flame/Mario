@@ -38,8 +38,12 @@ namespace
     }
 }
 
-Core::Core(){
+Core::Core(int startLevel){
     configureResourceWorkingDirectory();
+    if (startLevel >= 1 && startLevel <= TOTAL_LEVELS){
+        currentLevel = startLevel;
+    }
+    std::cout << "starting on level " << currentLevel << " of " << TOTAL_LEVELS << std::endl;
     this->win = new Window(640, 480, "Mario");
     this->world = new World(currentLevel);
     audio = new Audio(this->win);
